@@ -1,0 +1,306 @@
+import { getQuestionsBySubject, getQuestionsBySubjectAndChapter, getTotalQuestionsPerSubjectAndChapter } from "../questions/questions.services";
+import { getRandomColor } from "../utils/functions";
+import { typeOfTestsAndDescriptionData } from "../utils/global-data";
+import prisma from "../utils/prisma";
+import { calculateTotalQuestionsAttempt, calculateTotalCorrectAnswers, calculateTotalUnattemptQuestions, generateRecentTests, calculateAverageScorePerTest, calculateAverageScorePerQuestion, generateDailyTestProgress, getSubjectScoresForBarChart } from "./tests.methods";
+import { TBaseCustomTest, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
+
+
+export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<TBaseCustomTest | null> => {
+    const { name, slug, createdById, mode, questions } = customTestData;
+    const newCustomTest = await prisma.customTest.create({
+        data: {
+            name,
+            slug,
+            createdById,
+            mode: mode || 'ALL',
+            questions: questions
+        }
+    })
+    if (!newCustomTest) return null
+    return newCustomTest
+}
+
+export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string): Promise<string | null> => {
+    const { name, createdById, type, mode, limit } = customTestData;
+    const questions = await getQuestionsBySubject(subject, limit)
+    if (!questions || questions.length === 0) return null;
+
+    const newCustomTest = await prisma.customTest.create({
+        data: {
+            name,
+            type,
+            slug: name.toLowerCase().replace(/ /g, "_"),
+            createdById,
+            mode: mode || 'ALL',
+            questions: questions
+        }
+    })
+    if (!newCustomTest) return null
+    return newCustomTest.id
+}
+
+export const createChapterWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string, chapter: string): Promise<string | null> => {
+    const { name, createdById, type, mode, limit } = customTestData;
+    const questions = await getQuestionsBySubjectAndChapter(subject, chapter, limit)
+    if (!questions || questions.length === 0) return null;
+    const newCustomTest = await prisma.customTest.create({
+        data: {
+            name,
+            type,
+            slug: name.toLowerCase().replace(/ /g, "_"),
+            createdById,
+            mode: mode || 'ALL',
+            questions: questions
+        }
+    })
+    if (!newCustomTest) return null
+    return newCustomTest.id
+}
+
+export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWithQuestions | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: { id },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            createdBy: { select: { name: true } },
+            questions: true
+        }
+    });
+    if (!customTest) return null;
+
+    const questions = await prisma.question.findMany({
+        where: { id: { in: customTest.questions } },
+        select: {
+            id: true,
+            question: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
+            answer: true,
+            explanation: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            difficulty: true,
+        }
+    });
+
+    const modifiedQuestions = questions.map((q) => ({
+        ...q,
+        options: q.options || { a: "", b: "", c: "", d: "" }  
+    }));
+
+    const modifiedCustomTest = {
+        ...customTest,
+        createdBy: customTest.createdBy.name,
+        fetchedQuestions: modifiedQuestions
+    };
+
+    return modifiedCustomTest;
+};
+
+
+
+export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMetadata | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: {
+            id
+        },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            createdBy: {
+                select: {
+                    name: true,
+                }
+            },
+            archive: true,
+            date: true,
+            usersConnected: true,
+            questions: true,
+            usersAttended: {
+                select: {
+                    username: true,
+                    totalScore: true,
+                }
+            }
+        }
+    })
+
+    if(!customTest) return null
+
+    const modifiedTestData = {
+        ...customTest,
+        createdBy: customTest.createdBy.name,
+        questionsCount: customTest.questions.length,
+    }
+
+    if (!modifiedTestData) return null
+    return modifiedTestData
+}
+
+export const getAllTestsByType = async (type: TTypeOfTest): Promise<TBaseCustomTest[] | []> => {
+    const customTests = await prisma.customTest.findMany({
+        where: {
+            type: type
+        },
+        select: {
+            name: true,
+            id: true,
+            date: true,
+            questions: true
+        }
+    })
+
+    if (!customTests || customTests.length === 0) return []
+    return customTests
+}
+
+export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
+    const customTests = await prisma.customTest.findMany({
+        select: {
+            name: true,
+            id: true,
+            date: true,
+            questions: true
+        }
+    })
+
+    if (!customTests || customTests.length === 0) return []
+    return customTests
+}
+
+export const getTypesOfTests = (): TTypeOfTestsAndDescription[] | [] => {
+    return typeOfTestsAndDescriptionData.length > 0 ? typeOfTestsAndDescriptionData : []
+}
+
+export const createTestAnalytic = async (data: TCreateTestAnalytic): Promise<TBaseTestAnalytic | null> => {
+    const { userId, customTestId, questionsWithAnswers } = data
+    const newTestAnalytic = await prisma.testAnalytic.create({
+        data: {
+            userId,
+            customTestId,
+        }
+    })
+    if (!newTestAnalytic) return null
+
+    // Prepare the array of objects for TestQuestionAnswer creation
+    const testQuestionAnswersData = questionsWithAnswers.map((qa) => ({
+        testAnalyticId: newTestAnalytic.id,
+        questionId: qa.questionId,
+        userAnswer: qa.userAnswer
+    }));
+
+    // Create many TestQuestionAnswer records
+    const newTestQuestionAnswers = await prisma.testQuestionAnswer.createMany({
+        data: testQuestionAnswersData
+    });
+
+    if (!newTestQuestionAnswers) return null;
+    return newTestAnalytic
+
+}
+
+export const saveUserScore = async (userScoreData: TSaveUserScore): Promise<TBaseUserScore | null> => {
+    const { username, customTestId, totalScore } = userScoreData
+    const newUserScore = await prisma.userScore.create({
+        data: {
+            username,
+            customTestId,
+            totalScore
+        },
+        select: {
+            username: true,
+            totalScore: true,
+        }
+    })
+    if (!newUserScore) return null
+    return newUserScore
+}
+
+export const getDashboardAnalytics = async (userId: string): Promise<TDashboardAnalyticData | null> => {
+    const currentUser = await prisma.user.findUnique({
+        where: {
+            id: userId
+        },
+        select: {
+            testAnalytics: {
+                select: {
+                    testQuestionAnswer: {
+                        select: {
+                            userAnswer: true,
+                            question: {
+                                select: {
+                                    answer: true,
+                                    subject: true,
+                                }
+                            }
+                        }
+                    },
+                    createdAt: true, // Fetching the date when the test was taken
+                    customTest: {
+                        select: {
+                            name: true,
+                            id: true, // Including test ID for reference
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!currentUser) {
+        return null; // If no user data is found, return null
+    }
+
+    const totalTests = currentUser.testAnalytics.length;
+    const totalQuestionsAttempt = calculateTotalQuestionsAttempt(currentUser.testAnalytics);
+    const totalCorrectAnswers = calculateTotalCorrectAnswers(currentUser.testAnalytics);
+    const totalUnattemptQuestions = calculateTotalUnattemptQuestions(currentUser.testAnalytics);
+    const totalIncorrectanswers = totalQuestionsAttempt - (totalCorrectAnswers + totalUnattemptQuestions)
+
+    // const subjectScores = calculateSubjectScores(currentUser.testAnalytics);
+    const recentTests = generateRecentTests(currentUser.testAnalytics);
+
+    const averageScorePerTest = calculateAverageScorePerTest(totalCorrectAnswers, totalTests);
+    const averageScorePerQuestion = calculateAverageScorePerQuestion(totalCorrectAnswers, totalQuestionsAttempt);
+
+    // Round the averages
+    const roundedAverageScorePerTest = Math.round(averageScorePerTest * 100) / 100;
+    const roundedAverageScorePerQuestion = Math.round(averageScorePerQuestion * 100) / 100;
+
+
+    const dailyTestProgressData = generateDailyTestProgress(currentUser.testAnalytics)
+    const subjectWiseScoreChartData = getSubjectScoresForBarChart(currentUser.testAnalytics)
+
+    const scoreParametersData = [
+        { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: getRandomColor() },
+        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: getRandomColor() },
+        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: getRandomColor() },
+    ]
+
+    const analyticData: TDashboardAnalyticData = {
+        totalTests,
+        totalQuestionsAttempt,
+        totalCorrectAnswers,
+        totalUnattemptQuestions,
+        totalIncorrectanswers,
+        scoreParametersData,
+        averageScorePerTest: roundedAverageScorePerTest,
+        averageScorePerQuestion: roundedAverageScorePerQuestion,
+        recentTests,
+        dailyTestProgressChartData: dailyTestProgressData,
+        subjectWiseScoreChartData
+    };
+
+    return analyticData;
+};

@@ -1,0 +1,129 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const users_validators_1 = require("./users.validators");
+const express_validator_1 = require("express-validator");
+const UserServices = __importStar(require("./users.services"));
+const middleware_1 = require("../utils/middleware");
+const router = express_1.default.Router();
+router.post('/signup', users_validators_1.createUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        // const validatedData = await createUserSchema.parseAsync(request.body);
+        const existingUserWithEmail = yield UserServices.checkEmailExist(request.body.email);
+        if (existingUserWithEmail)
+            return response.status(400).json({ message: 'An User with email already exist' });
+        const user = yield UserServices.userSignUp(request.body);
+        // login user after creating the account
+        const loggedInUser = yield UserServices.loginUser({
+            email: user.email,
+            password: user.password
+        });
+        return response.status(200).json({ data: loggedInUser, message: 'User Created' });
+    }
+    catch (error) {
+        // if (error instanceof z.ZodError) {
+        //     return response.status(400).json({ message: error.errors[0].message });
+        // }
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/login', users_validators_1.loginUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const existingUserWithEmail = yield UserServices.checkEmailExist(request.body.email);
+        if (!existingUserWithEmail)
+            return response.status(400).json({ message: 'Incorrect credentials' });
+        const userLoginToken = yield UserServices.loginUser(request.body);
+        if (!userLoginToken) {
+            return response.status(404).json({ message: 'Incorrect credentials' });
+        }
+        // this token will be ustored in cookie and will be sent back to bacnend server with every requests
+        return response.status(200).json({ data: userLoginToken, message: 'Logged in successfully!' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/create-user-feedback', users_validators_1.userFeedbackValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const newUserFeedbackId = yield UserServices.createUserFeedback(request.body);
+        if (!newUserFeedbackId)
+            return response.status(400).json({ message: 'Can not create feedback' });
+        return response.status(200).json({ data: newUserFeedbackId, message: 'Feedback received successfully!' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/create-subscription-request', users_validators_1.subscriptionRequestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const subscriptionId = yield UserServices.createSubscriptionRequest(request.body);
+        if (!subscriptionId) {
+            return response.status(500).json({ message: 'Failed to create subscription' });
+        }
+        return response.status(201).json({ data: subscriptionId, message: 'Subscription created successfully' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get('/get-user-session', middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = request.user;
+        return response.status(200).json({ data: user, message: 'Sesssion Found!' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+exports.default = router;
