@@ -42,10 +42,8 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerato
         if (!questionIds || questionIds.length === 0) {
             return response.status(400).json({ data: null, message: "Questions cannot be added" });
         }
-        console.log("🚀 ~ router.post ~ questionIds:", questionIds)
         return response.status(200).json({ data: questionIds, message: `${questionIds.length} Questions Created` });
     } catch (error) {
-        console.log("🚀 ~ router.post ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })

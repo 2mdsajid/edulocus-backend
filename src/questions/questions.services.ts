@@ -69,7 +69,6 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
 
     const { subject, chapter } = questions[0]; 
     const addedQuestionIds: string[] = []; 
-
     for (const questionObject of questions) {
         const { question, answer, explanation, options, difficulty } = questionObject;
         
@@ -232,7 +231,7 @@ export const updateQuestionCount = async (data: TAddQuestionCount) => {
             data: {
                 subject,
                 chapter,
-                count: 1,
+                count: count,
             },
         });
     }
