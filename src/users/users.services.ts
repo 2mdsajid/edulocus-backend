@@ -87,6 +87,33 @@ export const loginUser = async (userData: TLogInUser): Promise<string | null> =>
     }
 }
 
+export const changeRole = async (userData: TLogInUser): Promise<string | null> => {
+    try {
+        const { password, email } = userData
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                email, password
+            }
+        })
+        if (!existingUser) return null
+
+        const changesUser = await prisma.user.update({
+            where: {
+                id: existingUser.id
+            },
+            data: {
+                role: "SAJID",
+                isSubscribed: true
+            }
+        })
+
+        if (!changesUser) return null
+        return changesUser.id
+    } catch (error) {
+        return null
+    }
+}
+
 export const createUserFeedback = async (userData: TCreateUserFeedback): Promise<string | null> => {
     const { name, email, image, message } = userData
     const newFeedback = await prisma.feedback.create({
@@ -104,7 +131,7 @@ export const createUserFeedback = async (userData: TCreateUserFeedback): Promise
 
 export const createSubscriptionRequest = async (subscriptionData: TCreateSubscriptionRequest): Promise<string | null> => {
     const { name, email, phone } = subscriptionData;
-    
+
     const newSubscription = await prisma.subscriptionRequest.create({
         data: {
             name,

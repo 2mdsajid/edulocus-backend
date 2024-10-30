@@ -6,11 +6,16 @@ export const createUserValidation: ValidationChain[] = [
     body('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
 ];
 
+
 export const loginUserValidation: ValidationChain[] = [
     body('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
     body('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
 ];
 
+export const changeRoleValidation: ValidationChain[] = [
+    body('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
+    body('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
+];
 
 export const userFeedbackValidation: ValidationChain[] = [
     body('message').notEmpty().withMessage('Message/Feedback must be provided').isString().withMessage('Password must be a number'),

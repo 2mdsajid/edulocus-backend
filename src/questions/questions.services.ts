@@ -2,6 +2,7 @@ import { ROLES_HIEARCHY } from "../users/users.schema";
 import { PG_SYLLABUS } from "../utils/global-data";
 import { TPGSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
+import { getAllSubjects } from "./questions.methods";
 import { TAddQuestion, TAddQuestionCount, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
 
 
@@ -307,5 +308,10 @@ export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: 
 // get syllabus
 export const getSyllabus = async (): Promise<TPGSyllabus | null> => {
     return PG_SYLLABUS ?? null
+};
+
+// get Subjects
+export const getSubjects = async (): Promise<string[] | null> => {
+    return getAllSubjects(PG_SYLLABUS) ?? null
 };
 

@@ -118,6 +118,19 @@ router.get('/get-syllabus', async (request: Request, response: Response) => {
 })
 
 
+router.get('/get-subjects', async (request: Request, response: Response) => {
+    try {
+        const subjects = await QuestionServices.getSubjects()
+        if (!subjects || subjects.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Subjects Found' })
+        }
+        return response.status(200).json({ data: subjects, message: 'Subjects Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
+
 
 
 

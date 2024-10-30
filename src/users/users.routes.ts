@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { createUserValidation, loginUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
+import { changeRoleValidation, createUserValidation, loginUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
 import { validationResult } from 'express-validator';
 import * as UserServices from './users.services'
 import { z } from 'zod';
@@ -53,6 +53,26 @@ router.post('/login', loginUserValidation, async (request: Request, response: Re
 
         // this token will be ustored in cookie and will be sent back to bacnend server with every requests
         return response.status(200).json({ data: userLoginToken, message: 'Logged in successfully!' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
+router.post('/edit-role', changeRoleValidation, async (request: Request, response: Response) => {
+    try {
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+
+        const existingUserWithEmail = await UserServices.checkEmailExist(request.body.email)
+        if (!existingUserWithEmail) return response.status(400).json({ message: 'Incorrect credentials' });
+
+        const changedRoleUserId = await UserServices.changeRole(request.body)
+        if (!changedRoleUserId) {
+            return response.status(404).json({ message: 'Incorrect credentials' })
+        }
+        return response.status(200).json({ data: changedRoleUserId, message: 'Logged in successfully!' });
     } catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
