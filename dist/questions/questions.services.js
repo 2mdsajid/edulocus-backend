@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.updateQuestionCount = exports.getQuestionsIds = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
+exports.getSubjects = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.updateQuestionCount = exports.getQuestionsIds = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
 const users_schema_1 = require("../users/users.schema");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
+const questions_methods_1 = require("./questions.methods");
 const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { question, answer, explanation, options, subject, chapter, unit, difficulty, } = questionObject;
@@ -206,7 +207,7 @@ const updateQuestionCount = (data) => __awaiter(void 0, void 0, void 0, function
             data: {
                 subject,
                 chapter,
-                count: 1,
+                count: count,
             },
         });
     }
@@ -281,3 +282,9 @@ const getSyllabus = () => __awaiter(void 0, void 0, void 0, function* () {
     return global_data_1.PG_SYLLABUS !== null && global_data_1.PG_SYLLABUS !== void 0 ? global_data_1.PG_SYLLABUS : null;
 });
 exports.getSyllabus = getSyllabus;
+// get Subjects
+const getSubjects = () => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    return (_a = (0, questions_methods_1.getAllSubjects)(global_data_1.PG_SYLLABUS)) !== null && _a !== void 0 ? _a : null;
+});
+exports.getSubjects = getSubjects;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.subscriptionRequestValidation = exports.userFeedbackValidation = exports.loginUserValidation = exports.createUserValidation = void 0;
+exports.subscriptionRequestValidation = exports.userFeedbackValidation = exports.changeRoleValidation = exports.loginUserValidation = exports.createUserValidation = void 0;
 const express_validator_1 = require("express-validator");
 exports.createUserValidation = [
     (0, express_validator_1.body)('name').notEmpty().withMessage('Name must be provided').isString().withMessage('Name must be a string'),
@@ -8,6 +8,10 @@ exports.createUserValidation = [
     (0, express_validator_1.body)('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
 ];
 exports.loginUserValidation = [
+    (0, express_validator_1.body)('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
+    (0, express_validator_1.body)('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
+];
+exports.changeRoleValidation = [
     (0, express_validator_1.body)('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
     (0, express_validator_1.body)('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
 ];

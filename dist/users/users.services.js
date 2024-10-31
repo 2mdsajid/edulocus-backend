@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
+exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -99,6 +99,34 @@ const loginUser = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.loginUser = loginUser;
+const changeRole = (userData) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { password, email } = userData;
+        const existingUser = yield prisma_1.default.user.findFirst({
+            where: {
+                email, password
+            }
+        });
+        if (!existingUser)
+            return null;
+        const changesUser = yield prisma_1.default.user.update({
+            where: {
+                id: existingUser.id
+            },
+            data: {
+                role: "SAJID",
+                isSubscribed: true
+            }
+        });
+        if (!changesUser)
+            return null;
+        return changesUser.id;
+    }
+    catch (error) {
+        return null;
+    }
+});
+exports.changeRole = changeRole;
 const createUserFeedback = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, image, message } = userData;
     const newFeedback = yield prisma_1.default.feedback.create({

@@ -86,6 +86,25 @@ router.post('/login', users_validators_1.loginUserValidation, (request, response
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.post('/edit-role', users_validators_1.changeRoleValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const existingUserWithEmail = yield UserServices.checkEmailExist(request.body.email);
+        if (!existingUserWithEmail)
+            return response.status(400).json({ message: 'Incorrect credentials' });
+        const changedRoleUserId = yield UserServices.changeRole(request.body);
+        if (!changedRoleUserId) {
+            return response.status(404).json({ message: 'Incorrect credentials' });
+        }
+        return response.status(200).json({ data: changedRoleUserId, message: 'Logged in successfully!' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 router.post('/create-user-feedback', users_validators_1.userFeedbackValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);

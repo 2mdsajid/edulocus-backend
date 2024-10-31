@@ -71,11 +71,9 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.
         if (!questionIds || questionIds.length === 0) {
             return response.status(400).json({ data: null, message: "Questions cannot be added" });
         }
-        console.log("🚀 ~ router.post ~ questionIds:", questionIds);
         return response.status(200).json({ data: questionIds, message: `${questionIds.length} Questions Created` });
     }
     catch (error) {
-        console.log("🚀 ~ router.post ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -139,6 +137,18 @@ router.get('/get-syllabus', (request, response) => __awaiter(void 0, void 0, voi
             return response.status(404).json({ data: null, message: 'No Syllabus Found' });
         }
         return response.status(200).json({ data: syllabus, message: 'Question Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const subjects = yield QuestionServices.getSubjects();
+        if (!subjects || subjects.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Subjects Found' });
+        }
+        return response.status(200).json({ data: subjects, message: 'Subjects Found' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
