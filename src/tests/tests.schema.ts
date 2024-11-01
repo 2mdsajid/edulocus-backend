@@ -6,7 +6,6 @@ export type TcreateCustomTest = Pick<CustomTest,
     'name' |
     'createdById' |
     'slug' |
-    'questions' |
     'mode'
 >
 

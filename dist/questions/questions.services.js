@@ -172,16 +172,24 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
     return addedQuestionIds;
 });
 exports.addMultipleQuestionsForDifferentSubjectAndChapter = addMultipleQuestionsForDifferentSubjectAndChapter;
-const getQuestionsIds = () => __awaiter(void 0, void 0, void 0, function* () {
+const getQuestionsIds = (limit) => __awaiter(void 0, void 0, void 0, function* () {
+    // Validate that limit is a positive integer
+    if (!Number.isInteger(limit) || limit <= 0) {
+        console.error("Invalid limit:", limit);
+        return null;
+    }
     const questions = yield prisma_1.default.question.findMany({
-        select: {
-            id: true
-        }
+        select: { id: true },
+        take: limit, // Limit number of results
+        orderBy: { id: 'asc' } // Random order
     });
-    const questionsIds = questions.map(question => question.id);
-    if (!questionsIds || questionsIds.length === 0)
-        return [];
-    return questionsIds;
+    // Map IDs and check if array is empty
+    const questionIds = questions.map(question => question.id);
+    if (questionIds.length === 0) {
+        console.warn("No questions found.");
+        return null;
+    }
+    return questionIds;
 });
 exports.getQuestionsIds = getQuestionsIds;
 // update the question counts in db for each chapter ans subject

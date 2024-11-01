@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { checkModerator, getSubscribedUserId, RequestWithUserIdAndRole, RequestWithUserIdAndSubscription } from '../utils/middleware';
-import { TcreateCustomTestByUser, TTypeOfTest } from './tests.schema';
+import { TcreateCustomTest, TcreateCustomTestByUser, TTypeOfTest } from './tests.schema';
 import * as TestsServices from './tests.services';
 import { createCustomTestByUserValidation, createCustomTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
 import { ModeOfTest, TypeOfTest } from '@prisma/client';
@@ -16,12 +16,26 @@ router.post("/create-custom-tests", checkModerator, createCustomTestValidation, 
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
         }
-        const newCustomTest = await TestsServices.createCustomTest(request.body);
+
+        const limit = request.query.limit;
+        if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+            return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
+        }
+
+        const createdById = request.user?.id
+        const data = {
+            name: request.body.name,
+            slug: request.body.slug,
+            createdById: createdById,
+            mode: "ALL"
+        } as TcreateCustomTest
+
+        const newCustomTest = await TestsServices.createCustomTest(data, Number(limit));
         if (!newCustomTest || newCustomTest === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" })
         }
 
-        return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test created` });
+        return response.status(201).json({ data: newCustomTest.id, message: `${newCustomTest.name} test created` });
     } catch (error: any) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }

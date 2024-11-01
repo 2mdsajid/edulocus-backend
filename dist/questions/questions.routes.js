@@ -96,13 +96,19 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', middlewa
 }));
 router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const questionIds = yield QuestionServices.getQuestionsIds();
-        if (questionIds.length === 0) {
-            return response.status(500).json({ data: null, message: 'No Questions Found' });
+        const limit = request.query.limit;
+        // Improved limit check
+        if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+            return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        return response.status(200).json({ data: questionIds, message: 'Question Created' });
+        const questionIds = yield QuestionServices.getQuestionsIds(Number(limit));
+        if (!questionIds || questionIds.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: questionIds, message: 'Questions Retrieved' });
     }
     catch (error) {
+        console.error("🚀 ~ router.get error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

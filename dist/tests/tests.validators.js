@@ -8,17 +8,8 @@ exports.createCustomTestValidation = [
         .notEmpty().withMessage('Test name must be provided')
         .isString().withMessage('Test name must be a string'),
     (0, express_validator_1.body)('slug')
-        .notEmpty().withMessage('Test ID must be provided')
-        .isString().withMessage('Test ID must be a string'),
-    (0, express_validator_1.body)('createdById')
-        .notEmpty().withMessage('Creator (User) ID must be provided')
-        .isString().withMessage('Invalid User ID format'),
-    (0, express_validator_1.body)('questions')
-        .optional()
-        .isArray().withMessage('Questions must be an array of Question IDs')
-        .custom((value) => value.every((id) => {
-        return typeof id === 'string' && id.startsWith('c') && id.length === 25;
-    })).withMessage('Each Question ID must be a valid CUID (starting with "c" and 25 characters long)'),
+        .notEmpty().withMessage('Slug must be provided')
+        .isString().withMessage('Slug must be a string'),
 ];
 const typeOfTestValues = Object.values(client_1.TypeOfTest);
 exports.createCustomTestByUserValidation = [

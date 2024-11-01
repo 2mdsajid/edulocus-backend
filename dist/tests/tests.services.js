@@ -18,8 +18,12 @@ const functions_1 = require("../utils/functions");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const tests_methods_1 = require("./tests.methods");
-const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, slug, createdById, mode, questions } = customTestData;
+const createCustomTest = (customTestData, limit) => __awaiter(void 0, void 0, void 0, function* () {
+    const questions = yield (0, questions_services_1.getQuestionsIds)(limit);
+    if (!questions || questions.length === 0) {
+        return null;
+    }
+    const { name, slug, createdById, mode } = customTestData;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,

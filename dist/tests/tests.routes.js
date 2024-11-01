@@ -43,16 +43,28 @@ const tests_validators_1 = require("./tests.validators");
 const router = express_1.default.Router();
 // Create a new custom test
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const errors = (0, express_validator_1.validationResult)(request);
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
         }
-        const newCustomTest = yield TestsServices.createCustomTest(request.body);
+        const limit = request.query.limit;
+        if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+            return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
+        }
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        const data = {
+            name: request.body.name,
+            slug: request.body.slug,
+            createdById: createdById,
+            mode: "ALL"
+        };
+        const newCustomTest = yield TestsServices.createCustomTest(data, Number(limit));
         if (!newCustomTest || newCustomTest === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" });
         }
-        return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test created` });
+        return response.status(201).json({ data: newCustomTest.id, message: `${newCustomTest.name} test created` });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

@@ -59,7 +59,7 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', checkMod
         if (!request.user || request.user === undefined || request.user === null) {
             return response.status(400).json({ data: null, message: "Not Authorized" });
         }
-        
+
         const questionIds = await QuestionServices.addMultipleQuestionsForDifferentSubjectAndChapter(request.body.questions, request.user.id)
         return response.status(200).json({ data: questionIds, message: 'Questions Created' });
     } catch (error) {
@@ -69,15 +69,26 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', checkMod
 
 router.get('/get-questions', async (request: Request, response: Response) => {
     try {
-        const questionIds = await QuestionServices.getQuestionsIds()
-        if (questionIds.length === 0) {
-            return response.status(500).json({ data: null, message: 'No Questions Found' })
+        const limit = request.query.limit;
+
+        // Improved limit check
+        if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+            return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        return response.status(200).json({ data: questionIds, message: 'Question Created' });
+
+        const questionIds = await QuestionServices.getQuestionsIds(Number(limit));
+
+        if (!questionIds || questionIds.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' });
+        }
+
+        return response.status(200).json({ data: questionIds, message: 'Questions Retrieved' });
     } catch (error) {
-        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+        console.error("🚀 ~ router.get error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
-})
+});
+
 
 router.get('/get-total-questions-per-subject', async (request: Request, response: Response) => {
     try {

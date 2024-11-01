@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -49,7 +43,7 @@ model Payment {
   expireAt  DateTime?
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // QUESTIONS -----------------------------------------------------------
@@ -72,7 +66,7 @@ model Question {
   correctattempt Int         @default(0)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   analytic TestQuestionAnswer[]
 
@@ -88,7 +82,7 @@ enum ANSWER {
 
 model Option {
   questionId String   @id
-  question   Question @relation(fields: [questionId], references: [id]) // Link to Question
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   a          String
   b          String
   c          String
@@ -97,7 +91,7 @@ model Option {
 
 model Images {
   questionId String   @id
-  question   Question @relation(fields: [questionId], references: [id]) // Link to Question
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   qn         String?
   a          String?
   b          String?
@@ -108,7 +102,7 @@ model Images {
 
 model IsReported {
   questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id]) // Link to Question
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   state      Boolean   @default(false)
   by         String?
   message    String?
@@ -117,7 +111,7 @@ model IsReported {
 
 model IsVerified {
   questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id]) // Link to Question
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   state      Boolean   @default(false)
   by         String?
   date       DateTime?
@@ -125,7 +119,7 @@ model IsVerified {
 
 model IsFlagged {
   questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id]) // Link to Question
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   state      Boolean   @default(false)
   by         String?
   message    String?
@@ -133,12 +127,12 @@ model IsFlagged {
 }
 
 model QuestionCount {
-  id       String  @id @default(cuid())
-  subject  String
-  chapter  String
-  count    Int     @default(0)
+  id      String @id @default(cuid())
+  subject String
+  chapter String
+  count   Int    @default(0)
 
-  @@unique([subject, chapter]) // Ensure unique combinations of subject and chapter
+  @@unique([subject, chapter])
 }
 
 
@@ -174,20 +168,18 @@ model CustomTest {
   image String? @default("")
 
   type TypeOfTest @default(MODEL)
-  mode ModeOfTest  @default(ALL)
+  mode ModeOfTest @default(ALL)
 
   createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id]) // Relation to User model
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   archive Boolean @default(false)
 
   usersConnected String[] @default([])
+  keysUsed       String[] @default([])
+  date           DateTime @default(now())
 
-  keysUsed String[] @default([])
-  date     DateTime @default(now())
-
-  questions String[]
-
+  questions     String[]
   usersAttended UserScore[]
   testAnalytic  TestAnalytic[]
 }
@@ -199,17 +191,17 @@ model UserScore {
   totalScore Float  @default(0)
 
   customTestId String
-  customTest   CustomTest @relation(fields: [customTestId], references: [id])
+  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
 }
 
 model TestAnalytic {
   id String @id @default(cuid())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   customTestId String
-  customTest   CustomTest @relation(fields: [customTestId], references: [id])
+  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
 
   testQuestionAnswer TestQuestionAnswer[]
 
@@ -220,17 +212,17 @@ model TestAnalytic {
 model TestQuestionAnswer {
   id         String   @id @default(cuid())
   questionId String
-  question   Question @relation(fields: [questionId], references: [id])
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   userAnswer String
 
   testAnalyticId String
-  testAnalytic   TestAnalytic @relation(fields: [testAnalyticId], references: [id])
+  testAnalytic   TestAnalytic @relation(fields: [testAnalyticId], references: [id], onDelete: Cascade)
 }
 
 // FEEDBACK ------------------------------------------------
 model Feedback {
-  id      String  @id @default(cuid()) // Unique identifier with CUID
+  id      String  @id @default(cuid())
   name    String
   email   String
   message String
@@ -242,9 +234,9 @@ model Feedback {
 
 // FEEDBACK ------------------------------------------------
 model SubscriptionRequest {
-  id      String  @id @default(cuid()) // Unique identifier with CUID
-  name    String
-  email   String
+  id    String @id @default(cuid())
+  name  String
+  email String
   phone String
 
   createdAt DateTime @default(now())

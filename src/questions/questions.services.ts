@@ -67,11 +67,11 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
 ): Promise<string[] | null> => {
     if (!questions.length) return null;
 
-    const { subject, chapter } = questions[0]; 
-    const addedQuestionIds: string[] = []; 
+    const { subject, chapter } = questions[0];
+    const addedQuestionIds: string[] = [];
     for (const questionObject of questions) {
         const { question, answer, explanation, options, difficulty } = questionObject;
-        
+
         const newQuestion = await prisma.question.create({
             data: {
                 question,
@@ -106,7 +106,7 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
         if (!newOption) return null;
 
         const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
-        
+
         await prisma.isVerified.create({
             data: {
                 questionId: newQuestion.id,
@@ -188,7 +188,7 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
         await updateQuestionCount({
             subject: newQuestion.subject,
             chapter: newQuestion.chapter,
-            count: 1, 
+            count: 1,
         });
     }
 
@@ -196,16 +196,29 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
 };
 
 
-export const getQuestionsIds = async (): Promise<String[] | []> => {
+export const getQuestionsIds = async (limit: number): Promise<string[] | null> => {
+    // Validate that limit is a positive integer
+    if (!Number.isInteger(limit) || limit <= 0) {
+        console.error("Invalid limit:", limit);
+        return null;
+    }
+
     const questions = await prisma.question.findMany({
-        select: {
-            id: true
-        }
-    })
-    const questionsIds = questions.map(question => question.id)
-    if (!questionsIds || questionsIds.length === 0) return []
-    return questionsIds
-}
+        select: { id: true },
+        take: limit,           // Limit number of results
+        orderBy: { id: 'asc' }  // Random order
+    });
+
+    // Map IDs and check if array is empty
+    const questionIds = questions.map(question => question.id);
+    if (questionIds.length === 0) {
+        console.warn("No questions found.");
+        return null;
+    }
+
+    return questionIds;
+};
+
 
 
 // update the question counts in db for each chapter ans subject
@@ -287,7 +300,7 @@ export const getQuestionsBySubject = async (subject: string, limit: boolean): Pr
         },
         take: limit ? 10 : 50,
     });
-    if(!selectedQuestions || selectedQuestions.length === 0) return null
+    if (!selectedQuestions || selectedQuestions.length === 0) return null
     return selectedQuestions.map(question => question.id);
 };
 
@@ -300,7 +313,7 @@ export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: 
         },
         take: limit ? 10 : 50,
     });
-    if(!selectedQuestions || selectedQuestions.length === 0) return null
+    if (!selectedQuestions || selectedQuestions.length === 0) return null
     return selectedQuestions.map(question => question.id);
 };
 

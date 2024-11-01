@@ -1,4 +1,4 @@
-import { getQuestionsBySubject, getQuestionsBySubjectAndChapter, getTotalQuestionsPerSubjectAndChapter } from "../questions/questions.services";
+import { getQuestionsBySubject, getQuestionsBySubjectAndChapter, getQuestionsIds, getTotalQuestionsPerSubjectAndChapter } from "../questions/questions.services";
 import { getRandomColor } from "../utils/functions";
 import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import prisma from "../utils/prisma";
@@ -6,8 +6,14 @@ import { calculateTotalQuestionsAttempt, calculateTotalCorrectAnswers, calculate
 import { TBaseCustomTest, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 
-export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<TBaseCustomTest | null> => {
-    const { name, slug, createdById, mode, questions } = customTestData;
+export const createCustomTest = async (customTestData: TcreateCustomTest, limit: number): Promise<TBaseCustomTest | null> => {
+
+    const questions = await getQuestionsIds(limit)
+    if (!questions || questions.length === 0) {
+        return null
+    }
+
+    const { name, slug, createdById, mode } = customTestData;
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
@@ -95,7 +101,7 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 
     const modifiedQuestions = questions.map((q) => ({
         ...q,
-        options: q.options || { a: "", b: "", c: "", d: "" }  
+        options: q.options || { a: "", b: "", c: "", d: "" }
     }));
 
     const modifiedCustomTest = {
@@ -106,8 +112,6 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 
     return modifiedCustomTest;
 };
-
-
 
 export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMetadata | null> => {
     const customTest = await prisma.customTest.findFirst({
@@ -136,7 +140,7 @@ export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMeta
         }
     })
 
-    if(!customTest) return null
+    if (!customTest) return null
 
     const modifiedTestData = {
         ...customTest,
