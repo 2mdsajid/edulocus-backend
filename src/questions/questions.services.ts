@@ -254,6 +254,7 @@ export const updateQuestionCount = async (data: TAddQuestionCount) => {
 export const getTotalQuestionsPerSubject = async (): Promise<TTotalQuestionsPerSubject[] | null> => {
     const questionCounts = await prisma.questionCount.findMany(); // Retrieve all records
     const totalQuestionsPerSubject: { [subject: string]: number } = {}; // Object to store counts per subject
+    
     questionCounts.forEach((record) => {
         const { subject, count } = record;
         if (totalQuestionsPerSubject[subject]) {
@@ -262,13 +263,14 @@ export const getTotalQuestionsPerSubject = async (): Promise<TTotalQuestionsPerS
             totalQuestionsPerSubject[subject] = count;
         }
     });
-    const result: TTotalQuestionsPerSubject[] = Object.entries(totalQuestionsPerSubject).map(([subject, count]) => ({
-        subject,
-        count
-    }));
+
+    const result: TTotalQuestionsPerSubject[] = Object.entries(totalQuestionsPerSubject)
+        .map(([subject, count]) => ({ subject, count }))
+        .sort((a, b) => b.count - a.count); // Sort in descending order based on count
 
     return result;
 };
+
 
 export const getTotalQuestionsPerSubjectAndChapter = async (): Promise<TTotalQuestionsPerSubjectAndChapter | null> => {
     const questionCounts = await prisma.questionCount.findMany();
@@ -288,8 +290,21 @@ export const getTotalQuestionsPerSubjectAndChapter = async (): Promise<TTotalQue
         }
     });
 
-    return totalQuestionsPerSubjectAndChapter ? totalQuestionsPerSubjectAndChapter : null
+    // Sort chapters by count in descending order within each subject while maintaining the nested object structure
+    const result: TTotalQuestionsPerSubjectAndChapter = Object.fromEntries(
+        Object.entries(totalQuestionsPerSubjectAndChapter).map(([subject, chapters]) => [
+            subject,
+            Object.fromEntries(
+                Object.entries(chapters)
+                    .sort(([, countA], [, countB]) => countB - countA) // Sort by count in descending order
+            ),
+        ])
+    );
+
+    return result;
 };
+
+
 
 
 // Fetch questions by subject with a limit
