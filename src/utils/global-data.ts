@@ -98,7 +98,8 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "thorax",
             "abdomen",
             "pelvis_and_perineum",
-            "lower_limb"
+            "lower_limb",
+            "upper_limb"
         ]
     },
     "physiology": {

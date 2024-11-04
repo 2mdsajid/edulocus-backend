@@ -59,7 +59,6 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
     return newQuestion.id ?? null
 }
 
-
 // add multiple questions from same chapter and subject
 export const addMultipleQuestionsForSameSubjectAndChapter = async (
     questions: TAddQuestion[],
@@ -203,10 +202,8 @@ export const getQuestionsIds = async (limit: number): Promise<string[] | null> =
         return null;
     }
 
-    const questions = await prisma.question.findMany({
-        select: { id: true },
-        take: limit,           // Limit number of results
-        orderBy: { id: 'asc' }  // Random order
+    const questions = await prisma.question.findManyRandom(limit, {
+        select: { id: true }
     });
 
     // Map IDs and check if array is empty
@@ -218,7 +215,6 @@ export const getQuestionsIds = async (limit: number): Promise<string[] | null> =
 
     return questionIds;
 };
-
 
 
 // update the question counts in db for each chapter ans subject
@@ -254,7 +250,7 @@ export const updateQuestionCount = async (data: TAddQuestionCount) => {
 export const getTotalQuestionsPerSubject = async (): Promise<TTotalQuestionsPerSubject[] | null> => {
     const questionCounts = await prisma.questionCount.findMany(); // Retrieve all records
     const totalQuestionsPerSubject: { [subject: string]: number } = {}; // Object to store counts per subject
-    
+
     questionCounts.forEach((record) => {
         const { subject, count } = record;
         if (totalQuestionsPerSubject[subject]) {
@@ -309,11 +305,11 @@ export const getTotalQuestionsPerSubjectAndChapter = async (): Promise<TTotalQue
 
 // Fetch questions by subject with a limit
 export const getQuestionsBySubject = async (subject: string, limit: boolean): Promise<string[] | null> => {
-    const selectedQuestions = await prisma.question.findMany({
+    const limitValue = limit ? 10 : 50
+    const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
         },
-        take: limit ? 10 : 50,
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
     return selectedQuestions.map(question => question.id);
@@ -321,12 +317,12 @@ export const getQuestionsBySubject = async (subject: string, limit: boolean): Pr
 
 // Fetch questions by subject and chapter with a limit
 export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean): Promise<string[] | null> => {
-    const selectedQuestions = await prisma.question.findMany({
+    const limitValue = limit ? 10 : 50
+    const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
             chapter: chapter,
         },
-        take: limit ? 10 : 50,
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
     return selectedQuestions.map(question => question.id);
