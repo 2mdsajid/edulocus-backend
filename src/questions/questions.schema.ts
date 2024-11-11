@@ -1,11 +1,14 @@
-import { Option, Question, QuestionCount } from "@prisma/client";
+import { IsPastQuestion, Option, Question, QuestionCount } from "@prisma/client";
 
 export type TBaseQuestion = Omit<Question,
     'category' |
     'attempt' |
     'correctattempt' |
-    'userId'
+    'userId' |
+    'stream'
 >
+
+export type TCreatePastQuestion = Omit<IsPastQuestion,'questionId'>
 
 export type TBaseOption = Omit<Option, 'questionId'>
 

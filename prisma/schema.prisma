@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// USER ------------------------------------------------------------
+// different users roles
 enum ROLE {
   USER
   ADMIN
@@ -16,6 +16,41 @@ enum ROLE {
   SAJID
 }
 
+// for multiple streams
+enum STREAM {
+  UG
+  PG
+}
+
+// to enum custom tests created by whom
+enum ModeOfTest {
+  USER //created by premium users
+  PUBLIC //created for non premium users
+  ALL //created for all users like model tests
+}
+
+// different types of tests that is available
+// amed in /lib/global.d.ts in FE as well
+enum TypeOfTest {
+  MODEL
+  SUBJECT_WISE
+  CHAPTER_WISE
+  TOPIC_WISE
+  CUSTOM
+  UNIT_WISE
+  DIFFICULTY_BASED
+  RANDOM
+  FLASH
+  AI_GENERATED
+  PERFORMANCE_ANALYZER
+  PBQ_BASED
+  THEORY_BASED
+  REVISION
+  RETAKE
+  PAST_PAPER
+}
+
+// USER ------------------------------------------------------------
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -48,22 +83,23 @@ model Payment {
 
 // QUESTIONS -----------------------------------------------------------
 model Question {
-  id             String      @id @default(cuid())
+  id             String          @id @default(cuid())
   question       String
   options        Option?
   answer         ANSWER
-  explanation    String      @default("")
+  explanation    String          @default("")
   images         Images?
-  subject        String      @default("unknown")
-  chapter        String      @default("unknown")
-  unit           String      @default("unknown")
-  category       String      @default("mbbs")
-  difficulty     String      @default("m")
+  subject        String          @default("unknown")
+  chapter        String          @default("unknown")
+  unit           String          @default("unknown")
+  category       String          @default("mbbs")
+  difficulty     String          @default("m")
   isreported     IsReported?
   isverified     IsVerified?
   isflagged      IsFlagged?
-  attempt        Int         @default(0)
-  correctattempt Int         @default(0)
+  IsPast         IsPastQuestion?
+  attempt        Int             @default(0)
+  correctattempt Int             @default(0)
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -135,32 +171,16 @@ model QuestionCount {
   @@unique([subject, chapter])
 }
 
-
-// TESTS ---------------------------------------------------
-enum TypeOfTest {
-  MODEL
-  SUBJECT_WISE
-  CHAPTER_WISE
-  TOPIC_WISE
-  CUSTOM
-  UNIT_WISE
-  DIFFICULTY_BASED
-  RANDOM
-  FLASH
-  AI_GENERATED
-  PERFORMANCE_ANALYZER
-  PBQ_BASED
-  THEORY_BASED
-  REVISION
-  RETAKE
+model IsPastQuestion {
+  questionId  String   @id
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  stream      STREAM   @default(PG)
+  year        Int
+  category    String?  @default("")
+  affiliation String?  @default("")
 }
 
-enum ModeOfTest {
-  USER //created by premium users
-  PUBLIC //created for non premium users
-  ALL //created for all users like model tests
-}
-
+// TESTS ------------------------------------------------------------------------------
 model CustomTest {
   id    String  @id @default(cuid())
   name  String
@@ -182,6 +202,18 @@ model CustomTest {
   questions     String[]
   usersAttended UserScore[]
   testAnalytic  TestAnalytic[]
+
+  pastPaper PastPaper?
+}
+
+// to store past papers 
+model PastPaper {
+  customTestId String     @id
+  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
+  stream       STREAM     @default(PG)
+  year         Int
+  category     String?    @default("")
+  affiliation  String?    @default("")
 }
 
 // for leaderboards
@@ -230,7 +262,6 @@ model Feedback {
 
   createdAt DateTime @default(now())
 }
-
 
 // FEEDBACK ------------------------------------------------
 model SubscriptionRequest {

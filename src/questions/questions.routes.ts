@@ -130,6 +130,18 @@ router.get('/get-syllabus', async (request: Request, response: Response) => {
     }
 })
 
+router.get('/get-stream-hierarchy', async (request: Request, response: Response) => {
+    try {
+        const streamHierarchy = await QuestionServices.getStreamHierarchy()
+        if (!streamHierarchy) {
+            return response.status(404).json({ data: null, message: 'No Stream Hierarchy Found' })
+        }
+        return response.status(200).json({ data: streamHierarchy, message: 'Stream Hierarchy Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
 
 router.get('/get-subjects', async (request: Request, response: Response) => {
     try {

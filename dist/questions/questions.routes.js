@@ -88,9 +88,13 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', middlewa
             return response.status(400).json({ data: null, message: "Not Authorized" });
         }
         const questionIds = yield QuestionServices.addMultipleQuestionsForDifferentSubjectAndChapter(request.body.questions, request.user.id);
-        return response.status(200).json({ data: questionIds, message: 'Questions Created' });
+        if (!questionIds || questionIds.length === 0) {
+            return response.status(400).json({ data: null, message: "Not Questions Added" });
+        }
+        return response.status(200).json({ data: questionIds, message: `${questionIds.length} Questions Created` });
     }
     catch (error) {
+        console.log("🚀 ~ router.post ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -143,6 +147,18 @@ router.get('/get-syllabus', (request, response) => __awaiter(void 0, void 0, voi
             return response.status(404).json({ data: null, message: 'No Syllabus Found' });
         }
         return response.status(200).json({ data: syllabus, message: 'Question Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get('/get-stream-hierarchy', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const streamHierarchy = yield QuestionServices.getStreamHierarchy();
+        if (!streamHierarchy) {
+            return response.status(404).json({ data: null, message: 'No Stream Hierarchy Found' });
+        }
+        return response.status(200).json({ data: streamHierarchy, message: 'Stream Hierarchy Found' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

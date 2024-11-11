@@ -3,29 +3,48 @@ import { getRandomColor } from "../utils/functions";
 import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import prisma from "../utils/prisma";
 import { calculateTotalQuestionsAttempt, calculateTotalCorrectAnswers, calculateTotalUnattemptQuestions, generateRecentTests, calculateAverageScorePerTest, calculateAverageScorePerQuestion, generateDailyTestProgress, getSubjectScoresForBarChart } from "./tests.methods";
-import { TBaseCustomTest, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
+import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 
-export const createCustomTest = async (customTestData: TcreateCustomTest, limit: number): Promise<TBaseCustomTest | null> => {
-
-    const questions = await getQuestionsIds(limit)
-    if (!questions || questions.length === 0) {
-        return null
-    }
-
-    const { name, slug, createdById, mode } = customTestData;
+export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
+    const { name, slug, createdById, mode, questions, type } = customTestData;
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
             slug,
             createdById,
+            type,
             mode: mode || 'ALL',
             questions: questions
         }
     })
     if (!newCustomTest) return null
-    return newCustomTest
+    return newCustomTest.id
 }
+
+export const createPastTest = async (testData: TCreatePastPaper): Promise<TBasePastPaper | null> => {
+    console.log("🚀 ~ createPastTest ~ testData:", testData)
+    const {
+        customTestId,
+        affiliation,
+        year,
+        stream,
+        category
+    } = testData;
+
+    const newPastPaper = await prisma.pastPaper.create({
+        data: {
+            stream,
+            customTestId,
+            affiliation,
+            category,
+            year
+        }
+    })
+    if (!newPastPaper) return null
+    return newPastPaper
+}
+
 
 export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string): Promise<string | null> => {
     const { name, createdById, type, mode, limit } = customTestData;
@@ -161,7 +180,15 @@ export const getAllTestsByType = async (type: TTypeOfTest): Promise<TBaseCustomT
             name: true,
             id: true,
             date: true,
-            questions: true
+            questions: true,
+            pastPaper: {
+                select:{
+                    stream: true,
+                    category: true,
+                    year: true,
+                    affiliation: true,
+                }
+            }
         }
     })
 
@@ -175,7 +202,15 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
             name: true,
             id: true,
             date: true,
-            questions: true
+            questions: true,
+            pastPaper: {
+                select:{
+                    stream: true,
+                    category: true,
+                    year: true,
+                    affiliation: true,
+                }
+            }
         }
     })
 

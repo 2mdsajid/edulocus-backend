@@ -40,6 +40,7 @@ const express_validator_1 = require("express-validator");
 const middleware_1 = require("../utils/middleware");
 const TestsServices = __importStar(require("./tests.services"));
 const tests_validators_1 = require("./tests.validators");
+const questions_services_1 = require("../questions/questions.services");
 const router = express_1.default.Router();
 // Create a new custom test
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -49,27 +50,92 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
         }
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!request.user || !createdById) {
+            return response.status(400).json({ message: 'Unauthorized' });
+        }
         const limit = request.query.limit;
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit));
+        if (!questionsIds || questionsIds.length === 0) {
+            return null;
+        }
         const data = {
             name: request.body.name,
             slug: request.body.slug,
             createdById: createdById,
-            mode: "ALL"
+            mode: "ALL",
+            type: "MODEL",
+            questions: questionsIds
         };
-        const newCustomTest = yield TestsServices.createCustomTest(data, Number(limit));
-        if (!newCustomTest || newCustomTest === undefined) {
+        const newCustomTestId = yield TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" });
         }
-        return response.status(201).json({ data: newCustomTest.id, message: `${newCustomTest.name} test created` });
+        return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// Create a new past test
+router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_1.createPastTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        console.log(request.body.category);
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!request.user || !createdById) {
+            return response.status(400).json({ message: 'Unauthorized' });
+        }
+        const questions = request.body.questions;
+        const questionsIds = yield (0, questions_services_1.addMultipleQuestionsForDifferentSubjectAndChapter)(questions, createdById);
+        if (!questionsIds || questions.length === 0) {
+            return response.status(400).json({ message: 'Can not process the given questions' });
+        }
+        const year = request.body.year;
+        const affiliation = request.body.affiliation || "";
+        const stream = request.body.stream;
+        const category = request.body.category || "";
+        const data = {
+            name: `${category}-${year}`,
+            slug: `${category}_${year}`,
+            createdById: createdById,
+            mode: "ALL",
+            type: "PAST_PAPER",
+            questions: questionsIds
+        };
+        const newCustomTestId = yield TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === undefined) {
+            return response.status(400).json({ data: null, message: "Custom can't be created" });
+        }
+        const pastTestData = {
+            year: year,
+            affiliation: affiliation,
+            category: category,
+            stream: stream,
+            customTestId: newCustomTestId
+        };
+        const updatedIsPastQuestions = yield (0, questions_services_1.updateIsPastQuestion)(pastTestData, questionsIds);
+        if (!updatedIsPastQuestions) {
+            return response.status(400).json({ data: null, message: "Unable to update the past questions" });
+        }
+        const newPastTest = yield TestsServices.createPastTest(pastTestData);
+        if (!newPastTest) {
+            return response.status(400).json({ data: null, message: "Past Test can't be created" });
+        }
+        return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// to create tests by paid  users -- esp subjectwise, chapterwise tests creation
 router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, tests_validators_1.createCustomTestByUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);
@@ -171,6 +237,7 @@ router.get("/get-tests-by-type/:type", (request, response) => __awaiter(void 0, 
         return response.status(201).json({ data: customTests, message: `Tests found` });
     }
     catch (error) {
+        console.log("🚀 ~ router.get ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

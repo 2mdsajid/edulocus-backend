@@ -12,32 +12,46 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getCustomTestById = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getCustomTestById = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const functions_1 = require("../utils/functions");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const tests_methods_1 = require("./tests.methods");
-const createCustomTest = (customTestData, limit) => __awaiter(void 0, void 0, void 0, function* () {
-    const questions = yield (0, questions_services_1.getQuestionsIds)(limit);
-    if (!questions || questions.length === 0) {
-        return null;
-    }
-    const { name, slug, createdById, mode } = customTestData;
+const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, function* () {
+    const { name, slug, createdById, mode, questions, type } = customTestData;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,
             slug,
             createdById,
+            type,
             mode: mode || 'ALL',
             questions: questions
         }
     });
     if (!newCustomTest)
         return null;
-    return newCustomTest;
+    return newCustomTest.id;
 });
 exports.createCustomTest = createCustomTest;
+const createPastTest = (testData) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("🚀 ~ createPastTest ~ testData:", testData);
+    const { customTestId, affiliation, year, stream, category } = testData;
+    const newPastPaper = yield prisma_1.default.pastPaper.create({
+        data: {
+            stream,
+            customTestId,
+            affiliation,
+            category,
+            year
+        }
+    });
+    if (!newPastPaper)
+        return null;
+    return newPastPaper;
+});
+exports.createPastTest = createPastTest;
 const createSubjectWiseCustomTestByUser = (customTestData, subject) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, createdById, type, mode, limit } = customTestData;
     const questions = yield (0, questions_services_1.getQuestionsBySubject)(subject, limit);
@@ -160,7 +174,15 @@ const getAllTestsByType = (type) => __awaiter(void 0, void 0, void 0, function* 
             name: true,
             id: true,
             date: true,
-            questions: true
+            questions: true,
+            pastPaper: {
+                select: {
+                    stream: true,
+                    category: true,
+                    year: true,
+                    affiliation: true,
+                }
+            }
         }
     });
     if (!customTests || customTests.length === 0)
@@ -174,7 +196,15 @@ const getAllTests = () => __awaiter(void 0, void 0, void 0, function* () {
             name: true,
             id: true,
             date: true,
-            questions: true
+            questions: true,
+            pastPaper: {
+                select: {
+                    stream: true,
+                    category: true,
+                    year: true,
+                    affiliation: true,
+                }
+            }
         }
     });
     if (!customTests || customTests.length === 0)

@@ -1,4 +1,4 @@
-import { CustomTest, ModeOfTest, Prisma, TestAnalytic, TestQuestionAnswer, TypeOfTest, UserScore } from "@prisma/client";
+import { CustomTest, ModeOfTest, PastPaper, Prisma, TestAnalytic, TestQuestionAnswer, TypeOfTest, UserScore } from "@prisma/client";
 import { TQuestion } from "../questions/questions.schema";
 import { LucideIcon } from "lucide-react";
 
@@ -6,12 +6,16 @@ export type TcreateCustomTest = Pick<CustomTest,
     'name' |
     'createdById' |
     'slug' |
-    'mode'
+    'mode' |
+    'type' |
+    'questions'
 >
+
+export type TCreatePastPaper = PastPaper
 
 export type TcreateCustomTestByUser = Pick<CustomTest,
     'name' |
-    'type' | 
+    'type' |
     'createdById' |
     'mode'
 > & {
@@ -53,7 +57,11 @@ export type TBaseCustomTest = Pick<CustomTest,
     'name' |
     'date' |
     'questions'
->
+> & {
+    pastPaper: TBasePastPaper | null
+}
+
+export type TBasePastPaper = Omit<PastPaper, 'customTestId'>
 
 
 // create array of questions and user answers
@@ -107,7 +115,7 @@ export type TDashboardAnalyticData = {
     totalIncorrectanswers: number,
     averageScorePerTest: number,
     averageScorePerQuestion: number,
-    scoreParametersData:TScoreParametersData[],
+    scoreParametersData: TScoreParametersData[],
     recentTests: TRecentTestInDashboardData[],
     dailyTestProgressChartData: TDailyTestProgressChartData[],
     subjectWiseScoreChartData: TSubjectwiseScoresChartData[],

@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { checkModerator, getSubscribedUserId, RequestWithUserIdAndRole, RequestWithUserIdAndSubscription } from '../utils/middleware';
-import { TcreateCustomTest, TcreateCustomTestByUser, TTypeOfTest } from './tests.schema';
+import { TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TTypeOfTest } from './tests.schema';
 import * as TestsServices from './tests.services';
-import { createCustomTestByUserValidation, createCustomTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
+import { createCustomTestByUserValidation, createCustomTestValidation, createPastTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
 import { ModeOfTest, TypeOfTest } from '@prisma/client';
+import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, updateIsPastQuestion } from '../questions/questions.services';
 
 const router = express.Router();
 type TypedRequestBody<T> = Request<{}, {}, T>;
@@ -17,31 +18,110 @@ router.post("/create-custom-tests", checkModerator, createCustomTestValidation, 
             return response.status(400).json({ message: errors.array()[0].msg });
         }
 
+        const createdById = request.user?.id
+        if (!request.user || !createdById) {
+            return response.status(400).json({ message: 'Unauthorized' });
+        }
+
+
         const limit = request.query.limit;
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
 
-        const createdById = request.user?.id
-        const data = {
+        const questionsIds = await getQuestionsIds(Number(limit))
+        if (!questionsIds || questionsIds.length === 0) {
+            return null
+        }
+
+        const data: TcreateCustomTest = {
             name: request.body.name,
             slug: request.body.slug,
             createdById: createdById,
-            mode: "ALL"
-        } as TcreateCustomTest
+            mode: "ALL",
+            type: "MODEL",
+            questions: questionsIds
+        }
 
-        const newCustomTest = await TestsServices.createCustomTest(data, Number(limit));
-        if (!newCustomTest || newCustomTest === undefined) {
+        const newCustomTestId = await TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" })
         }
 
-        return response.status(201).json({ data: newCustomTest.id, message: `${newCustomTest.name} test created` });
+        return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
     } catch (error: any) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });
 
 
+// Create a new past test
+router.post("/create-past-tests", checkModerator, createPastTestValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
+    try {
+
+        console.log(request.body.category)
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+
+        const createdById = request.user?.id
+        if (!request.user || !createdById) {
+            return response.status(400).json({ message: 'Unauthorized' });
+        }
+
+        const questions = request.body.questions
+        const questionsIds = await addMultipleQuestionsForDifferentSubjectAndChapter(questions, createdById)
+        if (!questionsIds || questions.length === 0) {
+            return response.status(400).json({ message: 'Can not process the given questions' });
+        }
+
+        const year = request.body.year
+        const affiliation = request.body.affiliation || ""
+        const stream = request.body.stream
+        const category = request.body.category || ""
+
+
+        const data: TcreateCustomTest = {
+            name: `${category}-${year}`,
+            slug: `${category}_${year}`,
+            createdById: createdById,
+            mode: "ALL",
+            type: "PAST_PAPER",
+            questions: questionsIds
+        }
+
+        const newCustomTestId = await TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === undefined) {
+            return response.status(400).json({ data: null, message: "Custom can't be created" })
+        }
+
+        const pastTestData: TCreatePastPaper = {
+            year: year,
+            affiliation: affiliation,
+            category: category,
+            stream: stream,
+            customTestId: newCustomTestId
+        }
+
+        const updatedIsPastQuestions = await updateIsPastQuestion(pastTestData, questionsIds)
+        if (!updatedIsPastQuestions) {
+            return response.status(400).json({ data: null, message: "Unable to update the past questions" })
+        }
+
+        const newPastTest = await TestsServices.createPastTest(pastTestData)
+        if (!newPastTest) {
+            return response.status(400).json({ data: null, message: "Past Test can't be created" })
+        }
+
+
+        return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
+    } catch (error: any) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+// to create tests by paid  users -- esp subjectwise, chapterwise tests creation
 router.post(
     "/create-custom-tests-by-users",
     getSubscribedUserId,
@@ -163,6 +243,7 @@ router.get("/get-tests-by-type/:type", async (request: Request<{ type: TTypeOfTe
         }
         return response.status(201).json({ data: customTests, message: `Tests found` });
     } catch (error: any) {
+        console.log("🚀 ~ router.get ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });

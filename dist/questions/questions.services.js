@@ -12,11 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSubjects = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.updateQuestionCount = exports.getQuestionsIds = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
+exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
 const users_schema_1 = require("../users/users.schema");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const questions_methods_1 = require("./questions.methods");
+// add a single question
 const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { question, answer, explanation, options, subject, chapter, unit, difficulty, } = questionObject;
@@ -172,26 +173,23 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
     return addedQuestionIds;
 });
 exports.addMultipleQuestionsForDifferentSubjectAndChapter = addMultipleQuestionsForDifferentSubjectAndChapter;
-const getQuestionsIds = (limit) => __awaiter(void 0, void 0, void 0, function* () {
-    // Validate that limit is a positive integer
-    if (!Number.isInteger(limit) || limit <= 0) {
-        console.error("Invalid limit:", limit);
-        return null;
-    }
-    const questions = yield prisma_1.default.question.findMany({
-        select: { id: true },
-        take: limit, // Limit number of results
-        orderBy: { id: 'asc' } // Random order
+// to add , update past questions table
+const updateIsPastQuestion = (isPastQuestionData, questionsIds) => __awaiter(void 0, void 0, void 0, function* () {
+    const { category, affiliation, stream, year } = isPastQuestionData;
+    const pastQuestionData = questionsIds.map((questionId) => ({
+        stream,
+        year,
+        affiliation,
+        category,
+        questionId,
+    }));
+    const newPastQuestions = yield prisma_1.default.isPastQuestion.createMany({
+        data: pastQuestionData,
+        skipDuplicates: true,
     });
-    // Map IDs and check if array is empty
-    const questionIds = questions.map(question => question.id);
-    if (questionIds.length === 0) {
-        console.warn("No questions found.");
-        return null;
-    }
-    return questionIds;
+    return newPastQuestions.count > 0 ? questionsIds : null;
 });
-exports.getQuestionsIds = getQuestionsIds;
+exports.updateIsPastQuestion = updateIsPastQuestion;
 // update the question counts in db for each chapter ans subject
 const updateQuestionCount = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const { subject, chapter, count } = data;
@@ -221,6 +219,69 @@ const updateQuestionCount = (data) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.updateQuestionCount = updateQuestionCount;
+// to fetch a certain number of question ids -- esp for creating custom tests
+const getQuestionsIds = (limit) => __awaiter(void 0, void 0, void 0, function* () {
+    // Validate that limit is a positive integer
+    if (!Number.isInteger(limit) || limit <= 0) {
+        console.error("Invalid limit:", limit);
+        return null;
+    }
+    const questions = yield prisma_1.default.question.findManyRandom(limit, {
+        select: { id: true }
+    });
+    // Map IDs and check if array is empty
+    const questionIds = questions.map(question => question.id);
+    if (questionIds.length === 0) {
+        console.warn("No questions found.");
+        return null;
+    }
+    return questionIds;
+});
+exports.getQuestionsIds = getQuestionsIds;
+// ot Fetch questions by subject with a limit -- esp for subjectwise tests
+const getQuestionsBySubject = (subject, limit) => __awaiter(void 0, void 0, void 0, function* () {
+    const limitValue = limit ? 10 : 50;
+    const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
+        where: {
+            subject: subject,
+        },
+    });
+    if (!selectedQuestions || selectedQuestions.length === 0)
+        return null;
+    return selectedQuestions.map(question => question.id);
+});
+exports.getQuestionsBySubject = getQuestionsBySubject;
+// to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
+const getQuestionsBySubjectAndChapter = (subject, chapter, limit) => __awaiter(void 0, void 0, void 0, function* () {
+    const limitValue = limit ? 10 : 50;
+    const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
+        where: {
+            subject: subject,
+            chapter: chapter,
+        },
+    });
+    if (!selectedQuestions || selectedQuestions.length === 0)
+        return null;
+    return selectedQuestions.map(question => question.id);
+});
+exports.getQuestionsBySubjectAndChapter = getQuestionsBySubjectAndChapter;
+// get syllabus
+const getSyllabus = () => __awaiter(void 0, void 0, void 0, function* () {
+    return global_data_1.PG_SYLLABUS !== null && global_data_1.PG_SYLLABUS !== void 0 ? global_data_1.PG_SYLLABUS : null;
+});
+exports.getSyllabus = getSyllabus;
+// get sream hierarchy
+const getStreamHierarchy = () => __awaiter(void 0, void 0, void 0, function* () {
+    return global_data_1.STREAM_HIERARCHY !== null && global_data_1.STREAM_HIERARCHY !== void 0 ? global_data_1.STREAM_HIERARCHY : null;
+});
+exports.getStreamHierarchy = getStreamHierarchy;
+// get Subjects
+const getSubjects = () => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    return (_a = (0, questions_methods_1.getAllSubjects)(global_data_1.PG_SYLLABUS)) !== null && _a !== void 0 ? _a : null;
+});
+exports.getSubjects = getSubjects;
+// get count of questions in each subject -- exp for subject wise test models
 const getTotalQuestionsPerSubject = () => __awaiter(void 0, void 0, void 0, function* () {
     const questionCounts = yield prisma_1.default.questionCount.findMany(); // Retrieve all records
     const totalQuestionsPerSubject = {}; // Object to store counts per subject
@@ -233,13 +294,13 @@ const getTotalQuestionsPerSubject = () => __awaiter(void 0, void 0, void 0, func
             totalQuestionsPerSubject[subject] = count;
         }
     });
-    const result = Object.entries(totalQuestionsPerSubject).map(([subject, count]) => ({
-        subject,
-        count
-    }));
+    const result = Object.entries(totalQuestionsPerSubject)
+        .map(([subject, count]) => ({ subject, count }))
+        .sort((a, b) => b.count - a.count); // Sort in descending order based on count
     return result;
 });
 exports.getTotalQuestionsPerSubject = getTotalQuestionsPerSubject;
+// get count of questions in each chapter and its subject -- exp for showing chapter wise tests models
 const getTotalQuestionsPerSubjectAndChapter = () => __awaiter(void 0, void 0, void 0, function* () {
     const questionCounts = yield prisma_1.default.questionCount.findMany();
     const totalQuestionsPerSubjectAndChapter = {};
@@ -255,44 +316,13 @@ const getTotalQuestionsPerSubjectAndChapter = () => __awaiter(void 0, void 0, vo
             totalQuestionsPerSubjectAndChapter[subject][chapter] = count;
         }
     });
-    return totalQuestionsPerSubjectAndChapter ? totalQuestionsPerSubjectAndChapter : null;
+    // Sort chapters by count in descending order within each subject while maintaining the nested object structure
+    const result = Object.fromEntries(Object.entries(totalQuestionsPerSubjectAndChapter).map(([subject, chapters]) => [
+        subject,
+        Object.fromEntries(Object.entries(chapters)
+            .sort(([, countA], [, countB]) => countB - countA) // Sort by count in descending order
+        ),
+    ]));
+    return result;
 });
 exports.getTotalQuestionsPerSubjectAndChapter = getTotalQuestionsPerSubjectAndChapter;
-// Fetch questions by subject with a limit
-const getQuestionsBySubject = (subject, limit) => __awaiter(void 0, void 0, void 0, function* () {
-    const selectedQuestions = yield prisma_1.default.question.findMany({
-        where: {
-            subject: subject,
-        },
-        take: limit ? 10 : 50,
-    });
-    if (!selectedQuestions || selectedQuestions.length === 0)
-        return null;
-    return selectedQuestions.map(question => question.id);
-});
-exports.getQuestionsBySubject = getQuestionsBySubject;
-// Fetch questions by subject and chapter with a limit
-const getQuestionsBySubjectAndChapter = (subject, chapter, limit) => __awaiter(void 0, void 0, void 0, function* () {
-    const selectedQuestions = yield prisma_1.default.question.findMany({
-        where: {
-            subject: subject,
-            chapter: chapter,
-        },
-        take: limit ? 10 : 50,
-    });
-    if (!selectedQuestions || selectedQuestions.length === 0)
-        return null;
-    return selectedQuestions.map(question => question.id);
-});
-exports.getQuestionsBySubjectAndChapter = getQuestionsBySubjectAndChapter;
-// get syllabus
-const getSyllabus = () => __awaiter(void 0, void 0, void 0, function* () {
-    return global_data_1.PG_SYLLABUS !== null && global_data_1.PG_SYLLABUS !== void 0 ? global_data_1.PG_SYLLABUS : null;
-});
-exports.getSyllabus = getSyllabus;
-// get Subjects
-const getSubjects = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    return (_a = (0, questions_methods_1.getAllSubjects)(global_data_1.PG_SYLLABUS)) !== null && _a !== void 0 ? _a : null;
-});
-exports.getSubjects = getSubjects;
