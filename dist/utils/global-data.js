@@ -330,22 +330,22 @@ exports.PG_SYLLABUS = {
             "glaucoma",
             "vitreous",
             "retina",
-            "neuro_ophthalmology",
+            "neuro_opthalmology",
             "ocular_motility",
             "eyelids",
             "lacrimal_apparatus",
             "orbit",
             "ocular_injuries",
             "ocular_pharmacology",
-            "lasers_in_ophthalmology",
-            "cryotherapy_in_ophthalmology",
-            "systemic_ophthalmology",
-            "community_ophthalmology",
-            "clinical_methods_in_ophthalmology",
-            "clinical_ophthalmic_cases",
+            "lasers_in_opthalmology",
+            "cryotherapy_in_opthalmology",
+            "systemic_opthalmology",
+            "community_opthalmology",
+            "clinical_methods_in_opthalmology",
+            "clinical_opthalmic_cases",
             "darkroom_procedures",
-            "ophthalmic_instruments",
-            "operatve_ophthalmology"
+            "opthalmic_instruments",
+            "operatve_opthalmology"
         ]
     },
     "obg": {
@@ -464,7 +464,7 @@ exports.PG_SYLLABUS = {
             "rheumatological_disorders",
             "genetic_disorders",
             "inborn_errors_of_metabolism",
-            "ophthalmic_disorders",
+            "opthalmic_disorders",
             "skin_disorders",
             "poisonings_injuries_and_accidents",
             "pediatric_critical_care",
@@ -648,13 +648,13 @@ exports.STREAM_HIERARCHY = [
         categories: [
             { name: "NMCLE", affiliations: [] },
             { name: "USMLE", affiliations: [] },
-            { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS"] }
+            { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS", "CEE"] }
         ]
     },
     {
         name: "UG",
         categories: [
-            { name: "MBBS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS"] }
+            { name: "MBBS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS", "CEE"] }
         ]
     },
     {
@@ -1108,22 +1108,22 @@ exports.STREAM_HIERARCHY = [
 //             "glaucoma",
 //             "diseases_of_vitreous",
 //             "diseases_of_retina",
-//             "neuro_ophthalmology",
+//             "neuro_opthalmology",
 //             "disorders_of_ocular_motility",
 //             "disorders_of_eyelids",
 //             "diseases_of_lacrimal_apparatus",
 //             "diseases_of_orbit",
 //             "ocular_injuries",
 //             "ocular_pharmacology",
-//             "lasers_in_ophthalmology",
-//             "cryotherapy_in_ophthalmology",
-//             "systemic_ophthalmology",
-//             "community_ophthalmology",
-//             "clinical_methods_in_ophthalmology",
-//             "clinical_ophthalmic_cases",
+//             "lasers_in_opthalmology",
+//             "cryotherapy_in_opthalmology",
+//             "systemic_opthalmology",
+//             "community_opthalmology",
+//             "clinical_methods_in_opthalmology",
+//             "clinical_opthalmic_cases",
 //             "darkroom_procedures",
-//             "ophthalmic_instruments",
-//             "operatve_ophthalmology"
+//             "opthalmic_instruments",
+//             "operatve_opthalmology"
 //         ]
 //     },
 //     "obg": {
@@ -1246,7 +1246,7 @@ exports.STREAM_HIERARCHY = [
 //             "rheumatological_disorders",
 //             "genetic_disorders",
 //             "inborn_errors_of_metabolism",
-//             "ophthalmic_disorders",
+//             "opthalmic_disorders",
 //             "skin_disorders",
 //             "poisonings_injuries_and_accidents",
 //             "pediatric_critical_care",
@@ -1385,7 +1385,7 @@ exports.STREAM_HIERARCHY = [
 //             "rheumatology",
 //             "neurology",
 //             "stroke_medicine",
-//             "ophthalmology",
+//             "opthalmology",
 //             "psychiatry",
 //             "dermatology",
 //             "maternal_medicine",
