@@ -1,7 +1,7 @@
 
 
 import { TTypeOfTestsAndDescription } from "../tests/tests.schema";
-import { TPGSyllabus } from "./global-types";
+import { TPGSyllabus, TStreamHierarchy } from "./global-types";
 
 
 
@@ -258,6 +258,7 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "vitamins",
             "vaccines",
             "drug_interactions",
+            "venoms",
         ]
     },
     "microbiology": {
@@ -335,22 +336,22 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "glaucoma",
             "vitreous",
             "retina",
-            "neuro_ophthalmology",
+            "neuro_opthalmology",
             "ocular_motility",
             "eyelids",
             "lacrimal_apparatus",
             "orbit",
             "ocular_injuries",
             "ocular_pharmacology",
-            "lasers_in_ophthalmology",
-            "cryotherapy_in_ophthalmology",
-            "systemic_ophthalmology",
-            "community_ophthalmology",
-            "clinical_methods_in_ophthalmology",
-            "clinical_ophthalmic_cases",
+            "lasers_in_opthalmology",
+            "cryotherapy_in_opthalmology",
+            "systemic_opthalmology",
+            "community_opthalmology",
+            "clinical_methods_in_opthalmology",
+            "clinical_opthalmic_cases",
             "darkroom_procedures",
-            "ophthalmic_instruments",
-            "operatve_ophthalmology"
+            "opthalmic_instruments",
+            "operatve_opthalmology"
         ]
     },
     "obg": {
@@ -433,7 +434,8 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "forensic_traumatology",
             "legal_system_and_medical_jurisprudence",
             "violent_asphyxia_deaths",
-            "forensic_thanatology_and_forensic_identity",
+            "forensic_thanatology",
+            "forensic_identity",
             "sexual_jurisprudence",
             "forensic_toxicology",
             "starvation_deaths",
@@ -468,7 +470,7 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "rheumatological_disorders",
             "genetic_disorders",
             "inborn_errors_of_metabolism",
-            "ophthalmic_disorders",
+            "opthalmic_disorders",
             "skin_disorders",
             "poisonings_injuries_and_accidents",
             "pediatric_critical_care",
@@ -612,7 +614,6 @@ export const PG_SYLLABUS: TPGSyllabus = {
             "substance_related_and_addictive_disorders",
             "child_psychiatry",
             "psychoanalysis",
-            "mental_health_care_act_2017"
         ]
     },
     "dermatology": {
@@ -648,6 +649,36 @@ export const PG_SYLLABUS: TPGSyllabus = {
     }
 }
 
+
+export const STREAM_HIERARCHY: TStreamHierarchy[] = [
+    {
+        name: "PG",
+        categories: [
+            { name: "NMCLE", affiliations: [] },
+            { name: "USMLE", affiliations: [] },
+            { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS","CEE"] }
+        ]
+    },
+    {
+        name: "UG",
+        categories: [
+            { name: "MBBS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS","CEE"] }
+        ]
+    },
+    {
+        name: "LOKSEWA",
+        categories: [],
+        affiliations: []
+    },
+    {
+        name: "IOE",
+        categories: [
+            { name: "PU", affiliations: [] },
+            { name: "TU", affiliations: [] },
+            { name: "KU", affiliations: [] }
+        ]
+    }
+];
 
 
 
@@ -1088,22 +1119,23 @@ export const PG_SYLLABUS: TPGSyllabus = {
 //             "glaucoma",
 //             "diseases_of_vitreous",
 //             "diseases_of_retina",
-//             "neuro_ophthalmology",
+//             "neuro_opthalmology",
 //             "disorders_of_ocular_motility",
 //             "disorders_of_eyelids",
 //             "diseases_of_lacrimal_apparatus",
 //             "diseases_of_orbit",
 //             "ocular_injuries",
 //             "ocular_pharmacology",
-//             "lasers_in_ophthalmology",
-//             "cryotherapy_in_ophthalmology",
-//             "systemic_ophthalmology",
-//             "community_ophthalmology",
-//             "clinical_methods_in_ophthalmology",
-//             "clinical_ophthalmic_cases",
+//             "lasers_in_opthalmology",
+//             "cryotherapy_in_opthalmology",
+//             "systemic_opthalmology",
+
+//             "community_opthalmology",
+//             "clinical_methods_in_opthalmology",
+//             "clinical_opthalmic_cases",
 //             "darkroom_procedures",
-//             "ophthalmic_instruments",
-//             "operatve_ophthalmology"
+//             "opthalmic_instruments",
+//             "operatve_opthalmology"
 //         ]
 //     },
 //     "obg": {
@@ -1226,7 +1258,7 @@ export const PG_SYLLABUS: TPGSyllabus = {
 //             "rheumatological_disorders",
 //             "genetic_disorders",
 //             "inborn_errors_of_metabolism",
-//             "ophthalmic_disorders",
+//             "opthalmic_disorders",
 //             "skin_disorders",
 //             "poisonings_injuries_and_accidents",
 //             "pediatric_critical_care",
@@ -1365,7 +1397,7 @@ export const PG_SYLLABUS: TPGSyllabus = {
 //             "rheumatology",
 //             "neurology",
 //             "stroke_medicine",
-//             "ophthalmology",
+//             "opthalmology",
 //             "psychiatry",
 //             "dermatology",
 //             "maternal_medicine",
