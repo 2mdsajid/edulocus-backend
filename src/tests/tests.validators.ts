@@ -45,9 +45,9 @@ export const createPastTestValidation: ValidationChain[] = [
     // body('questions.*.unit')
     //     .notEmpty().withMessage('unit must be provided')
     //     .isString().withMessage('unit must be a string'),
-    body('questions.*.explanation')
-        .notEmpty().withMessage('explanation must be provided')
-        .isString().withMessage('explanation must be a string'),
+    // body('questions.*.explanation')
+    //     .notEmpty().withMessage('explanation must be provided')
+    //     .isString().withMessage('explanation must be a string'),
     // body('questions.*.difficulty')
     //     .notEmpty().withMessage('Difficulty must be provided')
     //     .isString().withMessage('Difficulty must be a string'),
