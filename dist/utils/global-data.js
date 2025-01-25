@@ -646,7 +646,7 @@ exports.STREAM_HIERARCHY = [
     {
         name: "PG",
         categories: [
-            { name: "NMCLE", affiliations: [] },
+            { name: "NMCLE", affiliations: ["NMCLE"] },
             { name: "USMLE", affiliations: [] },
             { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS", "CEE"] }
         ]

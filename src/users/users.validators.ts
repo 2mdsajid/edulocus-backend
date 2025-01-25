@@ -12,6 +12,50 @@ export const loginUserValidation: ValidationChain[] = [
     body('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
 ];
 
+export const loginWithLuciaGoogleUserValidation = [
+    body('googleId').notEmpty().withMessage('Google ID is required'),
+    body('email').isEmail().withMessage('A valid email is required'),
+    body('name').notEmpty().withMessage('Name is required'),
+    body('image').notEmpty().withMessage('Image is required')
+];
+
+export const generateAuthTokenValidation: ValidationChain[] = [
+    body('name')
+        .notEmpty()
+        .withMessage('Name must be provided')
+        .isString()
+        .withMessage('Name must be a string'),
+
+    body('email')
+        .notEmpty()
+        .withMessage('Email must be provided')
+        .isEmail()
+        .withMessage('Email must be a valid email'),
+
+    body('id')
+        .notEmpty()
+        .withMessage('ID must be provided')
+        .isString()
+        .withMessage('ID must be a string'),
+
+    body('role')
+        .notEmpty()
+        .withMessage('Role must be provided')
+        .isIn(['USER', 'ADMIN', 'SUPERADMIN', 'MODERATOR', 'SAJID']) 
+        .withMessage('Role must be a valid enum value'),
+
+    body('isSubscribed')
+        .notEmpty()
+        .withMessage('Subscription status must be provided')
+        .isBoolean()
+        .withMessage('isSubscribed must be a boolean'),
+
+        // for googleId
+    body('googleId')
+        .isString()
+        .withMessage('Google ID must be a string')
+];
+
 export const changeRoleValidation: ValidationChain[] = [
     body('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
     body('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),

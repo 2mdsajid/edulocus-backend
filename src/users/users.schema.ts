@@ -16,25 +16,41 @@ export type TBaseUser = Omit<User,
     'key' |
     'tokensUsed' |
     'institution' |
-    'createdAt'
+    'createdAt' | 
+    'updatedAt' |
+    'emailVerified' 
 >
 
 export type TUserRole = ROLE
 export type TSignUpUser = Omit<User,
     'id' |
-    'image' |
+    'googleId' |
     'isCompleted' |
     'ip' |
     'key' |
     'tokensUsed' |
     'institution' |
-    'createdAt'
+    'createdAt' | 
+    'updatedAt' |
+    'emailVerified'
 >
 
 export type TLogInUser = {
     id?: string
+    googleId?: string
     email: string;
-    password: string
+    name?: string;
+    image?: string 
+    password: string | null
+}
+
+
+export type TLuciaGoogleAuth = {
+    id?: string
+    googleId: string
+    email: string;
+    name: string;
+    image: string 
 }
 
 export type TJWT = TBaseUser

@@ -20,16 +20,16 @@ const main = async () => {
 
     try {
         // Sign up a new user
-        // const newUser = await userSignUp(userData as any);
-        // console.log('User created:', newUser);
+        const newUser = await userSignUp(userData as any);
+        console.log('User created:', newUser);
 
         // const newUser2 = await userSignUp(userData2 as any);
         // console.log('User created:', newUser2);
 
-        // // Check if the user was successfully created
-        // if (!newUser?.id) {
-        //     throw new Error('User creation failed');
-        // }
+        // Check if the user was successfully created
+        if (!newUser?.id) {
+            throw new Error('User creation failed');
+        }
 
         // Seed questions
         const question1 = {
@@ -128,52 +128,52 @@ const main = async () => {
 
 
         // Add the questions
-        // const questionId1 = await addSingleQuestion(question1, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId2 = await addSingleQuestion(question2, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId3 = await addSingleQuestion(question3, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId4 = await addSingleQuestion(question4, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId5 = await addSingleQuestion(question5, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId6 = await addSingleQuestion(question6, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId7 = await addSingleQuestion(question7, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId8 = await addSingleQuestion(question8, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
-        // const questionId9 = await addSingleQuestion(question9, '8ab8760b-5020-48c2-8941-5fb9c8dcfc19') as string
+        const questionId1 = await addSingleQuestion(question1, newUser?.id) as string
+        const questionId2 = await addSingleQuestion(question2, newUser?.id) as string
+        const questionId3 = await addSingleQuestion(question3, newUser?.id) as string
+        const questionId4 = await addSingleQuestion(question4, newUser?.id) as string
+        const questionId5 = await addSingleQuestion(question5, newUser?.id) as string
+        const questionId6 = await addSingleQuestion(question6, newUser?.id) as string
+        const questionId7 = await addSingleQuestion(question7, newUser?.id) as string
+        const questionId8 = await addSingleQuestion(question8, newUser?.id) as string
+        const questionId9 = await addSingleQuestion(question9, newUser?.id) as string
 
 
         // // Create a test using the newly added questions
-        // const customTestData = {
-        //     name: 'Combined Gyne Pediatric',
-        //     slug: 'GKT2024',
-        //     mode:'ALL',
-        //     createdById: '8ab8760b-5020-48c2-8941-5fb9c8dcfc19', //newUser.id,
-        //     questions: [questionId1, questionId2, questionId3,questionId4,questionId5,questionId6,questionId7,questionId8,questionId9]
-        // } as TcreateCustomTest
-        // const customTestData2 = {
-        //     name: 'branching ',
-        //     slug: 'GKT2024',
-        //     mode:'ALL',
-        //     createdById: '8ab8760b-5020-48c2-8941-5fb9c8dcfc19',
-        //     questions: [questionId1, questionId2, questionId3,questionId4,questionId5]
-        // } as TcreateCustomTest
+        const customTestData = {
+            name: 'Combined Gyne Pediatric',
+            slug: 'GKT2024',
+            mode:'ALL',
+            createdById: newUser?.id, //newUser.id,
+            questions: [questionId1, questionId2, questionId3,questionId4,questionId5,questionId6,questionId7,questionId8,questionId9]
+        } as TcreateCustomTest
+        const customTestData2 = {
+            name: 'branching ',
+            slug: 'GKT2024',
+            mode:'ALL',
+            createdById: newUser?.id,
+            questions: [questionId1, questionId2, questionId3,questionId4,questionId5]
+        } as TcreateCustomTest
 
-        // const newTest = await createCustomTest(customTestData);
+        const newTest = await createCustomTest(customTestData);
 
-        // const newTest2 = await createCustomTest(customTestData2);
-        let results = [] as any
-        for (const item of questionsCountData) {
-            try {
-                const result = await prisma.questionCount.create({
-                    data: {
-                        id: item.id,
-                        subject: item.subject,
-                        chapter: item.chapter,
-                        count: item.count
-                    }
-                });
-                results.push(result);
-            } catch (error:any) {
-                console.error(`Error importing ${item.subject} - ${item.chapter}:`, error.message);
-            }
-        }
+        const newTest2 = await createCustomTest(customTestData2);
+        // let results = [] as any
+        // for (const item of questionsCountData) {
+        //     try {
+        //         const result = await prisma.questionCount.create({
+        //             data: {
+        //                 id: item.id,
+        //                 subject: item.subject,
+        //                 chapter: item.chapter,
+        //                 count: item.count
+        //             }
+        //         });
+        //         results.push(result);
+        //     } catch (error:any) {
+        //         console.error(`Error importing ${item.subject} - ${item.chapter}:`, error.message);
+        //     }
+        // }
 
     } catch (error) {
         console.error('Error during seeding:', error);

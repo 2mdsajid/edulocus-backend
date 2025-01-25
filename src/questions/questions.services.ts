@@ -18,17 +18,11 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
             chapter,
             explanation,
             difficulty,
-            userId,
         },
         select: {
             id: true,
             subject: true,
             chapter: true,
-            user: {
-                select: {
-                    role: true
-                }
-            }
         }
     })
     if (!newQuestion) return null
@@ -41,11 +35,11 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
     })
     if (!newOption) return null
 
-    const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string) ? true : false
+    // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string) ? true : false
     const isVerified = await prisma.isVerified.create({
         data: {
             questionId: newQuestion.id,
-            state: isAddedByAdmin,
+            state: true,
             by: userId
         }
     })
@@ -79,17 +73,11 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
                 chapter,
                 explanation,
                 difficulty,
-                userId,
             },
             select: {
                 id: true,
                 subject: true,
                 chapter: true,
-                user: {
-                    select: {
-                        role: true,
-                    },
-                },
             },
         });
 
@@ -104,12 +92,12 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
 
         if (!newOption) return null;
 
-        const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
+        // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
 
         await prisma.isVerified.create({
             data: {
                 questionId: newQuestion.id,
-                state: isAddedByAdmin,
+                state: true,
                 by: userId,
             },
         });
@@ -146,17 +134,11 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
                 chapter,
                 explanation,
                 difficulty,
-                userId,
             },
             select: {
                 id: true,
                 subject: true,
                 chapter: true,
-                user: {
-                    select: {
-                        role: true,
-                    },
-                },
             },
         });
 
@@ -171,12 +153,12 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
 
         if (!newOption) return null;
 
-        const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
+        // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
 
         await prisma.isVerified.create({
             data: {
                 questionId: newQuestion.id,
-                state: isAddedByAdmin,
+                state: true, //change to isAddedByAdmin when isAddedByAdmin is valid based on your auth or when needed
                 by: userId,
             },
         });
@@ -357,3 +339,25 @@ export const getTotalQuestionsPerSubjectAndChapter = async (): Promise<TTotalQue
 };
 
 
+
+
+// a function that will read all the questions and options associated with them in the database and then return them
+export const getAllQuestions = async (): Promise<any> => {
+    const questions = await prisma.question.findMany({
+        select: {
+            id: true,
+            question: true,
+            images: true,
+            answer: true,
+            explanation: true,
+            difficulty: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            options: true,
+            IsPast: true,
+        },
+    });
+    return null
+    return questions;
+};

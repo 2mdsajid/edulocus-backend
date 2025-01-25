@@ -113,7 +113,7 @@ const getSubjectScoresForBarChart = (testAnalytics) => {
         subject,
         total: total,
         score: total > 0 ? parseFloat(((correct / total) * 100).toFixed(2)) : 0, // Calculate percentage score and round to 2 decimal places
-        fill: (0, functions_1.getRandomColor)(),
+        fill: `var(--color-${subject})`,
     }));
     return chartData;
 };

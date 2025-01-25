@@ -102,9 +102,10 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
         const affiliation = request.body.affiliation || "";
         const stream = request.body.stream;
         const category = request.body.category || "";
+        const pastTestName = affiliation ? `${affiliation}-${year}` : `${category}-${year}`;
         const data = {
-            name: `${category}-${year}`,
-            slug: `${category}_${year}`,
+            name: pastTestName,
+            slug: `${affiliation || category}_${year}`,
             createdById: createdById,
             mode: "ALL",
             type: "PAST_PAPER",
@@ -237,7 +238,6 @@ router.get("/get-tests-by-type/:type", (request, response) => __awaiter(void 0, 
         return response.status(201).json({ data: customTests, message: `Tests found` });
     }
     catch (error) {
-        console.log("🚀 ~ router.get ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

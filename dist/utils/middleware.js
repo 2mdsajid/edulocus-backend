@@ -88,9 +88,6 @@ const getUserSession = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
         if (!user) {
             return res.status(401).json({ message: "Unauthenticated" });
         }
-        if (!user.isSubscribed) {
-            return res.status(401).json({ message: "Useer not subscribed!" });
-        }
         req.user = user;
         next();
     }

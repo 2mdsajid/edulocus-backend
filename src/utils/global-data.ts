@@ -654,7 +654,7 @@ export const STREAM_HIERARCHY: TStreamHierarchy[] = [
     {
         name: "PG",
         categories: [
-            { name: "NMCLE", affiliations: [] },
+            { name: "NMCLE", affiliations: ["NMCLE"] },
             { name: "USMLE", affiliations: [] },
             { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS","CEE"] }
         ]

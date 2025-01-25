@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
+exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -99,6 +99,80 @@ const loginUser = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.loginUser = loginUser;
+const loginWithLuciaGoogleUser = (userData) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email, googleId } = userData;
+        const existingUser = yield prisma_1.default.user.findFirst({
+            where: {
+                email,
+                googleId
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                isSubscribed: true,
+                googleId: true
+            }
+        });
+        if (!existingUser)
+            return null;
+        return existingUser;
+    }
+    catch (error) {
+        return null;
+    }
+});
+exports.loginWithLuciaGoogleUser = loginWithLuciaGoogleUser;
+const signupWithLuciaGoogleUser = (userData) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email, googleId, name, image } = userData;
+        const existingUser = yield prisma_1.default.user.create({
+            data: {
+                email,
+                googleId,
+                name,
+                image
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                isSubscribed: true,
+                googleId: true
+            }
+        });
+        if (!existingUser)
+            return null;
+        return existingUser;
+    }
+    catch (error) {
+        console.log("🚀 ~ signupWithLuciaGoogleUser ~ error:", error);
+        return null;
+    }
+});
+exports.signupWithLuciaGoogleUser = signupWithLuciaGoogleUser;
+const generateAuthToken = (userData) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id, email, name, role, isSubscribed, googleId } = userData;
+        const token = jsonwebtoken_1.default.sign({
+            id: id,
+            name: name,
+            email: email,
+            role: role,
+            isSubscribed: isSubscribed,
+            googleId: googleId
+        }, process.env.SECRET_KEY_FOR_AUTH);
+        return token;
+    }
+    catch (error) {
+        console.log("🚀 ~ generateAuthToken ~ error:", error);
+        return null;
+    }
+});
+exports.generateAuthToken = generateAuthToken;
 const changeRole = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { password, email } = userData;
@@ -165,6 +239,7 @@ const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
             id: true,
             name: true,
             email: true,
+            googleId: true,
             role: true,
             isSubscribed: true
         }

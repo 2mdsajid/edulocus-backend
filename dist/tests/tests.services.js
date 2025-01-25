@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getCustomTestById = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
-const functions_1 = require("../utils/functions");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const tests_methods_1 = require("./tests.methods");
@@ -307,9 +306,9 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
     const dailyTestProgressData = (0, tests_methods_1.generateDailyTestProgress)(currentUser.testAnalytics);
     const subjectWiseScoreChartData = (0, tests_methods_1.getSubjectScoresForBarChart)(currentUser.testAnalytics);
     const scoreParametersData = [
-        { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: (0, functions_1.getRandomColor)() },
-        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: (0, functions_1.getRandomColor)() },
-        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: (0, functions_1.getRandomColor)() },
+        { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: `var(--color-correct)` },
+        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: `var(--color-incorrect)` },
+        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)` },
     ];
     const analyticData = {
         totalTests,

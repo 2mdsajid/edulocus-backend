@@ -46,7 +46,6 @@ export const checkUserExists = async (
 
 // this will check if the user logged in or not
 // this will help create custom tests
-
 export const getSubscribedUserId = async (
   req: RequestWithUserIdAndSubscription,
   res: Response,
@@ -107,10 +106,6 @@ export const getUserSession = async (
     const user = (await getUserById(userFromJWT.id)) as TJWT;
     if (!user) {
       return res.status(401).json({ message: "Unauthenticated" });
-    }
-
-    if (!user.isSubscribed) {
-      return res.status(401).json({ message: "Useer not subscribed!" });
     }
 
     req.user = user;

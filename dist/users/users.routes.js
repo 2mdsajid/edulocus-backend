@@ -36,10 +36,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const users_validators_1 = require("./users.validators");
 const express_validator_1 = require("express-validator");
-const UserServices = __importStar(require("./users.services"));
 const middleware_1 = require("../utils/middleware");
+const UserServices = __importStar(require("./users.services"));
+const users_validators_1 = require("./users.validators");
 const router = express_1.default.Router();
 router.post('/signup', users_validators_1.createUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -81,6 +81,62 @@ router.post('/login', users_validators_1.loginUserValidation, (request, response
         }
         // this token will be ustored in cookie and will be sent back to bacnend server with every requests
         return response.status(200).json({ data: userLoginToken, message: 'Logged in successfully!' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/lucia-google-auth', users_validators_1.loginWithLuciaGoogleUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Validate request body
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ data: null, message: errors.array()[0].msg });
+        }
+        const { googleId, email, name, image } = request.body;
+        // Check if the email exists in the database
+        const existingUserWithEmail = yield UserServices.checkEmailExist(email);
+        if (existingUserWithEmail) {
+            const user = yield UserServices.loginWithLuciaGoogleUser(request.body);
+            //    check if user is null
+            if (!user) {
+                return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+            }
+            return response.status(200).json({ data: user, message: 'Logged in successfully!' });
+        }
+        // If user doesn't exist, create a new user account
+        const newUser = yield UserServices.signupWithLuciaGoogleUser({
+            email,
+            googleId,
+            name,
+            image,
+        });
+        if (!newUser) {
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+        }
+        // Send the user in response
+        return response.status(200).json({ data: newUser, message: 'Logged in successfully!' });
+    }
+    catch (error) {
+        console.error("Error during Google login:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/generate-auth-token', users_validators_1.generateAuthTokenValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ data: null, message: errors.array()[0].msg });
+        }
+        const existingUserWithEmail = yield UserServices.checkEmailExist(request.body.email);
+        if (!existingUserWithEmail) {
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+        }
+        const authToken = yield UserServices.generateAuthToken(request.body);
+        if (!authToken) {
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+        }
+        return response.status(200).json({ data: authToken, message: 'Logged in successfully!' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

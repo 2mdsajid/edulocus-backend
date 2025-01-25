@@ -81,10 +81,10 @@ router.post("/create-past-tests", checkModerator, createPastTestValidation, asyn
         const stream = request.body.stream
         const category = request.body.category || ""
 
-
+        const pastTestName = affiliation ? `${affiliation}-${year}` : `${category}-${year}`
         const data: TcreateCustomTest = {
-            name: `${category}-${year}`,
-            slug: `${category}_${year}`,
+            name: pastTestName,
+            slug: `${affiliation || category}_${year}`,
             createdById: createdById,
             mode: "ALL",
             type: "PAST_PAPER",
@@ -243,7 +243,6 @@ router.get("/get-tests-by-type/:type", async (request: Request<{ type: TTypeOfTe
         }
         return response.status(201).json({ data: customTests, message: `Tests found` });
     } catch (error: any) {
-        console.log("🚀 ~ router.get ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });

@@ -1,6 +1,6 @@
 import { isUUID } from "../utils/functions";
 import prisma from "../utils/prisma"
-import { TBaseUser, TCreateSubscriptionRequest, TCreateUserFeedback, TJWT, TLogInUser, TSignUpUser } from "./users.schema";
+import { TBaseUser, TCreateSubscriptionRequest, TCreateUserFeedback, TJWT, TLogInUser, TLuciaGoogleAuth, TSignUpUser } from "./users.schema";
 import jwt from 'jsonwebtoken';
 
 
@@ -87,6 +87,77 @@ export const loginUser = async (userData: TLogInUser): Promise<string | null> =>
     }
 }
 
+export const loginWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Promise<TBaseUser | null> => {
+    try {
+        const { email, googleId } = userData
+        const existingUser = await prisma.user.findFirst({
+            where: {
+                email,
+                googleId
+            },
+            select:{
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                isSubscribed: true,
+                googleId: true
+            }
+        })
+        if (!existingUser) return null
+        return existingUser
+    } catch (error) {
+        return null
+    }
+}
+
+
+export const signupWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Promise<TBaseUser | null> => {
+    try {
+        const { email, googleId, name, image } = userData
+        const existingUser = await prisma.user.create({
+            data: {
+                email,
+                googleId,
+                name,
+                image
+            },
+            select:{
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                isSubscribed: true,
+                googleId: true
+            }
+        })
+        if (!existingUser) return null
+        return existingUser
+    } catch (error) {
+        console.log("🚀 ~ signupWithLuciaGoogleUser ~ error:", error)
+        return null
+    }
+}
+
+export const generateAuthToken = async (userData:TBaseUser): Promise<string | null> => {
+    try {
+        const { id,email,name,role,isSubscribed, googleId } = userData
+
+        const token = jwt.sign({
+            id: id,
+            name: name,
+            email: email,
+            role: role,
+            isSubscribed: isSubscribed,
+            googleId: googleId
+        }, process.env.SECRET_KEY_FOR_AUTH as string);
+        return token
+    } catch (error) {
+        console.log("🚀 ~ generateAuthToken ~ error:", error)
+        return null
+    }
+}
+
 export const changeRole = async (userData: TLogInUser): Promise<string | null> => {
     try {
         const { password, email } = userData
@@ -144,6 +215,7 @@ export const createSubscriptionRequest = async (subscriptionData: TCreateSubscri
     return newSubscription.id;
 };
 
+
 export const getUserById = async (userId: string): Promise<TJWT | null> => {
     const user = await prisma.user.findUnique({
         where: {
@@ -153,6 +225,7 @@ export const getUserById = async (userId: string): Promise<TJWT | null> => {
             id: true,
             name: true,
             email: true,
+            googleId: true,
             role: true,
             isSubscribed: true
         }

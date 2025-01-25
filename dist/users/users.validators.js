@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.subscriptionRequestValidation = exports.userFeedbackValidation = exports.changeRoleValidation = exports.loginUserValidation = exports.createUserValidation = void 0;
+exports.subscriptionRequestValidation = exports.userFeedbackValidation = exports.changeRoleValidation = exports.generateAuthTokenValidation = exports.loginWithLuciaGoogleUserValidation = exports.loginUserValidation = exports.createUserValidation = void 0;
 const express_validator_1 = require("express-validator");
 exports.createUserValidation = [
     (0, express_validator_1.body)('name').notEmpty().withMessage('Name must be provided').isString().withMessage('Name must be a string'),
@@ -10,6 +10,43 @@ exports.createUserValidation = [
 exports.loginUserValidation = [
     (0, express_validator_1.body)('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),
     (0, express_validator_1.body)('password').notEmpty().withMessage('Password must be provided').isString().withMessage('Password must be a number'),
+];
+exports.loginWithLuciaGoogleUserValidation = [
+    (0, express_validator_1.body)('googleId').notEmpty().withMessage('Google ID is required'),
+    (0, express_validator_1.body)('email').isEmail().withMessage('A valid email is required'),
+    (0, express_validator_1.body)('name').notEmpty().withMessage('Name is required'),
+    (0, express_validator_1.body)('image').notEmpty().withMessage('Image is required')
+];
+exports.generateAuthTokenValidation = [
+    (0, express_validator_1.body)('name')
+        .notEmpty()
+        .withMessage('Name must be provided')
+        .isString()
+        .withMessage('Name must be a string'),
+    (0, express_validator_1.body)('email')
+        .notEmpty()
+        .withMessage('Email must be provided')
+        .isEmail()
+        .withMessage('Email must be a valid email'),
+    (0, express_validator_1.body)('id')
+        .notEmpty()
+        .withMessage('ID must be provided')
+        .isString()
+        .withMessage('ID must be a string'),
+    (0, express_validator_1.body)('role')
+        .notEmpty()
+        .withMessage('Role must be provided')
+        .isIn(['USER', 'ADMIN', 'SUPERADMIN', 'MODERATOR', 'SAJID'])
+        .withMessage('Role must be a valid enum value'),
+    (0, express_validator_1.body)('isSubscribed')
+        .notEmpty()
+        .withMessage('Subscription status must be provided')
+        .isBoolean()
+        .withMessage('isSubscribed must be a boolean'),
+    // for googleId
+    (0, express_validator_1.body)('googleId')
+        .isString()
+        .withMessage('Google ID must be a string')
 ];
 exports.changeRoleValidation = [
     (0, express_validator_1.body)('email').notEmpty().withMessage('Email must be provided').isEmail().withMessage('Email must be a number'),

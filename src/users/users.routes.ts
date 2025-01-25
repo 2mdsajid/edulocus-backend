@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { changeRoleValidation, createUserValidation, loginUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
 import { validationResult } from 'express-validator';
-import * as UserServices from './users.services'
-import { z } from 'zod';
-import { checkUserExists, getUserSession, RequestWithUserIdAndRole } from '../utils/middleware';
+import { getUserSession, RequestWithUserIdAndRole } from '../utils/middleware';
+import * as UserServices from './users.services';
+import { changeRoleValidation, createUserValidation, generateAuthTokenValidation, loginUserValidation, loginWithLuciaGoogleUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
 
 
 const router = express.Router();
@@ -57,6 +56,72 @@ router.post('/login', loginUserValidation, async (request: Request, response: Re
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+router.post('/lucia-google-auth', loginWithLuciaGoogleUserValidation, async (request: Request, response: Response) => {
+    try {
+        // Validate request body
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ data: null, message: errors.array()[0].msg });
+        }
+
+        const { googleId, email, name, image } = request.body;
+
+        // Check if the email exists in the database
+        const existingUserWithEmail = await UserServices.checkEmailExist(email);
+        if (existingUserWithEmail) {
+            const user = await UserServices.loginWithLuciaGoogleUser(request.body);
+            //    check if user is null
+            if (!user) {
+                return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+            }
+            return response.status(200).json({ data: user, message: 'Logged in successfully!' });
+        }
+
+        // If user doesn't exist, create a new user account
+        const newUser = await UserServices.signupWithLuciaGoogleUser({
+            email,
+            googleId,
+            name,
+            image,
+        });
+
+        if (!newUser) {
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
+        }
+
+        // Send the user in response
+        return response.status(200).json({ data: newUser, message: 'Logged in successfully!' });
+
+    } catch (error) {
+        console.error("Error during Google login:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+router.post('/generate-auth-token', generateAuthTokenValidation, async (request: Request, response: Response) => {
+    try {
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({data:null, message: errors.array()[0].msg });
+        }
+
+        const existingUserWithEmail = await UserServices.checkEmailExist(request.body.email);
+        if (!existingUserWithEmail) {
+            return response.status(404).json({data:null, message: 'Incorrect credentials' });
+        }
+
+        const authToken = await UserServices.generateAuthToken(request.body);
+        if (!authToken) {
+            return response.status(404).json({data:null, message: 'Incorrect credentials' });
+        }
+
+        return response.status(200).json({data:authToken, message: 'Logged in successfully!' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
 
 router.post('/edit-role', changeRoleValidation, async (request: Request, response: Response) => {
     try {

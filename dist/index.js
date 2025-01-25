@@ -38,8 +38,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cors_1 = __importDefault(require("cors"));
 const dotenv = __importStar(require("dotenv"));
 const express_1 = __importDefault(require("express"));
-const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
 const questions_routes_1 = __importDefault(require("./questions/questions.routes"));
+const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
 const users_routes_1 = __importDefault(require("./users/users.routes"));
 dotenv.config();
 if (!process.env.PORT) {
@@ -47,15 +47,18 @@ if (!process.env.PORT) {
     process.exit(1);
 }
 const app = (0, express_1.default)();
-app.use((0, cors_1.default)()); // to avoid cross-origin blocking
-app.use(express_1.default.json());
+// Increase payload size limit (e.g., 50MB)
+app.use(express_1.default.json({ limit: "50mb" })); // For JSON payloads
+app.use(express_1.default.urlencoded({ limit: "50mb", extended: true })); // For URL-encoded payloads
+app.use((0, cors_1.default)()); // To avoid cross-origin blocking
+// Routes
 app.use("/tests", tests_routes_1.default);
 app.use("/users", users_routes_1.default);
 app.use("/questions", questions_routes_1.default);
-app.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         return res.status(200).json({
-            message: 'Hello, please do not cause unnecessary API calls',
+            message: "Hello, please do not cause unnecessary API calls",
         });
     }
     catch (error) {

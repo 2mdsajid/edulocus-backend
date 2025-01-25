@@ -12,8 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
-const users_schema_1 = require("../users/users.schema");
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const questions_methods_1 = require("./questions.methods");
@@ -30,17 +29,11 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
             chapter,
             explanation,
             difficulty,
-            userId,
         },
         select: {
             id: true,
             subject: true,
             chapter: true,
-            user: {
-                select: {
-                    role: true
-                }
-            }
         }
     });
     if (!newQuestion)
@@ -50,11 +43,11 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
     });
     if (!newOption)
         return null;
-    const isAddedByAdmin = users_schema_1.ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role) ? true : false;
+    // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string) ? true : false
     const isVerified = yield prisma_1.default.isVerified.create({
         data: {
             questionId: newQuestion.id,
-            state: isAddedByAdmin,
+            state: true,
             by: userId
         }
     });
@@ -82,17 +75,11 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
                 chapter,
                 explanation,
                 difficulty,
-                userId,
             },
             select: {
                 id: true,
                 subject: true,
                 chapter: true,
-                user: {
-                    select: {
-                        role: true,
-                    },
-                },
             },
         });
         if (!newQuestion)
@@ -102,11 +89,11 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
         });
         if (!newOption)
             return null;
-        const isAddedByAdmin = users_schema_1.ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role);
+        // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
         yield prisma_1.default.isVerified.create({
             data: {
                 questionId: newQuestion.id,
-                state: isAddedByAdmin,
+                state: true,
                 by: userId,
             },
         });
@@ -135,17 +122,11 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
                 chapter,
                 explanation,
                 difficulty,
-                userId,
             },
             select: {
                 id: true,
                 subject: true,
                 chapter: true,
-                user: {
-                    select: {
-                        role: true,
-                    },
-                },
             },
         });
         if (!newQuestion)
@@ -155,11 +136,11 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         });
         if (!newOption)
             return null;
-        const isAddedByAdmin = users_schema_1.ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role);
+        // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
         yield prisma_1.default.isVerified.create({
             data: {
                 questionId: newQuestion.id,
-                state: isAddedByAdmin,
+                state: true, //change to isAddedByAdmin when isAddedByAdmin is valid based on your auth or when needed
                 by: userId,
             },
         });
@@ -326,3 +307,24 @@ const getTotalQuestionsPerSubjectAndChapter = () => __awaiter(void 0, void 0, vo
     return result;
 });
 exports.getTotalQuestionsPerSubjectAndChapter = getTotalQuestionsPerSubjectAndChapter;
+// a function that will read all the questions and options associated with them in the database and then return them
+const getAllQuestions = () => __awaiter(void 0, void 0, void 0, function* () {
+    const questions = yield prisma_1.default.question.findMany({
+        select: {
+            id: true,
+            question: true,
+            images: true,
+            answer: true,
+            explanation: true,
+            difficulty: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            options: true,
+            IsPast: true,
+        },
+    });
+    return null;
+    return questions;
+});
+exports.getAllQuestions = getAllQuestions;

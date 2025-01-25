@@ -322,9 +322,9 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
     const subjectWiseScoreChartData = getSubjectScoresForBarChart(currentUser.testAnalytics)
 
     const scoreParametersData = [
-        { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: getRandomColor() },
-        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: getRandomColor() },
-        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: getRandomColor() },
+        { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: `var(--color-correct)` },
+        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: `var(--color-incorrect)`  },
+        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)`  },
     ]
 
     const analyticData: TDashboardAnalyticData = {

@@ -176,4 +176,18 @@ router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, voi
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// a route to read all the questions from the database and then download them in json format
+router.get('/download-questions', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return response.status(200).json({ data: null, message: 'Downloaded' });
+        const questions = yield QuestionServices.getAllQuestions();
+        if (!questions || questions.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: questions, message: 'Questions Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 exports.default = router;

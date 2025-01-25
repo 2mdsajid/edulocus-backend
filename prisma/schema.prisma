@@ -1,274 +1,280 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 // different users roles
 enum ROLE {
-  USER
-  ADMIN
-  SUPERADMIN
-  MODERATOR
-  SAJID
+    USER
+    ADMIN
+    SUPERADMIN
+    MODERATOR
+    SAJID
 }
 
 // for multiple streams
 enum STREAM {
-  UG
-  PG
+    UG
+    PG
 }
 
 // to enum custom tests created by whom
 enum ModeOfTest {
-  USER //created by premium users
-  PUBLIC //created for non premium users
-  ALL //created for all users like model tests
+    USER //created by premium users
+    PUBLIC //created for non premium users
+    ALL //created for all users like model tests
 }
 
 // different types of tests that is available
 // amed in /lib/global.d.ts in FE as well
 enum TypeOfTest {
-  MODEL
-  SUBJECT_WISE
-  CHAPTER_WISE
-  TOPIC_WISE
-  CUSTOM
-  UNIT_WISE
-  DIFFICULTY_BASED
-  RANDOM
-  FLASH
-  AI_GENERATED
-  PERFORMANCE_ANALYZER
-  PBQ_BASED
-  THEORY_BASED
-  REVISION
-  RETAKE
-  PAST_PAPER
+    MODEL
+    SUBJECT_WISE
+    CHAPTER_WISE
+    TOPIC_WISE
+    CUSTOM
+    UNIT_WISE
+    DIFFICULTY_BASED
+    RANDOM
+    FLASH
+    AI_GENERATED
+    PERFORMANCE_ANALYZER
+    PBQ_BASED
+    THEORY_BASED
+    REVISION
+    RETAKE
+    PAST_PAPER
 }
 
 // USER ------------------------------------------------------------
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  email        String   @unique
-  password     String
-  image        String?
-  role         ROLE     @default(USER)
-  key          String   @default("")
-  isCompleted  Boolean  @default(false)
-  tokensUsed   String[] @default([])
-  institution  String?
-  isSubscribed Boolean  @default(false)
-  createdAt    DateTime @default(now())
+    id           String   @id @default(uuid())
+    googleId     String?   @unique
+    name         String
+    email        String   @unique
+    password     String?
+    image        String?
+    role         ROLE     @default(USER)
+    key          String   @default("")
+    isCompleted  Boolean  @default(false)
+    tokensUsed   String[] @default([])
+    institution  String?
+    isSubscribed Boolean  @default(false)
 
-  questions          Question[]
-  payments           Payment[]
-  customTestsCreated CustomTest[]
-  testAnalytics      TestAnalytic[]
+    emailVerified DateTime?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime? @updatedAt
+
+    payments           Payment[]
+    customTestsCreated CustomTest[]
+    testAnalytics      TestAnalytic[]
 }
 
 model Payment {
-  id        Int       @id @default(autoincrement())
-  isPaid    Boolean   @default(false)
-  paymentID String?
-  expireAt  DateTime?
+    id        Int       @id @default(autoincrement())
+    isPaid    Boolean   @default(false)
+    paymentID String?
+    expireAt  DateTime?
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // QUESTIONS -----------------------------------------------------------
 model Question {
-  id             String          @id @default(cuid())
-  question       String
-  options        Option?
-  answer         ANSWER
-  explanation    String          @default("")
-  images         Images?
-  subject        String          @default("unknown")
-  chapter        String          @default("unknown")
-  unit           String          @default("unknown")
-  category       String          @default("mbbs")
-  difficulty     String          @default("m")
-  isreported     IsReported?
-  isverified     IsVerified?
-  isflagged      IsFlagged?
-  IsPast         IsPastQuestion?
-  attempt        Int             @default(0)
-  correctattempt Int             @default(0)
+    id             String          @id @default(cuid())
+    question       String
+    options        Option?
+    answer         ANSWER
+    explanation    String          @default("")
+    images         Images?
+    subject        String          @default("unknown")
+    chapter        String          @default("unknown")
+    unit           String          @default("unknown")
+    category       String          @default("mbbs")
+    difficulty     String          @default("m")
+    isreported     IsReported?
+    isverified     IsVerified?
+    isflagged      IsFlagged?
+    IsPast         IsPastQuestion?
+    attempt        Int             @default(0)
+    correctattempt Int             @default(0)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    analytic TestQuestionAnswer[]
 
-  analytic TestQuestionAnswer[]
-
-  @@index([chapter])
+    @@index([chapter])
 }
 
 enum ANSWER {
-  a
-  b
-  c
-  d
+    a
+    b
+    c
+    d
 }
 
 model Option {
-  questionId String   @id
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  a          String
-  b          String
-  c          String
-  d          String
+    questionId String   @id
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    a          String
+    b          String
+    c          String
+    d          String
 }
 
 model Images {
-  questionId String   @id
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  qn         String?
-  a          String?
-  b          String?
-  c          String?
-  d          String?
-  exp        String?
+    questionId String   @id
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    qn         String?
+    a          String?
+    b          String?
+    c          String?
+    d          String?
+    exp        String?
 }
 
 model IsReported {
-  questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  state      Boolean   @default(false)
-  by         String?
-  message    String?
-  date       DateTime?
+    questionId String    @id
+    question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    state      Boolean   @default(false)
+    by         String?
+    message    String?
+    date       DateTime?
 }
 
 model IsVerified {
-  questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  state      Boolean   @default(false)
-  by         String?
-  date       DateTime?
+    questionId String    @id
+    question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    state      Boolean   @default(false)
+    by         String?
+    date       DateTime?
 }
 
 model IsFlagged {
-  questionId String    @id
-  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  state      Boolean   @default(false)
-  by         String?
-  message    String?
-  date       DateTime?
+    questionId String    @id
+    question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    state      Boolean   @default(false)
+    by         String?
+    message    String?
+    date       DateTime?
 }
 
 model QuestionCount {
-  id      String @id @default(cuid())
-  subject String
-  chapter String
-  count   Int    @default(0)
+    id      String @id @default(cuid())
+    subject String
+    chapter String
+    count   Int    @default(0)
 
-  @@unique([subject, chapter])
+    @@unique([subject, chapter])
 }
 
 model IsPastQuestion {
-  questionId  String   @id
-  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  stream      STREAM   @default(PG)
-  year        Int
-  category    String?  @default("")
-  affiliation String?  @default("")
+    questionId  String   @id
+    question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    stream      STREAM   @default(PG)
+    year        Int
+    category    String?  @default("")
+    affiliation String?  @default("")
 }
 
 // TESTS ------------------------------------------------------------------------------
 model CustomTest {
-  id    String  @id @default(cuid())
-  name  String
-  slug  String  @default("test")
-  image String? @default("")
+    id    String  @id @default(cuid())
+    name  String
+    slug  String  @default("test")
+    image String? @default("")
 
-  type TypeOfTest @default(MODEL)
-  mode ModeOfTest @default(ALL)
+    // all tests are custom tests -- a custom test will be created with every test 
+    type TypeOfTest @default(MODEL)
 
-  createdById String
-  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+    // mode is how user access the custom tests -- 
+    // if premium user created it, it will be USER
+    // if it is created by non premium users, it will be PUBLIC
+    // if it is created for all -- by admins, it will be ALL
+    mode ModeOfTest @default(ALL)
 
-  archive Boolean @default(false)
+    createdById String
+    createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
-  usersConnected String[] @default([])
-  keysUsed       String[] @default([])
-  date           DateTime @default(now())
+    archive Boolean @default(false)
 
-  questions     String[]
-  usersAttended UserScore[]
-  testAnalytic  TestAnalytic[]
+    usersConnected String[] @default([])
+    keysUsed       String[] @default([])
+    date           DateTime @default(now())
 
-  pastPaper PastPaper?
+    questions     String[]
+    usersAttended UserScore[]
+    testAnalytic  TestAnalytic[]
+
+    pastPaper PastPaper?
 }
 
 // to store past papers 
 model PastPaper {
-  customTestId String     @id
-  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
-  stream       STREAM     @default(PG)
-  year         Int
-  category     String?    @default("")
-  affiliation  String?    @default("")
+    customTestId String     @id
+    customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
+    stream       STREAM     @default(PG)
+    year         Int
+    category     String?    @default("")
+    affiliation  String?    @default("")
 }
 
 // for leaderboards
 model UserScore {
-  id         String @id @default(cuid())
-  username   String
-  totalScore Float  @default(0)
+    id         String @id @default(cuid())
+    username   String
+    totalScore Float  @default(0)
 
-  customTestId String
-  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
+    customTestId String
+    customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
 }
 
 model TestAnalytic {
-  id String @id @default(cuid())
+    id String @id @default(cuid())
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  customTestId String
-  customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
+    customTestId String
+    customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
 
-  testQuestionAnswer TestQuestionAnswer[]
+    testQuestionAnswer TestQuestionAnswer[]
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
 }
 
 // to store questions and answers (from users after tests) for above testanalytics
 model TestQuestionAnswer {
-  id         String   @id @default(cuid())
-  questionId String
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    id         String   @id @default(cuid())
+    questionId String
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  userAnswer String
+    userAnswer String
 
-  testAnalyticId String
-  testAnalytic   TestAnalytic @relation(fields: [testAnalyticId], references: [id], onDelete: Cascade)
+    testAnalyticId String
+    testAnalytic   TestAnalytic @relation(fields: [testAnalyticId], references: [id], onDelete: Cascade)
 }
 
 // FEEDBACK ------------------------------------------------
 model Feedback {
-  id      String  @id @default(cuid())
-  name    String
-  email   String
-  message String
-  image   String?
+    id      String  @id @default(cuid())
+    name    String
+    email   String
+    message String
+    image   String?
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
 }
 
 // FEEDBACK ------------------------------------------------
 model SubscriptionRequest {
-  id    String @id @default(cuid())
-  name  String
-  email String
-  phone String
+    id    String @id @default(cuid())
+    name  String
+    email String
+    phone String
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
 }
