@@ -6,6 +6,7 @@ import * as TestsServices from './tests.services';
 import { createCustomTestByUserValidation, createCustomTestValidation, createPastTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
 import { ModeOfTest, TypeOfTest } from '@prisma/client';
 import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, updateIsPastQuestion } from '../questions/questions.services';
+import prisma from '../utils/prisma';
 
 const router = express.Router();
 type TypedRequestBody<T> = Request<{}, {}, T>;
@@ -59,7 +60,6 @@ router.post("/create-custom-tests", checkModerator, createCustomTestValidation, 
 router.post("/create-past-tests", checkModerator, createPastTestValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
     try {
 
-        console.log(request.body.category)
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
@@ -71,6 +71,7 @@ router.post("/create-past-tests", checkModerator, createPastTestValidation, asyn
         }
 
         const questions = request.body.questions
+
         const questionsIds = await addMultipleQuestionsForDifferentSubjectAndChapter(questions, createdById)
         if (!questionsIds || questions.length === 0) {
             return response.status(400).json({ message: 'Can not process the given questions' });
@@ -103,7 +104,6 @@ router.post("/create-past-tests", checkModerator, createPastTestValidation, asyn
             stream: stream,
             customTestId: newCustomTestId
         }
-
         const updatedIsPastQuestions = await updateIsPastQuestion(pastTestData, questionsIds)
         if (!updatedIsPastQuestions) {
             return response.status(400).json({ data: null, message: "Unable to update the past questions" })
@@ -117,6 +117,7 @@ router.post("/create-past-tests", checkModerator, createPastTestValidation, asyn
 
         return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
     } catch (error: any) {
+        console.log("🚀 ~ router.post ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });
@@ -177,7 +178,78 @@ router.post(
         }
     });
 
+// create daily tests -- normal custom tests but will of type DAILY_TEST and will be fetched daily
+router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, response: Response) => {
+    try {
 
+        const admin = await prisma.user.findFirst({
+            where: {
+                role: "SAJID"
+            }
+        })
+
+        if (!admin) {
+            return response.status(400).json({ data: null, message: 'Noooops No Test' });
+        }
+
+        const createdById = admin.id
+        if (!createdById) {
+            return response.status(400).json({ data: null, message: 'Unauthorized' });
+        }
+
+        const limit = 50;
+
+        const questionsIds = await getQuestionsIds(Number(limit))
+        if (!questionsIds || questionsIds.length === 0) {
+            return null
+        }
+
+        const date = new Date();
+        const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+        const slug = `dt-${formattedDate}`;
+        const name = `Daily Test - ${formattedDate}`
+        console.log(slug);
+
+        const isDailyTestAlreadyExist = await TestsServices.isDailyTestSlugExist(slug)
+        console.log(isDailyTestAlreadyExist);
+        if (isDailyTestAlreadyExist) {
+            return response.status(400).json({ data: null, message: 'Daily Test already exist' });
+        }
+
+        const data: TcreateCustomTest = {
+            name: name,
+            slug: slug,
+            createdById: createdById,
+            mode: "ALL",
+            type: "DAILY_TEST",
+            questions: questionsIds
+        }
+
+        const newCustomTestId = await TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === null) {
+            return response.status(404).json({ data: null, message: "Custom test not found" })
+        }
+
+        return response.status(201).json({ data: newCustomTestId, message: `${slug} test created` });
+    } catch (error: any) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+router.get("/get-daily-test", async (request: Request, response: Response) => {
+    try {
+        const date = new Date().toLocaleDateString('en-GB');
+        const slug = `dt-${date}`
+        const dailyTest = await TestsServices.getDailyTestBySlug(slug);
+        if (!dailyTest) {
+            return response.status(404).json({ data: null, message: "Daily test not found" })
+        }
+        return response.status(201).json({ data: dailyTest, message: `Daily Test ${dailyTest.name} found` });
+    } catch (error: any) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
 
 
 router.get("/get-types-of-tests", async (request: Request, response: Response) => {

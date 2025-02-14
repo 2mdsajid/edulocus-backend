@@ -5,6 +5,7 @@ import express, { Request, Response } from "express";
 import questionsRouter from "./questions/questions.routes";
 import testsRouter from "./tests/tests.routes";
 import usersRouter from "./users/users.routes";
+import googleRouter from "./google/google.routes";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(cors()); // To avoid cross-origin blocking
 
 // Routes
 app.use("/tests", testsRouter);
+app.use("/google", googleRouter)
 app.use("/users", usersRouter);
 app.use("/questions", questionsRouter);
 
@@ -38,6 +40,7 @@ app.get("/", async (req: Request, res: Response): Promise<any> => {
 });
 
 const PORT: number = parseInt(process.env.PORT as string, 10) || 3002;
+
 app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+  console.log(`Listening http://localhost:${PORT}/`);
 });

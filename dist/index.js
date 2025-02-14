@@ -41,6 +41,7 @@ const express_1 = __importDefault(require("express"));
 const questions_routes_1 = __importDefault(require("./questions/questions.routes"));
 const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
 const users_routes_1 = __importDefault(require("./users/users.routes"));
+const google_routes_1 = __importDefault(require("./google/google.routes"));
 dotenv.config();
 if (!process.env.PORT) {
     console.log("Please specify port number ");
@@ -53,6 +54,7 @@ app.use(express_1.default.urlencoded({ limit: "50mb", extended: true })); // For
 app.use((0, cors_1.default)()); // To avoid cross-origin blocking
 // Routes
 app.use("/tests", tests_routes_1.default);
+app.use("/google", google_routes_1.default);
 app.use("/users", users_routes_1.default);
 app.use("/questions", questions_routes_1.default);
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -68,5 +70,5 @@ app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 }));
 const PORT = parseInt(process.env.PORT, 10) || 3002;
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
+    console.log(`Listening http://localhost:${PORT}/`);
 });

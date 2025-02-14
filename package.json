@@ -14,6 +14,7 @@
   "author": "c0mrad1",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^5.20.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -23,7 +24,7 @@
     "lucide-react": "^0.453.0",
     "prisma-extension-random": "^0.2.2",
     "ts-node": "^10.9.2",
-    "zod": "^3.23.8"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.15",
