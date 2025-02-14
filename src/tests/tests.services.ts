@@ -83,6 +83,17 @@ export const createChapterWiseCustomTestByUser = async (customTestData: TcreateC
     return newCustomTest.id
 }
 
+export const isDailyTestSlugExist = async (slug: string): Promise<boolean> => {
+    const dailyTest = await prisma.customTest.findFirst({
+        where: {
+            slug,
+            type:"DAILY_TEST"
+        }
+    });
+    if (!dailyTest) return false;
+    return true
+}
+
 export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWithQuestions | null> => {
     const customTest = await prisma.customTest.findFirst({
         where: { id },
@@ -131,6 +142,60 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 
     return modifiedCustomTest;
 };
+
+
+export const getDailyTestBySlug = async (slug: string): Promise<TSingleCustomTestWithQuestions | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: {
+            slug: slug
+        },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            createdBy: { select: { name: true } },
+            questions: true
+        }
+    })
+
+    if (!customTest) return null;
+
+    const questions = await prisma.question.findMany({
+        where: { id: { in: customTest.questions } },
+        select: {
+            id: true,
+            question: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
+            answer: true,
+            explanation: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            difficulty: true,
+        }
+    });
+
+    const modifiedQuestions = questions.map((q) => ({
+        ...q,
+        options: q.options || { a: "", b: "", c: "", d: "" }
+    }));
+
+    const modifiedCustomTest = {
+        ...customTest,
+        createdBy: customTest.createdBy.name,
+        fetchedQuestions: modifiedQuestions
+    };
+
+    return modifiedCustomTest;
+
+}
 
 export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMetadata | null> => {
     const customTest = await prisma.customTest.findFirst({
@@ -182,7 +247,7 @@ export const getAllTestsByType = async (type: TTypeOfTest): Promise<TBaseCustomT
             date: true,
             questions: true,
             pastPaper: {
-                select:{
+                select: {
                     stream: true,
                     category: true,
                     year: true,
@@ -204,7 +269,7 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
             date: true,
             questions: true,
             pastPaper: {
-                select:{
+                select: {
                     stream: true,
                     category: true,
                     year: true,
@@ -323,8 +388,8 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
 
     const scoreParametersData = [
         { name: 'correct', value: totalCorrectAnswers, total: totalQuestionsAttempt, fill: `var(--color-correct)` },
-        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: `var(--color-incorrect)`  },
-        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)`  },
+        { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: `var(--color-incorrect)` },
+        { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)` },
     ]
 
     const analyticData: TDashboardAnalyticData = {

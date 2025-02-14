@@ -648,7 +648,7 @@ exports.STREAM_HIERARCHY = [
         categories: [
             { name: "NMCLE", affiliations: ["NMCLE"] },
             { name: "USMLE", affiliations: [] },
-            { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS", "CEE"] }
+            { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS", "NAMS", "CEE"] }
         ]
     },
     {

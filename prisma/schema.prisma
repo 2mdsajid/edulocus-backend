@@ -37,6 +37,7 @@ enum TypeOfTest {
     CHAPTER_WISE
     TOPIC_WISE
     CUSTOM
+    DAILY_TEST
     UNIT_WISE
     DIFFICULTY_BASED
     RANDOM

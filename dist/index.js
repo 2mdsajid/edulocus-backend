@@ -68,5 +68,5 @@ app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 }));
 const PORT = parseInt(process.env.PORT, 10) || 3002;
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
+    console.log(`Listening http://localhost:${PORT}/`);
 });

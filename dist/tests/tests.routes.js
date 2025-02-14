@@ -41,6 +41,7 @@ const middleware_1 = require("../utils/middleware");
 const TestsServices = __importStar(require("./tests.services"));
 const tests_validators_1 = require("./tests.validators");
 const questions_services_1 = require("../questions/questions.services");
+const prisma_1 = __importDefault(require("../utils/prisma"));
 const router = express_1.default.Router();
 // Create a new custom test
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -84,7 +85,6 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
 router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_1.createPastTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        console.log(request.body.category);
         const errors = (0, express_validator_1.validationResult)(request);
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
@@ -173,6 +173,68 @@ router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, t
         else {
             return response.status(400).json({ data: null, message: ` No Specfied Type Creatable` });
         }
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// create daily tests -- normal custom tests but will of type DAILY_TEST and will be fetched daily
+router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const admin = yield prisma_1.default.user.findFirst({
+            where: {
+                role: "SAJID"
+            }
+        });
+        if (!admin) {
+            return response.status(400).json({ data: null, message: 'Noooops No Test' });
+        }
+        const createdById = admin.id;
+        if (!createdById) {
+            return response.status(400).json({ data: null, message: 'Unauthorized' });
+        }
+        const limit = 50;
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit));
+        if (!questionsIds || questionsIds.length === 0) {
+            return null;
+        }
+        const date = new Date();
+        const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+        const slug = `dt-${formattedDate}`;
+        const name = `Daily Test - ${formattedDate}`;
+        console.log(slug);
+        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
+        console.log(isDailyTestAlreadyExist);
+        if (isDailyTestAlreadyExist) {
+            return response.status(400).json({ data: null, message: 'Daily Test already exist' });
+        }
+        const data = {
+            name: name,
+            slug: slug,
+            createdById: createdById,
+            mode: "ALL",
+            type: "DAILY_TEST",
+            questions: questionsIds
+        };
+        const newCustomTestId = yield TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === null) {
+            return response.status(404).json({ data: null, message: "Custom test not found" });
+        }
+        return response.status(201).json({ data: newCustomTestId, message: `${slug} test created` });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get("/get-daily-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const date = new Date().toLocaleDateString('en-GB');
+        const slug = `dt-${date}`;
+        const dailyTest = yield TestsServices.getDailyTestBySlug(slug);
+        if (!dailyTest) {
+            return response.status(404).json({ data: null, message: "Daily test not found" });
+        }
+        return response.status(201).json({ data: dailyTest, message: `Daily Test ${dailyTest.name} found` });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

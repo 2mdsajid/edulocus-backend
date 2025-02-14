@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getCustomTestById = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -91,6 +91,18 @@ const createChapterWiseCustomTestByUser = (customTestData, subject, chapter) => 
     return newCustomTest.id;
 });
 exports.createChapterWiseCustomTestByUser = createChapterWiseCustomTestByUser;
+const isDailyTestSlugExist = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+    const dailyTest = yield prisma_1.default.customTest.findFirst({
+        where: {
+            slug,
+            type: "DAILY_TEST"
+        }
+    });
+    if (!dailyTest)
+        return false;
+    return true;
+});
+exports.isDailyTestSlugExist = isDailyTestSlugExist;
 const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: { id },
@@ -130,6 +142,47 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
     return modifiedCustomTest;
 });
 exports.getCustomTestById = getCustomTestById;
+const getDailyTestBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.findFirst({
+        where: {
+            slug: slug
+        },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            createdBy: { select: { name: true } },
+            questions: true
+        }
+    });
+    if (!customTest)
+        return null;
+    const questions = yield prisma_1.default.question.findMany({
+        where: { id: { in: customTest.questions } },
+        select: {
+            id: true,
+            question: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
+            answer: true,
+            explanation: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            difficulty: true,
+        }
+    });
+    const modifiedQuestions = questions.map((q) => (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" } })));
+    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, fetchedQuestions: modifiedQuestions });
+    return modifiedCustomTest;
+});
+exports.getDailyTestBySlug = getDailyTestBySlug;
 const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: {
