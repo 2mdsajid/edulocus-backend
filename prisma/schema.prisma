@@ -29,6 +29,20 @@ enum ModeOfTest {
     ALL //created for all users like model tests
 }
 
+// for group members
+enum GroupRole {
+    MEMBER
+    MODERATOR
+    ADMIN
+}
+
+// for group members
+enum MemberStatus {
+    ACTIVE
+    INACTIVE
+    BANNED
+}
+
 // different types of tests that is available
 // amed in /lib/global.d.ts in FE as well
 enum TypeOfTest {
@@ -54,7 +68,7 @@ enum TypeOfTest {
 // USER ------------------------------------------------------------
 model User {
     id           String   @id @default(uuid())
-    googleId     String?   @unique
+    googleId     String?  @unique
     name         String
     email        String   @unique
     password     String?
@@ -73,6 +87,7 @@ model User {
     payments           Payment[]
     customTestsCreated CustomTest[]
     testAnalytics      TestAnalytic[]
+    GroupMember        GroupMember[]
 }
 
 model Payment {
@@ -83,6 +98,40 @@ model Payment {
 
     userId String
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Group
+model Group {
+    id          String    @id @default(uuid())
+    name        String
+    description String?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime? @updatedAt
+
+    // Members of the group with their roles
+    members GroupMember[]
+
+    // Custom tests created by moderators in the group
+    customTests CustomTest[]
+
+    // Additional fields like image, slug, etc., can be added as needed
+    image String?
+    slug  String  @unique
+}
+
+model GroupMember {
+    id       String    @id @default(uuid())
+    userId   String
+    user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    groupId  String
+    group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+    groupRole     GroupRole @default(MEMBER)
+    joinedAt DateTime  @default(now())
+
+    // Additional fields like permissions, status, etc., can be added as needed
+    status MemberStatus @default(ACTIVE)
+
+    @@unique([userId, groupId])
 }
 
 // QUESTIONS -----------------------------------------------------------
@@ -211,6 +260,8 @@ model CustomTest {
     testAnalytic  TestAnalytic[]
 
     pastPaper PastPaper?
+    Group     Group?     @relation(fields: [groupId], references: [id])
+    groupId   String?
 }
 
 // to store past papers 

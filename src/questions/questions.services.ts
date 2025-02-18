@@ -268,6 +268,12 @@ export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: 
     return selectedQuestions.map(question => question.id);
 };
 
+// get total questions count
+export const getTotalQuestionsCount = async (): Promise<number | null> => {
+    const totalQuestions = await prisma.question.count()
+    return totalQuestions ?? null
+};
+
 // get syllabus
 export const getSyllabus = async (): Promise<TPGSyllabus | null> => {
     return PG_SYLLABUS ?? null

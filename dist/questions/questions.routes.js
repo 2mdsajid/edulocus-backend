@@ -36,10 +36,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const questions_validators_1 = require("./questions.validators");
 const express_validator_1 = require("express-validator");
 const QuestionServices = __importStar(require("../questions/questions.services"));
 const middleware_1 = require("../utils/middleware");
+const questions_validators_1 = require("./questions.validators");
 const router = express_1.default.Router();
 router.post('/add-single-question', middleware_1.checkModerator, questions_validators_1.addSingleQuestionValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -62,6 +62,7 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.
     try {
         const errors = (0, express_validator_1.validationResult)(request);
         if (!errors.isEmpty()) {
+            console.log(request.body);
             return response.status(400).json({ message: errors.array()[0].msg });
         }
         if (!request.user || request.user === undefined || request.user === null) {
@@ -123,6 +124,19 @@ router.get('/get-total-questions-per-subject', (request, response) => __awaiter(
             return response.status(500).json({ data: [], message: 'No Questions Found' });
         }
         return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// make a similar route t get count of total questions
+router.get('/get-total-questions-count', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const totalQuestions = yield QuestionServices.getTotalQuestionsCount();
+        if (!totalQuestions) {
+            return response.status(500).json({ data: null, message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: totalQuestions, message: 'Question Found' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

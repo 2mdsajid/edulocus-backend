@@ -133,6 +133,7 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
         return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
     }
     catch (error) {
+        console.log("🚀 ~ router.post ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

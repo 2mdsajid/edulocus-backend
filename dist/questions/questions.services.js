@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const questions_methods_1 = require("./questions.methods");
@@ -246,6 +246,12 @@ const getQuestionsBySubjectAndChapter = (subject, chapter, limit) => __awaiter(v
     return selectedQuestions.map(question => question.id);
 });
 exports.getQuestionsBySubjectAndChapter = getQuestionsBySubjectAndChapter;
+// get total questions count
+const getTotalQuestionsCount = () => __awaiter(void 0, void 0, void 0, function* () {
+    const totalQuestions = yield prisma_1.default.question.count();
+    return totalQuestions !== null && totalQuestions !== void 0 ? totalQuestions : null;
+});
+exports.getTotalQuestionsCount = getTotalQuestionsCount;
 // get syllabus
 const getSyllabus = () => __awaiter(void 0, void 0, void 0, function* () {
     return global_data_1.PG_SYLLABUS !== null && global_data_1.PG_SYLLABUS !== void 0 ? global_data_1.PG_SYLLABUS : null;

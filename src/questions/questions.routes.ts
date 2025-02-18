@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express';
-import { addMultipleQuestionsValidation, addSingleQuestionValidation } from './questions.validators';
 import { validationResult } from 'express-validator';
-import * as QuestionServices from '../questions/questions.services'
+import * as QuestionServices from '../questions/questions.services';
 import { checkModerator, RequestWithUserIdAndRole } from '../utils/middleware';
-import { TBaseUser } from '../users/users.schema';
+import { addMultipleQuestionsValidation, addSingleQuestionValidation } from './questions.validators';
 
 const router = express.Router();
 
@@ -31,6 +30,7 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerato
     try {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
+            console.log(request.body)
             return response.status(400).json({ message: errors.array()[0].msg });
         }
 
@@ -101,6 +101,19 @@ router.get('/get-total-questions-per-subject', async (request: Request, response
             return response.status(500).json({ data: [], message: 'No Questions Found' })
         }
         return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
+// make a similar route t get count of total questions
+router.get('/get-total-questions-count', async (request: Request, response: Response) => {
+    try {
+        const totalQuestions = await QuestionServices.getTotalQuestionsCount()
+        if (!totalQuestions) {
+            return response.status(500).json({ data: null, message: 'No Questions Found' })
+        }
+        return response.status(200).json({ data: totalQuestions, message: 'Question Found' });
     } catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }

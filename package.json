@@ -5,11 +5,11 @@
   "main": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/index.ts",
+    "dev": "bun --hot src/index.ts",
     "start": "npx prisma migrate && npx prisma generate && node dist/index.js",
-    "build":"tsc",
-    "seed": "ts-node scripts/seed.ts",
-    "db": "npx prisma db push && npx prisma generate"
+    "build": "tsc",
+    "seed": "bun scripts/seed.ts",
+    "db": "bun prisma db push && bun prisma generate"
   },
   "author": "c0mrad1",
   "license": "ISC",
