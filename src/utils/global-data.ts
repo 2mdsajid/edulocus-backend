@@ -654,7 +654,7 @@ export const STREAM_HIERARCHY: TStreamHierarchy[] = [
     {
         name: "PG",
         categories: [
-            { name: "NMCLE", affiliations: ["NMCLE"] },
+            { name: "NMCLE", affiliations: ["CHAITRA","KARTIK","MANGSIR"] }, //adding months coz NMCLE has no affiliation but different months of same year -- might think better something later on
             { name: "USMLE", affiliations: [] },
             { name: "MDMS", affiliations: ["IOM", "KU", "PAHS", "BPKIHS","NAMS","CEE"] }
         ]

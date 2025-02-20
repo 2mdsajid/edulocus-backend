@@ -144,9 +144,14 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
 
         if (!newQuestion) return null;
 
+        const {a, b, c, d} = options
+
         const newOption = await prisma.option.create({
             data: {
-                ...options,
+                a,
+                b,
+                c,
+                d,
                 questionId: newQuestion.id,
             },
         });

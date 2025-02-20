@@ -6,6 +6,7 @@ import questionsRouter from "./questions/questions.routes";
 import testsRouter from "./tests/tests.routes";
 import usersRouter from "./users/users.routes";
 import googleRouter from "./google/google.routes";
+import mailRouter from "./mail/mail.routes";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/tests", testsRouter);
 app.use("/google", googleRouter)
 app.use("/users", usersRouter);
 app.use("/questions", questionsRouter);
+app.use("/mail", mailRouter);
 
 app.get("/", async (req: Request, res: Response): Promise<any> => {
   try {

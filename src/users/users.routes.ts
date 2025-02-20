@@ -3,6 +3,8 @@ import { validationResult } from 'express-validator';
 import { getUserSession, RequestWithUserIdAndRole } from '../utils/middleware';
 import * as UserServices from './users.services';
 import { changeRoleValidation, createUserValidation, generateAuthTokenValidation, loginUserValidation, loginWithLuciaGoogleUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
+import { sendEmail } from '../mail/mail.services';
+import { sendFeedbackMailToAdmin, sendSubscriptionRequestMailToAdmin, sendSubscriptionRequestMailToUser, sendWelcomeMailToUser } from '../mail/mail.templates';
 
 
 const router = express.Router();
@@ -13,8 +15,6 @@ router.post('/signup', createUserValidation, async (request: Request, response: 
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
         }
-
-        // const validatedData = await createUserSchema.parseAsync(request.body);
 
         const existingUserWithEmail = await UserServices.checkEmailExist(request.body.email)
         if (existingUserWithEmail) return response.status(400).json({ message: 'An User with email already exist' });
@@ -28,9 +28,6 @@ router.post('/signup', createUserValidation, async (request: Request, response: 
         })
         return response.status(200).json({ data: loggedInUser, message: 'User Created' });
     } catch (error) {
-        // if (error instanceof z.ZodError) {
-        //     return response.status(400).json({ message: error.errors[0].message });
-        // }
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
@@ -90,6 +87,15 @@ router.post('/lucia-google-auth', loginWithLuciaGoogleUserValidation, async (req
             return response.status(404).json({ data: null, message: 'Incorrect credentials' });
         }
 
+        const sendWelcomeEmail = sendEmail({
+            to: request.body.email,
+            subject: 'Welcome',
+            html: sendWelcomeMailToUser({
+                name: request.body.name,
+                email: request.body.email,
+            })
+        })
+
         // Send the user in response
         return response.status(200).json({ data: newUser, message: 'Logged in successfully!' });
 
@@ -103,20 +109,20 @@ router.post('/generate-auth-token', generateAuthTokenValidation, async (request:
     try {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
-            return response.status(400).json({data:null, message: errors.array()[0].msg });
+            return response.status(400).json({ data: null, message: errors.array()[0].msg });
         }
 
         const existingUserWithEmail = await UserServices.checkEmailExist(request.body.email);
         if (!existingUserWithEmail) {
-            return response.status(404).json({data:null, message: 'Incorrect credentials' });
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
         }
 
         const authToken = await UserServices.generateAuthToken(request.body);
         if (!authToken) {
-            return response.status(404).json({data:null, message: 'Incorrect credentials' });
+            return response.status(404).json({ data: null, message: 'Incorrect credentials' });
         }
 
-        return response.status(200).json({data:authToken, message: 'Logged in successfully!' });
+        return response.status(200).json({ data: authToken, message: 'Logged in successfully!' });
     } catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
@@ -152,6 +158,17 @@ router.post('/create-user-feedback', userFeedbackValidation, async (request: Req
         }
         const newUserFeedbackId = await UserServices.createUserFeedback(request.body)
         if (!newUserFeedbackId) return response.status(400).json({ message: 'Can not create feedback' });
+
+        const sendFeedbackEmail =  sendEmail({
+            to: request.body.email,
+            subject: 'Feedback',
+            html: sendFeedbackMailToAdmin({
+                name: request.body.name,
+                email: request.body.email,
+                message: request.body.message
+            })
+        })
+
         return response.status(200).json({ data: newUserFeedbackId, message: 'Feedback received successfully!' });
     } catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
@@ -170,6 +187,22 @@ router.post('/create-subscription-request', subscriptionRequestValidation, async
         if (!subscriptionId) {
             return response.status(500).json({ message: 'Failed to create subscription' });
         }
+
+        const sendSubscriptionRequestEmail =  sendEmail({
+            to: request.body.email,
+            subject: 'Subscription Request',
+            html: sendSubscriptionRequestMailToUser(request.body.email)
+        })
+
+        const sentRequestToAdmin =  sendEmail({
+            to: process.env.ADMIN_EMAIL as string,
+            subject: 'Subscription Request',
+            html: sendSubscriptionRequestMailToAdmin({
+                name: request.body.name,
+                email: request.body.email,
+                phone: request.body.phone
+            })
+        })
 
         return response.status(201).json({ data: subscriptionId, message: 'Subscription created successfully' });
     } catch (error) {

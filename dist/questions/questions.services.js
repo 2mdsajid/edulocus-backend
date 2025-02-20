@@ -131,8 +131,15 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         });
         if (!newQuestion)
             return null;
+        const { a, b, c, d } = options;
         const newOption = yield prisma_1.default.option.create({
-            data: Object.assign(Object.assign({}, options), { questionId: newQuestion.id }),
+            data: {
+                a,
+                b,
+                c,
+                d,
+                questionId: newQuestion.id,
+            },
         });
         if (!newOption)
             return null;

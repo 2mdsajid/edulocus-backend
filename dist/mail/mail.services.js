@@ -31,46 +31,35 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const cors_1 = __importDefault(require("cors"));
-const dotenv = __importStar(require("dotenv"));
-const express_1 = __importDefault(require("express"));
-const questions_routes_1 = __importDefault(require("./questions/questions.routes"));
-const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
-const users_routes_1 = __importDefault(require("./users/users.routes"));
-const google_routes_1 = __importDefault(require("./google/google.routes"));
-const mail_routes_1 = __importDefault(require("./mail/mail.routes"));
-dotenv.config();
-if (!process.env.PORT) {
-    console.log("Please specify port number ");
-    process.exit(1);
-}
-const app = (0, express_1.default)();
-// Increase payload size limit (e.g., 50MB)
-app.use(express_1.default.json({ limit: "50mb" })); // For JSON payloads
-app.use(express_1.default.urlencoded({ limit: "50mb", extended: true })); // For URL-encoded payloads
-app.use((0, cors_1.default)()); // To avoid cross-origin blocking
-// Routes
-app.use("/tests", tests_routes_1.default);
-app.use("/google", google_routes_1.default);
-app.use("/users", users_routes_1.default);
-app.use("/questions", questions_routes_1.default);
-app.use("/mail", mail_routes_1.default);
-app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.sendEmail = void 0;
+const nodemailer = __importStar(require("nodemailer"));
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: process.env.SECURE === 'true', // Use `true` for TLS, `false` for STARTTLS
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+const sendEmail = (sendMailData) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return res.status(200).json({
-            message: "Hello, please do not cause unnecessary API calls",
-        });
+        const { to, subject, html } = sendMailData;
+        const mailOptions = {
+            from: process.env.SMTP_USER,
+            to,
+            subject,
+            html,
+        };
+        const info = yield transporter.sendMail(mailOptions);
+        if (!info)
+            return null;
+        return info;
     }
     catch (error) {
-        console.error(error); // Log the error for debugging
-        return res.status(500).json({ message: error.message });
+        console.log("🚀 ~ sendEmail ~ error:", error);
+        return null;
     }
-}));
-const PORT = parseInt(process.env.PORT, 10) || 3002;
-app.listen(PORT, () => {
-    console.log(`Listening http://localhost:${PORT}/`);
 });
+exports.sendEmail = sendEmail;

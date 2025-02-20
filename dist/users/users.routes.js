@@ -40,6 +40,8 @@ const express_validator_1 = require("express-validator");
 const middleware_1 = require("../utils/middleware");
 const UserServices = __importStar(require("./users.services"));
 const users_validators_1 = require("./users.validators");
+const mail_services_1 = require("../mail/mail.services");
+const mail_templates_1 = require("../mail/mail.templates");
 const router = express_1.default.Router();
 router.post('/signup', users_validators_1.createUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -47,7 +49,6 @@ router.post('/signup', users_validators_1.createUserValidation, (request, respon
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
         }
-        // const validatedData = await createUserSchema.parseAsync(request.body);
         const existingUserWithEmail = yield UserServices.checkEmailExist(request.body.email);
         if (existingUserWithEmail)
             return response.status(400).json({ message: 'An User with email already exist' });
@@ -60,9 +61,6 @@ router.post('/signup', users_validators_1.createUserValidation, (request, respon
         return response.status(200).json({ data: loggedInUser, message: 'User Created' });
     }
     catch (error) {
-        // if (error instanceof z.ZodError) {
-        //     return response.status(400).json({ message: error.errors[0].message });
-        // }
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -114,6 +112,14 @@ router.post('/lucia-google-auth', users_validators_1.loginWithLuciaGoogleUserVal
         if (!newUser) {
             return response.status(404).json({ data: null, message: 'Incorrect credentials' });
         }
+        const sendWelcomeEmail = (0, mail_services_1.sendEmail)({
+            to: request.body.email,
+            subject: 'Welcome',
+            html: (0, mail_templates_1.sendWelcomeMailToUser)({
+                name: request.body.name,
+                email: request.body.email,
+            })
+        });
         // Send the user in response
         return response.status(200).json({ data: newUser, message: 'Logged in successfully!' });
     }
@@ -170,6 +176,15 @@ router.post('/create-user-feedback', users_validators_1.userFeedbackValidation, 
         const newUserFeedbackId = yield UserServices.createUserFeedback(request.body);
         if (!newUserFeedbackId)
             return response.status(400).json({ message: 'Can not create feedback' });
+        const sendFeedbackEmail = (0, mail_services_1.sendEmail)({
+            to: request.body.email,
+            subject: 'Feedback',
+            html: (0, mail_templates_1.sendFeedbackMailToAdmin)({
+                name: request.body.name,
+                email: request.body.email,
+                message: request.body.message
+            })
+        });
         return response.status(200).json({ data: newUserFeedbackId, message: 'Feedback received successfully!' });
     }
     catch (error) {
@@ -186,6 +201,20 @@ router.post('/create-subscription-request', users_validators_1.subscriptionReque
         if (!subscriptionId) {
             return response.status(500).json({ message: 'Failed to create subscription' });
         }
+        const sendSubscriptionRequestEmail = (0, mail_services_1.sendEmail)({
+            to: request.body.email,
+            subject: 'Subscription Request',
+            html: (0, mail_templates_1.sendSubscriptionRequestMailToUser)(request.body.email)
+        });
+        const sentRequestToAdmin = (0, mail_services_1.sendEmail)({
+            to: process.env.ADMIN_EMAIL,
+            subject: 'Subscription Request',
+            html: (0, mail_templates_1.sendSubscriptionRequestMailToAdmin)({
+                name: request.body.name,
+                email: request.body.email,
+                phone: request.body.phone
+            })
+        });
         return response.status(201).json({ data: subscriptionId, message: 'Subscription created successfully' });
     }
     catch (error) {
