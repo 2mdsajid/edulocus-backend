@@ -16,7 +16,7 @@ const express_1 = __importDefault(require("express"));
 const google_services_1 = require("../google/google.services");
 const middleware_1 = require("../utils/middleware");
 const router = express_1.default.Router();
-router.get('/ask-gemini', middleware_1.checkUserExists, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/ask-gemini', middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
         const userId = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
@@ -37,7 +37,7 @@ router.get('/ask-gemini', middleware_1.checkUserExists, (request, response) => _
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-chapter-and-subject-scores", middleware_1.checkUserExists, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-chapter-and-subject-scores", middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
         const userId = ((_a = request.user) === null || _a === void 0 ? void 0 : _a.id) || '4478afbe-1519-4eb5-8c61-ebe88af5504b';

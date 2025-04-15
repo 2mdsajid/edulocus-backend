@@ -1,11 +1,11 @@
 import express, { Response } from 'express';
 import { askGemini, getChapterAndSubjectScores, isUserLegibleForAiAsk } from '../google/google.services';
-import { checkUserExists, RequestWithUserIdAndRole } from '../utils/middleware';
+import { getUserSession, RequestExtended } from '../utils/middleware';
 
 
 const router = express.Router();
 
-router.get('/ask-gemini',checkUserExists, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.get('/ask-gemini',getUserSession, async (request: RequestExtended, response: Response) => {
     try {
         const userId = request.user?.id 
         if (!userId) {
@@ -25,7 +25,7 @@ router.get('/ask-gemini',checkUserExists, async (request: RequestWithUserIdAndRo
     }
 })
 
-router.get("/get-chapter-and-subject-scores",checkUserExists, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.get("/get-chapter-and-subject-scores",getUserSession, async (request: RequestExtended, response: Response) => {
     try {
         const userId = request.user?.id || '4478afbe-1519-4eb5-8c61-ebe88af5504b'
         if (!userId) {
