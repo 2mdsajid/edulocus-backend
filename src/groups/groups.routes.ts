@@ -1,11 +1,11 @@
 import express, { Response } from 'express';
-import { checkModerator, RequestWithUserIdAndRole } from '../utils/middleware';
+import { checkModerator, RequestExtended } from '../utils/middleware';
 import { groupAddMemberSchema, groupCreateSchema } from './groups.schema';
 import * as GroupServices from './groups.services';
 const router = express.Router();
 
 
-router.post('/create-group', checkModerator, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/create-group', checkModerator, async (request: RequestExtended, response: Response) => {
     try {
         const validationResult = groupCreateSchema.safeParse(request.body);
         if (!validationResult.success) {
@@ -29,7 +29,7 @@ router.post('/create-group', checkModerator, async (request: RequestWithUserIdAn
 })
 
 
-router.get('/get-all-groups', async (request: RequestWithUserIdAndRole, response: Response) => {
+router.get('/get-all-groups', async (request: RequestExtended, response: Response) => {
     try {
         const groups = await GroupServices.getAllGroups();
         if (!groups || groups.length === 0) {
@@ -42,7 +42,7 @@ router.get('/get-all-groups', async (request: RequestWithUserIdAndRole, response
 })
 
 // add member to group
-router.post('/add-member-to-group', checkModerator, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/add-member-to-group', checkModerator, async (request: RequestExtended, response: Response) => {
     try {
         const validationResult = groupAddMemberSchema.safeParse(request.body);
         if (!validationResult.success) {
@@ -54,8 +54,21 @@ router.post('/add-member-to-group', checkModerator, async (request: RequestWithU
         if (!userId) {
             return response.status(400).json({ data: null, message: 'User not found' });
         }
+        // const sendGroupInvititationEmail = sendEmail({
+        //     to: request.body.email,
+        //     subject: 'Invitation to join a group',
+        //     html: sendGroupInvitationMailToUser({
+        //         name: request.body.name,
+        //         email: request.body.email,
+        //         groupTitle: request.body.groupTitle
+        //     })
+        // })
+
 
         const groupId = await GroupServices.addMemberToGroup(request.body, userId)
+
+
+
         if (!groupId) {
             return response.status(400).json({ data: null, message: 'Group not found' });
         }
@@ -66,7 +79,7 @@ router.post('/add-member-to-group', checkModerator, async (request: RequestWithU
 })
 
 // delete a group
-// router.delete('/delete-group', checkModerator, async (request: RequestWithUserIdAndRole, response: Response) => {
+// router.delete('/delete-group', checkModerator, async (request: RequestExtended, response: Response) => {
 //     try {
 //         const groupId = request.body.groupId;
 //         if (!groupId) {

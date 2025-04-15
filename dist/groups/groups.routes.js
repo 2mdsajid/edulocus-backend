@@ -87,6 +87,15 @@ router.post('/add-member-to-group', middleware_1.checkModerator, (request, respo
         if (!userId) {
             return response.status(400).json({ data: null, message: 'User not found' });
         }
+        // const sendGroupInvititationEmail = sendEmail({
+        //     to: request.body.email,
+        //     subject: 'Invitation to join a group',
+        //     html: sendGroupInvitationMailToUser({
+        //         name: request.body.name,
+        //         email: request.body.email,
+        //         groupTitle: request.body.groupTitle
+        //     })
+        // })
         const groupId = yield GroupServices.addMemberToGroup(request.body, userId);
         if (!groupId) {
             return response.status(400).json({ data: null, message: 'Group not found' });
@@ -98,7 +107,7 @@ router.post('/add-member-to-group', middleware_1.checkModerator, (request, respo
     }
 }));
 // delete a group
-// router.delete('/delete-group', checkModerator, async (request: RequestWithUserIdAndRole, response: Response) => {
+// router.delete('/delete-group', checkModerator, async (request: RequestExtended, response: Response) => {
 //     try {
 //         const groupId = request.body.groupId;
 //         if (!groupId) {
