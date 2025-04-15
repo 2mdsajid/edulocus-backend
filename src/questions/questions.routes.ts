@@ -1,13 +1,15 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import * as QuestionServices from '../questions/questions.services';
-import { checkModerator, RequestWithUserIdAndRole } from '../utils/middleware';
+import { checkModerator, checkStreamMiddleware, RequestExtended } from '../utils/middleware';
 import { addMultipleQuestionsValidation, addSingleQuestionValidation } from './questions.validators';
+import { getStreams } from '../utils/functions';
+import { TStream } from '../utils/global-types';
 
 const router = express.Router();
 
 
-router.post('/add-single-question', checkModerator, addSingleQuestionValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/add-single-question', checkModerator, addSingleQuestionValidation, async (request: RequestExtended, response: Response) => {
     try {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
@@ -26,7 +28,7 @@ router.post('/add-single-question', checkModerator, addSingleQuestionValidation,
 })
 
 // add multiple questions from same chapter
-router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerator, addMultipleQuestionsValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerator, addMultipleQuestionsValidation, async (request: RequestExtended, response: Response) => {
     try {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
@@ -49,7 +51,7 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerato
 })
 
 // add multiple questions from different subject and chapter
-router.post('/add-multiple-question-for-different-subject-and-chapter', checkModerator, addMultipleQuestionsValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/add-multiple-question-for-different-subject-and-chapter', checkModerator, addMultipleQuestionsValidation, async (request: RequestExtended, response: Response) => {
     try {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
@@ -75,12 +77,17 @@ router.get('/get-questions', async (request: Request, response: Response) => {
     try {
         const limit = request.query.limit;
 
+        const stream = request.query.stream as TStream
+        if (!stream || !getStreams().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+
         // Improved limit check
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
 
-        const questionIds = await QuestionServices.getQuestionsIds(Number(limit));
+        const questionIds = await QuestionServices.getQuestionsIds(Number(limit), stream);
 
         if (!questionIds || questionIds.length === 0) {
             return response.status(404).json({ data: null, message: 'No Questions Found' });
@@ -94,9 +101,14 @@ router.get('/get-questions', async (request: Request, response: Response) => {
 });
 
 
-router.get('/get-total-questions-per-subject', async (request: Request, response: Response) => {
+// users will get this for their own stream
+router.get('/get-total-questions-per-subject',checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
     try {
-        const totalQuestionsPerSubject = await QuestionServices.getTotalQuestionsPerSubject()
+        if (!request.stream || !getStreams().includes(request.stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+
+        const totalQuestionsPerSubject = await QuestionServices.getTotalQuestionsPerSubject(request.stream)
         if (!totalQuestionsPerSubject || totalQuestionsPerSubject.length === 0) {
             return response.status(500).json({ data: [], message: 'No Questions Found' })
         }
@@ -105,6 +117,24 @@ router.get('/get-total-questions-per-subject', async (request: Request, response
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+// users will get this for their own stream
+router.get('/get-total-questions-per-subject-and-chapter',checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
+    try {
+        if (!request.stream || !getStreams().includes(request.stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+
+        const totalQuestionsPerSubject = await QuestionServices.getTotalQuestionsPerSubjectAndChapter(request.stream)
+        if (!totalQuestionsPerSubject) {
+            return response.status(500).json({ data: null, message: 'No Questions Found' })
+        }
+        return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
 
 // make a similar route t get count of total questions
 router.get('/get-total-questions-count', async (request: Request, response: Response) => {
@@ -119,21 +149,15 @@ router.get('/get-total-questions-count', async (request: Request, response: Resp
     }
 })
 
-router.get('/get-total-questions-per-subject-and-chapter', async (request: Request, response: Response) => {
-    try {
-        const totalQuestionsPerSubject = await QuestionServices.getTotalQuestionsPerSubjectAndChapter()
-        if (!totalQuestionsPerSubject) {
-            return response.status(500).json({ data: null, message: 'No Questions Found' })
-        }
-        return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
-    } catch (error) {
-        return response.status(500).json({ data: null, message: 'Internal Server Error' })
-    }
-})
 
 router.get('/get-syllabus', async (request: Request, response: Response) => {
     try {
-        const syllabus = await QuestionServices.getSyllabus()
+        const stream = request.query.stream as TStream
+        if (!stream || !getStreams().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+        
+        const syllabus = await QuestionServices.getSyllabus(stream)
         if (!syllabus) {
             return response.status(404).json({ data: null, message: 'No Syllabus Found' })
         }
@@ -158,7 +182,13 @@ router.get('/get-stream-hierarchy', async (request: Request, response: Response)
 
 router.get('/get-subjects', async (request: Request, response: Response) => {
     try {
-        const subjects = await QuestionServices.getSubjects()
+        const stream = request.query.stream as TStream
+        if (!stream || !getStreams().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+
+
+        const subjects = await QuestionServices.getSubjects(stream)
         if (!subjects || subjects.length === 0) {
             return response.status(404).json({ data: null, message: 'No Subjects Found' })
         }
@@ -167,6 +197,7 @@ router.get('/get-subjects', async (request: Request, response: Response) => {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
 
 // a route to read all the questions from the database and then download them in json format
 router.get('/download-questions', async (request: Request, response: Response) => {
@@ -182,6 +213,13 @@ router.get('/download-questions', async (request: Request, response: Response) =
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+
+
+
+
+
+
 
 
 

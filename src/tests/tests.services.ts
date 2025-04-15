@@ -4,14 +4,15 @@ import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import prisma from "../utils/prisma";
 import { calculateTotalQuestionsAttempt, calculateTotalCorrectAnswers, calculateTotalUnattemptQuestions, generateRecentTests, calculateAverageScorePerTest, calculateAverageScorePerQuestion, generateDailyTestProgress, getSubjectScoresForBarChart } from "./tests.methods";
 import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
-
+import { TStream } from "../utils/global-types";
 
 export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
-    const { name, slug, createdById, mode, questions, type } = customTestData;
+    const { name, slug, createdById, mode, questions, type, stream } = customTestData;
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
             slug,
+            stream,
             createdById,
             type,
             mode: mode || 'ALL',
@@ -47,14 +48,15 @@ export const createPastTest = async (testData: TCreatePastPaper): Promise<TBaseP
 
 
 export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string): Promise<string | null> => {
-    const { name, createdById, type, mode, limit } = customTestData;
-    const questions = await getQuestionsBySubject(subject, limit)
+    const { name, createdById, type, mode, limit, stream } = customTestData;
+    const questions = await getQuestionsBySubject(subject, limit, stream)
     if (!questions || questions.length === 0) return null;
 
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
             type,
+            stream,
             slug: name.toLowerCase().replace(/ /g, "_"),
             createdById,
             mode: mode || 'ALL',
@@ -66,13 +68,14 @@ export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateC
 }
 
 export const createChapterWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string, chapter: string): Promise<string | null> => {
-    const { name, createdById, type, mode, limit } = customTestData;
-    const questions = await getQuestionsBySubjectAndChapter(subject, chapter, limit)
+    const { name, createdById, type, mode, limit, stream } = customTestData;
+    const questions = await getQuestionsBySubjectAndChapter(subject, chapter, limit, stream)
     if (!questions || questions.length === 0) return null;
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
             type,
+            stream,
             slug: name.toLowerCase().replace(/ /g, "_"),
             createdById,
             mode: mode || 'ALL',
@@ -123,6 +126,7 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
             answer: true,
             explanation: true,
             subject: true,
+            stream: true,
             chapter: true,
             unit: true,
             difficulty: true,
@@ -177,6 +181,7 @@ export const getDailyTestBySlug = async (slug: string): Promise<TSingleCustomTes
             explanation: true,
             subject: true,
             chapter: true,
+            stream: true,
             unit: true,
             difficulty: true,
         }
@@ -236,10 +241,11 @@ export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMeta
     return modifiedTestData
 }
 
-export const getAllTestsByType = async (type: TTypeOfTest): Promise<TBaseCustomTest[] | []> => {
+export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Promise<TBaseCustomTest[] | []> => {
     const customTests = await prisma.customTest.findMany({
         where: {
-            type: type
+            type: type,
+            stream: stream
         },
         select: {
             name: true,

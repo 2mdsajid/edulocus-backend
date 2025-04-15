@@ -18,11 +18,12 @@ const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const tests_methods_1 = require("./tests.methods");
 const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, slug, createdById, mode, questions, type } = customTestData;
+    const { name, slug, createdById, mode, questions, type, stream } = customTestData;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,
             slug,
+            stream,
             createdById,
             type,
             mode: mode || 'ALL',
@@ -52,14 +53,15 @@ const createPastTest = (testData) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.createPastTest = createPastTest;
 const createSubjectWiseCustomTestByUser = (customTestData, subject) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, createdById, type, mode, limit } = customTestData;
-    const questions = yield (0, questions_services_1.getQuestionsBySubject)(subject, limit);
+    const { name, createdById, type, mode, limit, stream } = customTestData;
+    const questions = yield (0, questions_services_1.getQuestionsBySubject)(subject, limit, stream);
     if (!questions || questions.length === 0)
         return null;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,
             type,
+            stream,
             slug: name.toLowerCase().replace(/ /g, "_"),
             createdById,
             mode: mode || 'ALL',
@@ -72,14 +74,15 @@ const createSubjectWiseCustomTestByUser = (customTestData, subject) => __awaiter
 });
 exports.createSubjectWiseCustomTestByUser = createSubjectWiseCustomTestByUser;
 const createChapterWiseCustomTestByUser = (customTestData, subject, chapter) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, createdById, type, mode, limit } = customTestData;
-    const questions = yield (0, questions_services_1.getQuestionsBySubjectAndChapter)(subject, chapter, limit);
+    const { name, createdById, type, mode, limit, stream } = customTestData;
+    const questions = yield (0, questions_services_1.getQuestionsBySubjectAndChapter)(subject, chapter, limit, stream);
     if (!questions || questions.length === 0)
         return null;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,
             type,
+            stream,
             slug: name.toLowerCase().replace(/ /g, "_"),
             createdById,
             mode: mode || 'ALL',
@@ -132,6 +135,7 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
             answer: true,
             explanation: true,
             subject: true,
+            stream: true,
             chapter: true,
             unit: true,
             difficulty: true,
@@ -174,6 +178,7 @@ const getDailyTestBySlug = (slug) => __awaiter(void 0, void 0, void 0, function*
             explanation: true,
             subject: true,
             chapter: true,
+            stream: true,
             unit: true,
             difficulty: true,
         }
@@ -217,10 +222,11 @@ const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function
     return modifiedTestData;
 });
 exports.getCustomTestMetadata = getCustomTestMetadata;
-const getAllTestsByType = (type) => __awaiter(void 0, void 0, void 0, function* () {
+const getAllTestsByType = (type, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const customTests = yield prisma_1.default.customTest.findMany({
         where: {
-            type: type
+            type: type,
+            stream: stream
         },
         select: {
             name: true,

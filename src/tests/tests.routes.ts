@@ -1,133 +1,141 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { checkModerator, getSubscribedUserId, RequestWithUserIdAndRole, RequestWithUserIdAndSubscription } from '../utils/middleware';
+import { checkModerator, checkStreamMiddleware, getSubscribedUserId, RequestExtended } from '../utils/middleware';
 import { TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TTypeOfTest } from './tests.schema';
 import * as TestsServices from './tests.services';
 import { createCustomTestByUserValidation, createCustomTestValidation, createPastTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
-import { ModeOfTest, TypeOfTest } from '@prisma/client';
 import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, updateIsPastQuestion } from '../questions/questions.services';
 import prisma from '../utils/prisma';
+import { getStreams } from '../utils/functions';
+import { TStream } from '../utils/global-types';
 
 const router = express.Router();
-type TypedRequestBody<T> = Request<{}, {}, T>;
 
 // Create a new custom test
-router.post("/create-custom-tests", checkModerator, createCustomTestValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
-    try {
-        const errors = validationResult(request);
-        if (!errors.isEmpty()) {
-            return response.status(400).json({ message: errors.array()[0].msg });
+router.post("/create-custom-tests",
+    checkModerator,
+    createCustomTestValidation,
+    async (request: RequestExtended, response: Response) => {
+        try {
+            const errors = validationResult(request);
+            if (!errors.isEmpty()) {
+                return response.status(400).json({ message: errors.array()[0].msg });
+            }
+
+            const createdById = request.user?.id
+            if (!request.user || !createdById) {
+                return response.status(400).json({ message: 'Unauthorized' });
+            }
+
+
+            const limit = request.query.limit;
+            if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+                return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
+            }
+
+            const questionsIds = await getQuestionsIds(Number(limit), request.body.stream)
+            if (!questionsIds || questionsIds.length === 0) {
+                return response.status(400).json({ data: null, message: 'No questions found' })
+            }
+
+            const data: TcreateCustomTest = {
+                name: request.body.name,
+                slug: request.body.slug,
+                createdById: createdById,
+                stream: request.body.stream,
+                mode: "ALL",
+                type: "MODEL",
+                questions: questionsIds,
+            }
+
+            const newCustomTestId = await TestsServices.createCustomTest(data);
+            if (!newCustomTestId || newCustomTestId === undefined) {
+                return response.status(404).json({ data: null, message: "Custom test not found" })
+            }
+
+            return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
+        } catch (error: any) {
+            return response.status(500).json({ data: null, message: 'Internal Server Error' });
         }
-
-        const createdById = request.user?.id
-        if (!request.user || !createdById) {
-            return response.status(400).json({ message: 'Unauthorized' });
-        }
-
-
-        const limit = request.query.limit;
-        if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
-            return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
-        }
-
-        const questionsIds = await getQuestionsIds(Number(limit))
-        if (!questionsIds || questionsIds.length === 0) {
-            return null
-        }
-
-        const data: TcreateCustomTest = {
-            name: request.body.name,
-            slug: request.body.slug,
-            createdById: createdById,
-            mode: "ALL",
-            type: "MODEL",
-            questions: questionsIds
-        }
-
-        const newCustomTestId = await TestsServices.createCustomTest(data);
-        if (!newCustomTestId || newCustomTestId === undefined) {
-            return response.status(404).json({ data: null, message: "Custom test not found" })
-        }
-
-        return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
-    } catch (error: any) {
-        return response.status(500).json({ data: null, message: 'Internal Server Error' });
-    }
-});
+    });
 
 
 // Create a new past test
-router.post("/create-past-tests", checkModerator, createPastTestValidation, async (request: RequestWithUserIdAndRole, response: Response) => {
-    try {
+router.post("/create-past-tests",
+    checkModerator,
+    createPastTestValidation,
+    async (request: RequestExtended, response: Response) => {
+        try {
 
-        const errors = validationResult(request);
-        if (!errors.isEmpty()) {
-            return response.status(400).json({ message: errors.array()[0].msg });
+            const errors = validationResult(request);
+            if (!errors.isEmpty()) {
+                return response.status(400).json({ message: errors.array()[0].msg });
+            }
+
+            const createdById = request.user?.id
+            if (!request.user || !createdById) {
+                return response.status(400).json({ message: 'Unauthorized' });
+            }
+
+            const questions = request.body.questions
+
+            const questionsIds = await addMultipleQuestionsForDifferentSubjectAndChapter(questions, createdById)
+            if (!questionsIds || questions.length === 0) {
+                return response.status(400).json({ message: 'Can not process the given questions' });
+            }
+
+            const year = request.body.year
+            const affiliation = request.body.affiliation || ""
+            const category = request.body.category || ""
+            const stream = request.body.stream
+
+            const pastTestName = affiliation ? `${affiliation}-${year}` : `${category}-${year}`
+            const data: TcreateCustomTest = {
+                name: pastTestName,
+                slug: `${affiliation || category}_${year}`,
+                createdById: createdById,
+                mode: "ALL",
+                type: "PAST_PAPER",
+                questions: questionsIds,
+                stream: stream
+            }
+
+            const newCustomTestId = await TestsServices.createCustomTest(data);
+            if (!newCustomTestId || newCustomTestId === undefined) {
+                return response.status(400).json({ data: null, message: "Custom can't be created" })
+            }
+
+            const pastTestData: TCreatePastPaper = {
+                year: year,
+                affiliation: affiliation,
+                category: category,
+                stream: stream,
+                customTestId: newCustomTestId
+            }
+            const updatedIsPastQuestions = await updateIsPastQuestion(pastTestData, questionsIds)
+            if (!updatedIsPastQuestions) {
+                return response.status(400).json({ data: null, message: "Unable to update the past questions" })
+            }
+
+            const newPastTest = await TestsServices.createPastTest(pastTestData)
+            if (!newPastTest) {
+                return response.status(400).json({ data: null, message: "Past Test can't be created" })
+            }
+
+
+            return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
+        } catch (error: any) {
+            console.log("🚀 ~ router.post ~ error:", error)
+            return response.status(500).json({ data: null, message: 'Internal Server Error' });
         }
-
-        const createdById = request.user?.id
-        if (!request.user || !createdById) {
-            return response.status(400).json({ message: 'Unauthorized' });
-        }
-
-        const questions = request.body.questions
-
-        const questionsIds = await addMultipleQuestionsForDifferentSubjectAndChapter(questions, createdById)
-        if (!questionsIds || questions.length === 0) {
-            return response.status(400).json({ message: 'Can not process the given questions' });
-        }
-
-        const year = request.body.year
-        const affiliation = request.body.affiliation || ""
-        const stream = request.body.stream
-        const category = request.body.category || ""
-
-        const pastTestName = affiliation ? `${affiliation}-${year}` : `${category}-${year}`
-        const data: TcreateCustomTest = {
-            name: pastTestName,
-            slug: `${affiliation || category}_${year}`,
-            createdById: createdById,
-            mode: "ALL",
-            type: "PAST_PAPER",
-            questions: questionsIds
-        }
-
-        const newCustomTestId = await TestsServices.createCustomTest(data);
-        if (!newCustomTestId || newCustomTestId === undefined) {
-            return response.status(400).json({ data: null, message: "Custom can't be created" })
-        }
-
-        const pastTestData: TCreatePastPaper = {
-            year: year,
-            affiliation: affiliation,
-            category: category,
-            stream: stream,
-            customTestId: newCustomTestId
-        }
-        const updatedIsPastQuestions = await updateIsPastQuestion(pastTestData, questionsIds)
-        if (!updatedIsPastQuestions) {
-            return response.status(400).json({ data: null, message: "Unable to update the past questions" })
-        }
-
-        const newPastTest = await TestsServices.createPastTest(pastTestData)
-        if (!newPastTest) {
-            return response.status(400).json({ data: null, message: "Past Test can't be created" })
-        }
-
-
-        return response.status(201).json({ data: newPastTest, message: `${newPastTest.stream}-${newPastTest.category}-${newPastTest.year} test created` });
-    } catch (error: any) {
-        console.log("🚀 ~ router.post ~ error:", error)
-        return response.status(500).json({ data: null, message: 'Internal Server Error' });
-    }
-});
+    });
 
 // to create tests by paid  users -- esp subjectwise, chapterwise tests creation
-router.post(
-    "/create-custom-tests-by-users",
+router.post("/create-custom-tests-by-users",
     getSubscribedUserId,
+    checkStreamMiddleware,
     createCustomTestByUserValidation,
-    async (request: RequestWithUserIdAndSubscription, response: Response) => {
+    async (request: RequestExtended, response: Response) => {
         try {
             const errors = validationResult(request);
             if (!errors.isEmpty()) {
@@ -137,12 +145,14 @@ router.post(
             const subject = request.query.subject as string;
             const chapter = request.query.chapter as string;
 
-            const createdById = request.userId
-            const limit = !request.isSubscribed || false
+            const createdById = request.user?.id
+            const limit = !request.user?.isSubscribed || false
             const mode = request.mode || 'ALL'
             const type = request.body.type as TTypeOfTest
 
-            const data = { ...request.body, createdById, limit, mode } as TcreateCustomTestByUser
+            
+            const stream = request.stream as TStream
+            const data = { ...request.body, createdById, limit, mode, stream } as TcreateCustomTestByUser
 
 
             if (type === 'SUBJECT_WISE') {
@@ -178,8 +188,10 @@ router.post(
         }
     });
 
+
+//  leaving this for now --  will add later for ug also
 // create daily tests -- normal custom tests but will of type DAILY_TEST and will be fetched daily
-router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, response: Response) => {
+router.get("/create-daily-test", async (request: RequestExtended, response: Response) => {
     try {
 
         const admin = await prisma.user.findFirst({
@@ -199,7 +211,7 @@ router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, respo
 
         const limit = 50;
 
-        const questionsIds = await getQuestionsIds(Number(limit))
+        const questionsIds = await getQuestionsIds(Number(limit), 'PG')
         if (!questionsIds || questionsIds.length === 0) {
             return null
         }
@@ -208,7 +220,14 @@ router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, respo
         const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`
-        console.log(slug);
+        
+
+        // default PG as of now
+        // Might edit laterr
+        const stream = request.stream || 'PG'
+        if (!stream || !getStreams().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified' });
+        }
 
         const isDailyTestAlreadyExist = await TestsServices.isDailyTestSlugExist(slug)
         console.log(isDailyTestAlreadyExist);
@@ -222,7 +241,8 @@ router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, respo
             createdById: createdById,
             mode: "ALL",
             type: "DAILY_TEST",
-            questions: questionsIds
+            questions: questionsIds,
+            stream: stream
         }
 
         const newCustomTestId = await TestsServices.createCustomTest(data);
@@ -237,7 +257,7 @@ router.get("/create-daily-test", async (request: RequestWithUserIdAndRole, respo
 });
 
 
-router.get("/get-daily-test", async (request: Request, response: Response) => {
+router.get("/get-daily-test", checkStreamMiddleware, async (request: Request, response: Response) => {
     try {
         const date = new Date().toLocaleDateString('en-GB');
         const slug = `dt-${date}`
@@ -279,7 +299,7 @@ router.get("/get-test-metadata/:id", createCustomTestValidation, async (request:
     }
 });
 
-router.get("/get-single-test/:id", createCustomTestValidation, async (request: Request, response: Response) => {
+router.get("/get-single-test/:id", async (request: Request, response: Response) => {
     try {
         const { id } = request.params
         const newCustomTest = await TestsServices.getCustomTestById(id);
@@ -294,7 +314,7 @@ router.get("/get-single-test/:id", createCustomTestValidation, async (request: R
 });
 
 
-router.get("/get-all-tests", async (request: Request, response: Response) => {
+router.get("/get-all-tests",  async (request: Request, response: Response) => {
     try {
         const customTests = await TestsServices.getAllTests();
         if (!customTests || customTests.length === 0) {
@@ -306,10 +326,15 @@ router.get("/get-all-tests", async (request: Request, response: Response) => {
     }
 });
 
-router.get("/get-tests-by-type/:type", async (request: Request<{ type: TTypeOfTest }>, response: Response) => {
+router.get("/get-tests-by-type/:type", checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
     try {
-        const { type } = request.params
-        const customTests = await TestsServices.getAllTestsByType(type);
+        const { type } = request.params as { type: TTypeOfTest };
+        const stream = request.stream;
+        if (!stream) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified' });
+        }
+
+        const customTests = await TestsServices.getAllTestsByType(type, stream);
         if (!customTests || customTests.length === 0) {
             return response.status(400).json({ data: null, message: 'No Tests Found!' });
         }

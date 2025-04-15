@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRandomColor = exports.generateRandomCode = exports.isCuid = exports.isUUID = exports.formatDate = void 0;
+exports.getStreams = exports.getRandomColor = exports.generateRandomCode = exports.isCuid = exports.isUUID = exports.formatDate = void 0;
+const global_data_1 = require("./global-data");
 const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = { month: 'short', day: '2-digit' };
@@ -43,3 +44,7 @@ const colors = [
 // Helper function to get a random color from the colors array
 const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
 exports.getRandomColor = getRandomColor;
+const getStreams = () => {
+    return global_data_1.STREAM_HIERARCHY.map(stream => stream.name);
+};
+exports.getStreams = getStreams;

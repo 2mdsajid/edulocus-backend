@@ -16,6 +16,8 @@ enum ROLE {
     SAJID
 }
 
+
+
 // for multiple streams
 enum STREAM {
     UG
@@ -83,6 +85,8 @@ model User {
     emailVerified DateTime?
     createdAt     DateTime  @default(now())
     updatedAt     DateTime? @updatedAt
+
+    stream STREAM @default(PG)
 
     payments           Payment[]
     customTestsCreated CustomTest[]
@@ -154,10 +158,14 @@ model Question {
     attempt        Int             @default(0)
     correctattempt Int             @default(0)
 
+    stream STREAM @default(PG) // default stream remove this later onn
+
     analytic TestQuestionAnswer[]
 
     @@index([chapter])
 }
+
+
 
 enum ANSWER {
     a
@@ -218,6 +226,8 @@ model QuestionCount {
     chapter String
     count   Int    @default(0)
 
+    stream  STREAM @default(PG)
+
     @@unique([subject, chapter])
 }
 
@@ -258,6 +268,9 @@ model CustomTest {
     questions     String[]
     usersAttended UserScore[]
     testAnalytic  TestAnalytic[]
+
+    // stream of the custom test -- for UG and PG
+    stream STREAM @default(PG)
 
     pastPaper PastPaper?
     Group     Group?     @relation(fields: [groupId], references: [id])
@@ -327,6 +340,8 @@ model SubscriptionRequest {
     name  String
     email String
     phone String
+
+    stream STREAM @default(PG)
 
     createdAt DateTime @default(now())
 }

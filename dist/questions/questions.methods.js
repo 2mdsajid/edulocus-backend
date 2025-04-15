@@ -6,22 +6,25 @@ exports.getMarksOfAllSubjects = getMarksOfAllSubjects;
 exports.getAllStreams = getAllStreams;
 exports.getCategoriesOfStream = getCategoriesOfStream;
 exports.getAffiliationsOfStreamCategory = getAffiliationsOfStreamCategory;
-// 1. Get a list of all subjects
-function getAllSubjects(syllabus) {
-    return Object.keys(syllabus);
+function getAllSubjects(syllabus, stream) {
+    if (syllabus[stream]) {
+        return Object.keys(syllabus[stream]);
+    }
+    return [];
 }
-// 2. Get a list of topics for a specific subject
-function getTopicsBySubject(syllabus, subject) {
-    if (syllabus[subject]) {
-        return syllabus[subject].topics;
+function getTopicsBySubject(syllabus, stream, subject) {
+    var _a;
+    if ((_a = syllabus[stream]) === null || _a === void 0 ? void 0 : _a[subject]) {
+        return syllabus[stream][subject].topics;
     }
     return null;
 }
-// 3. Get marks of all subjects
-function getMarksOfAllSubjects(syllabus) {
+function getMarksOfAllSubjects(syllabus, stream) {
     const marks = {};
-    for (const subject in syllabus) {
-        marks[subject] = syllabus[subject].marks;
+    if (syllabus[stream]) {
+        for (const subject in syllabus[stream]) {
+            marks[subject] = syllabus[stream][subject].marks;
+        }
     }
     return marks;
 }

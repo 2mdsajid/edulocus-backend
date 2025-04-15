@@ -1,4 +1,5 @@
 import { isUUID } from "../utils/functions";
+import { TStream } from "../utils/global-types";
 import prisma from "../utils/prisma"
 import { TBaseUser, TCreateSubscriptionRequest, TCreateUserFeedback, TJWT, TLogInUser, TLuciaGoogleAuth, TSignUpUser } from "./users.schema";
 import jwt from 'jsonwebtoken';
@@ -99,7 +100,9 @@ export const loginWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Prom
                 id: true,
                 name: true,
                 email: true,
+                isCompleted: true,
                 role: true,
+                stream: true,
                 isSubscribed: true,
                 googleId: true
             }
@@ -127,8 +130,10 @@ export const signupWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Pro
                 name: true,
                 email: true,
                 role: true,
+                stream: true,
                 isSubscribed: true,
-                googleId: true
+                googleId: true,
+                isCompleted: true
             }
         })
         if (!existingUser) return null
@@ -227,8 +232,19 @@ export const getUserById = async (userId: string): Promise<TJWT | null> => {
             email: true,
             googleId: true,
             role: true,
-            isSubscribed: true
+            isSubscribed: true,
+            stream: true,
+            isCompleted: true
         }
+    })
+    if (!user) return null
+    return user
+}
+
+export const setUserStream = async (userId: string, stream: TStream): Promise<TBaseUser | null> => {
+    const user = await prisma.user.update({
+        where: { id: userId },
+        data: { stream, isCompleted: true }
     })
     if (!user) return null
     return user

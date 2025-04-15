@@ -23,6 +23,7 @@ exports.addMultipleQuestionsValidation = [
     (0, express_validator_1.body)('questions.*.subject').notEmpty().withMessage('Subject must be provided').isString().withMessage('Subject must be a string'),
     (0, express_validator_1.body)('questions.*.chapter').notEmpty().withMessage('Chapter must be provided').isString().withMessage('Chapter must be a string'),
     (0, express_validator_1.body)('questions.*.difficulty').notEmpty().withMessage('Difficulty must be provided').isString().withMessage('Difficulty must be a string'),
+    (0, express_validator_1.body)('questions.*.stream').notEmpty().withMessage('Stream must be provided').isString().withMessage('Stream must be a string'),
     (0, express_validator_1.body)('questions.*.options.a').notEmpty().withMessage('Option A must be provided').isString().withMessage('Option A must be a string'),
     (0, express_validator_1.body)('questions.*.options.b').notEmpty().withMessage('Option B must be provided').isString().withMessage('Option B must be a string'),
     (0, express_validator_1.body)('questions.*.options.c').notEmpty().withMessage('Option C must be provided').isString().withMessage('Option C must be a string'),

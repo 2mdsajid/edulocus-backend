@@ -42,6 +42,7 @@ const TestsServices = __importStar(require("./tests.services"));
 const tests_validators_1 = require("./tests.validators");
 const questions_services_1 = require("../questions/questions.services");
 const prisma_1 = __importDefault(require("../utils/prisma"));
+const functions_1 = require("../utils/functions");
 const router = express_1.default.Router();
 // Create a new custom test
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -59,17 +60,18 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit));
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), request.body.stream);
         if (!questionsIds || questionsIds.length === 0) {
-            return null;
+            return response.status(400).json({ data: null, message: 'No questions found' });
         }
         const data = {
             name: request.body.name,
             slug: request.body.slug,
             createdById: createdById,
+            stream: request.body.stream,
             mode: "ALL",
             type: "MODEL",
-            questions: questionsIds
+            questions: questionsIds,
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
@@ -100,8 +102,8 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
         }
         const year = request.body.year;
         const affiliation = request.body.affiliation || "";
-        const stream = request.body.stream;
         const category = request.body.category || "";
+        const stream = request.body.stream;
         const pastTestName = affiliation ? `${affiliation}-${year}` : `${category}-${year}`;
         const data = {
             name: pastTestName,
@@ -109,7 +111,8 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
             createdById: createdById,
             mode: "ALL",
             type: "PAST_PAPER",
-            questions: questionsIds
+            questions: questionsIds,
+            stream: stream
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
@@ -138,7 +141,8 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
     }
 }));
 // to create tests by paid  users -- esp subjectwise, chapterwise tests creation
-router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, tests_validators_1.createCustomTestByUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, middleware_1.checkStreamMiddleware, tests_validators_1.createCustomTestByUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         const errors = (0, express_validator_1.validationResult)(request);
         if (!errors.isEmpty()) {
@@ -146,11 +150,12 @@ router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, t
         }
         const subject = request.query.subject;
         const chapter = request.query.chapter;
-        const createdById = request.userId;
-        const limit = !request.isSubscribed || false;
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        const limit = !((_b = request.user) === null || _b === void 0 ? void 0 : _b.isSubscribed) || false;
         const mode = request.mode || 'ALL';
         const type = request.body.type;
-        const data = Object.assign(Object.assign({}, request.body), { createdById, limit, mode });
+        const stream = request.stream;
+        const data = Object.assign(Object.assign({}, request.body), { createdById, limit, mode, stream });
         if (type === 'SUBJECT_WISE') {
             if (!subject || subject === '') {
                 return response.status(400).json({ message: 'No Chapter or Subject Specified' });
@@ -179,6 +184,7 @@ router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, t
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+//  leaving this for now --  will add later for ug also
 // create daily tests -- normal custom tests but will of type DAILY_TEST and will be fetched daily
 router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -195,7 +201,7 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
             return response.status(400).json({ data: null, message: 'Unauthorized' });
         }
         const limit = 50;
-        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit));
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'PG');
         if (!questionsIds || questionsIds.length === 0) {
             return null;
         }
@@ -203,7 +209,12 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`;
-        console.log(slug);
+        // default PG as of now
+        // Might edit laterr
+        const stream = request.stream || 'PG';
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified' });
+        }
         const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
         console.log(isDailyTestAlreadyExist);
         if (isDailyTestAlreadyExist) {
@@ -215,7 +226,8 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
             createdById: createdById,
             mode: "ALL",
             type: "DAILY_TEST",
-            questions: questionsIds
+            questions: questionsIds,
+            stream: stream
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === null) {
@@ -227,7 +239,7 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-daily-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-daily-test", middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const date = new Date().toLocaleDateString('en-GB');
         const slug = `dt-${date}`;
@@ -266,7 +278,7 @@ router.get("/get-test-metadata/:id", tests_validators_1.createCustomTestValidati
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-single-test/:id", tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-single-test/:id", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = request.params;
         const newCustomTest = yield TestsServices.getCustomTestById(id);
@@ -291,10 +303,14 @@ router.get("/get-all-tests", (request, response) => __awaiter(void 0, void 0, vo
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-tests-by-type/:type", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-tests-by-type/:type", middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { type } = request.params;
-        const customTests = yield TestsServices.getAllTestsByType(type);
+        const stream = request.stream;
+        if (!stream) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified' });
+        }
+        const customTests = yield TestsServices.getAllTestsByType(type, stream);
         if (!customTests || customTests.length === 0) {
             return response.status(400).json({ data: null, message: 'No Tests Found!' });
         }

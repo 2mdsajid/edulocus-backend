@@ -1,3 +1,5 @@
+import { STREAM_HIERARCHY } from "./global-data";
+import { TStream, TStreamHierarchy } from "./global-types";
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -43,3 +45,8 @@ const colors = [
 
 // Helper function to get a random color from the colors array
 export const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
+
+
+export const getStreams = (): TStream[] => {
+  return STREAM_HIERARCHY.map(stream => stream.name);
+};

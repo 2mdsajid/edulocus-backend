@@ -1,8 +1,17 @@
 import { body, ValidationChain } from 'express-validator';
 import { TCreateTestQuestionAnswer, TTypeOfTest } from './tests.schema';
 import { STREAM, TypeOfTest } from '@prisma/client';
+import { TStream } from '../utils/global-types';
+
+
+const typeOfStream: TStream[] = Object.values(STREAM);
 
 export const createCustomTestValidation: ValidationChain[] = [
+    body('stream')
+        .notEmpty().withMessage('Stream must be aaaa provided')
+        .isString().withMessage('Stream must be a string')
+        .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
+
     body('name')
         .notEmpty().withMessage('Test name must be provided')
         .isString().withMessage('Test name must be a string'),
@@ -13,8 +22,13 @@ export const createCustomTestValidation: ValidationChain[] = [
 ];
 
 
-const typeOfStream: STREAM[] = Object.values(STREAM);
 export const createPastTestValidation: ValidationChain[] = [
+    body('stream')
+    .notEmpty().withMessage('Stream must be aaaa provided')
+    .isString().withMessage('Stream must be a string')
+    .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
+
+    
     body('year')
         .notEmpty().withMessage('year name must be provided')
         .isNumeric().withMessage('year name must be a number'),

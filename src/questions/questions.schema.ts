@@ -4,8 +4,7 @@ export type TBaseQuestion = Omit<Question,
     'category' |
     'attempt' |
     'correctattempt' |
-    'userId' |
-    'stream'
+    'userId' 
 >
 
 export type TCreatePastQuestion = Omit<IsPastQuestion,'questionId'>

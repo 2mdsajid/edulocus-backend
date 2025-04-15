@@ -1,14 +1,14 @@
-import { ROLES_HIEARCHY } from "../users/users.schema";
-import { PG_SYLLABUS, STREAM_HIERARCHY } from "../utils/global-data";
-import { TPGSyllabus, TStreamHierarchy } from "../utils/global-types";
+import { STREAM_HIERARCHY } from "../utils/global-data";
+import { TStream, TStreamHierarchy, TSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
+import { SYLLABUS } from "../utils/syllabus";
 import { getAllSubjects } from "./questions.methods";
 import { TAddQuestion, TAddQuestionCount, TCreatePastQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
 
 
 // add a single question
 export const addSingleQuestion = async (questionObject: TAddQuestion, userId: string): Promise<string | null> => {
-    const { question, answer, explanation, options, subject, chapter, unit, difficulty, } = questionObject;
+    const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream } = questionObject;
     const newQuestion = await prisma.question.create({
         data: {
             question,
@@ -16,12 +16,14 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
             subject,
             unit,
             chapter,
+            stream,
             explanation,
             difficulty,
         },
         select: {
             id: true,
             subject: true,
+            stream: true,
             chapter: true,
         }
     })
@@ -45,6 +47,7 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
     })
 
     await updateQuestionCount({
+        stream: newQuestion.stream,
         subject: newQuestion.subject,
         chapter: newQuestion.chapter,
         count: 1
@@ -60,10 +63,11 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
 ): Promise<string[] | null> => {
     if (!questions.length) return null;
 
-    const { subject, chapter } = questions[0];
+    const { subject, chapter, stream } = questions[0];
+    console.log(stream)
     const addedQuestionIds: string[] = [];
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, difficulty } = questionObject;
+        const { question, answer, explanation, options, difficulty, stream } = questionObject;
 
         const newQuestion = await prisma.question.create({
             data: {
@@ -71,12 +75,14 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
                 answer,
                 subject,
                 chapter,
+                stream,
                 explanation,
                 difficulty,
             },
             select: {
                 id: true,
                 subject: true,
+                stream: true,
                 chapter: true,
             },
         });
@@ -106,6 +112,7 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
     }
 
     await updateQuestionCount({
+        stream,
         subject,
         chapter,
         count: questions.length,
@@ -124,7 +131,7 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
     const addedQuestionIds: string[] = [];
 
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, subject, chapter, difficulty } = questionObject;
+        const { question, answer, explanation, options, subject, chapter, difficulty, stream } = questionObject;
 
         const newQuestion = await prisma.question.create({
             data: {
@@ -133,11 +140,13 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
                 subject,
                 chapter,
                 explanation,
+                stream,
                 difficulty,
             },
             select: {
                 id: true,
                 subject: true,
+                stream: true,
                 chapter: true,
             },
         });
@@ -171,6 +180,7 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
         addedQuestionIds.push(newQuestion.id);
 
         await updateQuestionCount({
+            stream: newQuestion.stream,
             subject: newQuestion.subject,
             chapter: newQuestion.chapter,
             count: 1,
@@ -197,9 +207,12 @@ export const updateIsPastQuestion = async (isPastQuestionData: TCreatePastQuesti
     return newPastQuestions.count > 0 ? questionsIds : null;
 };
 
+
 // update the question counts in db for each chapter ans subject
+// stream is optional for now but will be required later
+// make unique combination of subject and chapter and stream --- which is not present now
 export const updateQuestionCount = async (data: TAddQuestionCount) => {
-    const { subject, chapter, count } = data
+    const { subject, chapter, count, stream } = data
     const existingCount = await prisma.questionCount.findUnique({
         where: {
             subject_chapter: { subject, chapter }, // Check unique combination
@@ -221,13 +234,14 @@ export const updateQuestionCount = async (data: TAddQuestionCount) => {
                 subject,
                 chapter,
                 count: count,
+                stream: stream
             },
         });
     }
 };
 
 // to fetch a certain number of question ids -- esp for creating custom tests
-export const getQuestionsIds = async (limit: number): Promise<string[] | null> => {
+export const getQuestionsIds = async (limit: number, stream: TStream): Promise<string[] | null> => {
     // Validate that limit is a positive integer
     if (!Number.isInteger(limit) || limit <= 0) {
         console.error("Invalid limit:", limit);
@@ -235,6 +249,9 @@ export const getQuestionsIds = async (limit: number): Promise<string[] | null> =
     }
 
     const questions = await prisma.question.findManyRandom(limit, {
+        where: {
+            stream: stream
+        },
         select: { id: true }
     });
 
@@ -249,11 +266,12 @@ export const getQuestionsIds = async (limit: number): Promise<string[] | null> =
 };
 
 // ot Fetch questions by subject with a limit -- esp for subjectwise tests
-export const getQuestionsBySubject = async (subject: string, limit: boolean): Promise<string[] | null> => {
+export const getQuestionsBySubject = async (subject: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
     const limitValue = limit ? 10 : 50
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
+            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
@@ -261,12 +279,13 @@ export const getQuestionsBySubject = async (subject: string, limit: boolean): Pr
 };
 
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
-export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean): Promise<string[] | null> => {
+export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
     const limitValue = limit ? 10 : 50
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
             chapter: chapter,
+            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
@@ -280,8 +299,8 @@ export const getTotalQuestionsCount = async (): Promise<number | null> => {
 };
 
 // get syllabus
-export const getSyllabus = async (): Promise<TPGSyllabus | null> => {
-    return PG_SYLLABUS ?? null
+export const getSyllabus = async (stream: TStream): Promise<TSyllabus | null> => {
+    return SYLLABUS[stream] ?? null
 };
 
 // get sream hierarchy
@@ -290,13 +309,17 @@ export const getStreamHierarchy = async (): Promise<TStreamHierarchy[] | null> =
 };
 
 // get Subjects
-export const getSubjects = async (): Promise<string[] | null> => {
-    return getAllSubjects(PG_SYLLABUS) ?? null
+export const getSubjects = async (stream: TStream): Promise<string[] | null> => {
+    return getAllSubjects(SYLLABUS, stream) ?? null
 };
 
 // get count of questions in each subject -- exp for subject wise test models
-export const getTotalQuestionsPerSubject = async (): Promise<TTotalQuestionsPerSubject[] | null> => {
-    const questionCounts = await prisma.questionCount.findMany(); // Retrieve all records
+export const getTotalQuestionsPerSubject = async (stream: TStream): Promise<TTotalQuestionsPerSubject[] | null> => {
+    const questionCounts = await prisma.questionCount.findMany({
+        where: {
+            stream: stream
+        }
+    }); // Retrieve all records
     const totalQuestionsPerSubject: { [subject: string]: number } = {}; // Object to store counts per subject
 
     questionCounts.forEach((record) => {
@@ -317,8 +340,12 @@ export const getTotalQuestionsPerSubject = async (): Promise<TTotalQuestionsPerS
 };
 
 // get count of questions in each chapter and its subject -- exp for showing chapter wise tests models
-export const getTotalQuestionsPerSubjectAndChapter = async (): Promise<TTotalQuestionsPerSubjectAndChapter | null> => {
-    const questionCounts = await prisma.questionCount.findMany();
+export const getTotalQuestionsPerSubjectAndChapter = async (stream: TStream): Promise<TTotalQuestionsPerSubjectAndChapter | null> => {
+    const questionCounts = await prisma.questionCount.findMany({
+        where: {
+            stream: stream
+        }
+    });
     const totalQuestionsPerSubjectAndChapter: { [subject: string]: { [chapter: string]: number } } = {};
 
     questionCounts.forEach((record) => {

@@ -3,7 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveUserScoreValidation = exports.createTestAnalyticValidation = exports.createCustomTestByUserValidation = exports.createPastTestValidation = exports.createCustomTestValidation = void 0;
 const express_validator_1 = require("express-validator");
 const client_1 = require("@prisma/client");
+const typeOfStream = Object.values(client_1.STREAM);
 exports.createCustomTestValidation = [
+    (0, express_validator_1.body)('stream')
+        .notEmpty().withMessage('Stream must be aaaa provided')
+        .isString().withMessage('Stream must be a string')
+        .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
     (0, express_validator_1.body)('name')
         .notEmpty().withMessage('Test name must be provided')
         .isString().withMessage('Test name must be a string'),
@@ -11,8 +16,11 @@ exports.createCustomTestValidation = [
         .notEmpty().withMessage('Slug must be provided')
         .isString().withMessage('Slug must be a string'),
 ];
-const typeOfStream = Object.values(client_1.STREAM);
 exports.createPastTestValidation = [
+    (0, express_validator_1.body)('stream')
+        .notEmpty().withMessage('Stream must be aaaa provided')
+        .isString().withMessage('Stream must be a string')
+        .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
     (0, express_validator_1.body)('year')
         .notEmpty().withMessage('year name must be provided')
         .isNumeric().withMessage('year name must be a number'),

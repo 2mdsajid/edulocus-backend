@@ -8,7 +8,8 @@ export type TcreateCustomTest = Pick<CustomTest,
     'slug' |
     'mode' |
     'type' |
-    'questions'
+    'questions' |
+    'stream'
 >
 
 export type TCreatePastPaper = PastPaper
@@ -17,7 +18,8 @@ export type TcreateCustomTestByUser = Pick<CustomTest,
     'name' |
     'type' |
     'createdById' |
-    'mode'
+    'mode' |
+    'stream'
 > & {
     limit: boolean,
 }

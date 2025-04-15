@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
+exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -111,7 +111,9 @@ const loginWithLuciaGoogleUser = (userData) => __awaiter(void 0, void 0, void 0,
                 id: true,
                 name: true,
                 email: true,
+                isCompleted: true,
                 role: true,
+                stream: true,
                 isSubscribed: true,
                 googleId: true
             }
@@ -140,8 +142,10 @@ const signupWithLuciaGoogleUser = (userData) => __awaiter(void 0, void 0, void 0
                 name: true,
                 email: true,
                 role: true,
+                stream: true,
                 isSubscribed: true,
-                googleId: true
+                googleId: true,
+                isCompleted: true
             }
         });
         if (!existingUser)
@@ -241,7 +245,9 @@ const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
             email: true,
             googleId: true,
             role: true,
-            isSubscribed: true
+            isSubscribed: true,
+            stream: true,
+            isCompleted: true
         }
     });
     if (!user)
@@ -249,3 +255,13 @@ const getUserById = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     return user;
 });
 exports.getUserById = getUserById;
+const setUserStream = (userId, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.update({
+        where: { id: userId },
+        data: { stream, isCompleted: true }
+    });
+    if (!user)
+        return null;
+    return user;
+});
+exports.setUserStream = setUserStream;

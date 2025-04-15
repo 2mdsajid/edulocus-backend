@@ -42,6 +42,7 @@ const UserServices = __importStar(require("./users.services"));
 const users_validators_1 = require("./users.validators");
 const mail_services_1 = require("../mail/mail.services");
 const mail_templates_1 = require("../mail/mail.templates");
+const functions_1 = require("../utils/functions");
 const router = express_1.default.Router();
 router.post('/signup', users_validators_1.createUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -216,6 +217,34 @@ router.post('/create-subscription-request', users_validators_1.subscriptionReque
             })
         });
         return response.status(201).json({ data: subscriptionId, message: 'Subscription created successfully' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// to get all the streams
+router.get('/get-all-streams', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const streams = (0, functions_1.getStreams)();
+        return response.status(200).json({ data: streams, message: 'Streams fetched successfully' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post('/set-user-stream', middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const stream = request.body.stream;
+        const streams = (0, functions_1.getStreams)();
+        if (!stream || !streams.includes(stream)) {
+            return response.status(400).json({ message: 'Invalid stream' });
+        }
+        const user = request.user;
+        if (!user) {
+            return response.status(401).json({ message: 'Unauthorized' });
+        }
+        const updatedUser = yield UserServices.setUserStream(user.id, stream);
+        return response.status(200).json({ data: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.stream, message: 'Stream set successfully' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

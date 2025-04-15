@@ -11,7 +11,6 @@ export const ROLES_HIEARCHY = {
 export type TBaseUser = Omit<User,
     'image' |
     'password' |
-    'isCompleted' |
     'ip' |
     'key' |
     'tokensUsed' |

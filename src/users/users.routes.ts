@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { getUserSession, RequestWithUserIdAndRole } from '../utils/middleware';
+import { getUserSession, RequestExtended } from '../utils/middleware';
 import * as UserServices from './users.services';
 import { changeRoleValidation, createUserValidation, generateAuthTokenValidation, loginUserValidation, loginWithLuciaGoogleUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
 import { sendEmail } from '../mail/mail.services';
 import { sendFeedbackMailToAdmin, sendSubscriptionRequestMailToAdmin, sendSubscriptionRequestMailToUser, sendWelcomeMailToUser } from '../mail/mail.templates';
+import { getStreams } from '../utils/functions';
 
 
 const router = express.Router();
@@ -210,8 +211,40 @@ router.post('/create-subscription-request', subscriptionRequestValidation, async
     }
 })
 
+// to get all the streams
+router.get('/get-all-streams', async (request: Request, response: Response) => {
+    try {
+        const streams = getStreams()
+        return response.status(200).json({ data: streams, message: 'Streams fetched successfully' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+})
 
-router.get('/get-user-session', getUserSession, async (request: RequestWithUserIdAndRole, response: Response) => {
+router.post('/set-user-stream', getUserSession, async (request: RequestExtended, response: Response) => {
+    try {
+        const stream = request.body.stream
+
+        const streams = getStreams()
+        if (!stream || !streams.includes(stream)) {
+            return response.status(400).json({ message: 'Invalid stream' });
+        }
+
+        const user = request.user
+        if (!user) {
+            return response.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const updatedUser = await UserServices.setUserStream(user.id, stream)
+        return response.status(200).json({ data: updatedUser?.stream, message: 'Stream set successfully' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+})
+
+
+
+router.get('/get-user-session', getUserSession, async (request: RequestExtended, response: Response) => {
     try {
         const user = request.user
         return response.status(200).json({ data: user, message: 'Sesssion Found!' });

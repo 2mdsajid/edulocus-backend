@@ -40,6 +40,7 @@ const express_validator_1 = require("express-validator");
 const QuestionServices = __importStar(require("../questions/questions.services"));
 const middleware_1 = require("../utils/middleware");
 const questions_validators_1 = require("./questions.validators");
+const functions_1 = require("../utils/functions");
 const router = express_1.default.Router();
 router.post('/add-single-question', middleware_1.checkModerator, questions_validators_1.addSingleQuestionValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -102,11 +103,15 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', middlewa
 router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const limit = request.query.limit;
+        const stream = request.query.stream;
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
         // Improved limit check
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        const questionIds = yield QuestionServices.getQuestionsIds(Number(limit));
+        const questionIds = yield QuestionServices.getQuestionsIds(Number(limit), stream);
         if (!questionIds || questionIds.length === 0) {
             return response.status(404).json({ data: null, message: 'No Questions Found' });
         }
@@ -117,11 +122,31 @@ router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, vo
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get('/get-total-questions-per-subject', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+// users will get this for their own stream
+router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubject();
+        if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubject(request.stream);
         if (!totalQuestionsPerSubject || totalQuestionsPerSubject.length === 0) {
             return response.status(500).json({ data: [], message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// users will get this for their own stream
+router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubjectAndChapter(request.stream);
+        if (!totalQuestionsPerSubject) {
+            return response.status(500).json({ data: null, message: 'No Questions Found' });
         }
         return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
     }
@@ -142,21 +167,13 @@ router.get('/get-total-questions-count', (request, response) => __awaiter(void 0
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get('/get-total-questions-per-subject-and-chapter', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubjectAndChapter();
-        if (!totalQuestionsPerSubject) {
-            return response.status(500).json({ data: null, message: 'No Questions Found' });
-        }
-        return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
-    }
-    catch (error) {
-        return response.status(500).json({ data: null, message: 'Internal Server Error' });
-    }
-}));
 router.get('/get-syllabus', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const syllabus = yield QuestionServices.getSyllabus();
+        const stream = request.query.stream;
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        const syllabus = yield QuestionServices.getSyllabus(stream);
         if (!syllabus) {
             return response.status(404).json({ data: null, message: 'No Syllabus Found' });
         }
@@ -180,7 +197,11 @@ router.get('/get-stream-hierarchy', (request, response) => __awaiter(void 0, voi
 }));
 router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const subjects = yield QuestionServices.getSubjects();
+        const stream = request.query.stream;
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        const subjects = yield QuestionServices.getSubjects(stream);
         if (!subjects || subjects.length === 0) {
             return response.status(404).json({ data: null, message: 'No Subjects Found' });
         }
