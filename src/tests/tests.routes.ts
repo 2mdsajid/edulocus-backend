@@ -132,8 +132,8 @@ router.post("/create-past-tests",
 
 // to create tests by paid  users -- esp subjectwise, chapterwise tests creation
 router.post("/create-custom-tests-by-users",
-    getSubscribedUserId,
     checkStreamMiddleware,
+    getSubscribedUserId,
     createCustomTestByUserValidation,
     async (request: RequestExtended, response: Response) => {
         try {
@@ -150,7 +150,7 @@ router.post("/create-custom-tests-by-users",
             const mode = request.mode || 'ALL'
             const type = request.body.type as TTypeOfTest
 
-            
+
             const stream = request.stream as TStream
             const data = { ...request.body, createdById, limit, mode, stream } as TcreateCustomTestByUser
 
@@ -220,7 +220,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`
-        
+
 
         // default PG as of now
         // Might edit laterr
@@ -230,7 +230,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         }
 
         const isDailyTestAlreadyExist = await TestsServices.isDailyTestSlugExist(slug)
-        console.log(isDailyTestAlreadyExist);
+
         if (isDailyTestAlreadyExist) {
             return response.status(400).json({ data: null, message: 'Daily Test already exist' });
         }
@@ -257,7 +257,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
 });
 
 
-router.get("/get-daily-test", checkStreamMiddleware, async (request: Request, response: Response) => {
+router.get("/get-daily-test", checkStreamMiddleware, getSubscribedUserId, async (request: Request, response: Response) => {
     try {
         const date = new Date().toLocaleDateString('en-GB');
         const slug = `dt-${date}`
@@ -314,7 +314,7 @@ router.get("/get-single-test/:id", async (request: Request, response: Response) 
 });
 
 
-router.get("/get-all-tests",  async (request: Request, response: Response) => {
+router.get("/get-all-tests", async (request: Request, response: Response) => {
     try {
         const customTests = await TestsServices.getAllTests();
         if (!customTests || customTests.length === 0) {
@@ -326,7 +326,7 @@ router.get("/get-all-tests",  async (request: Request, response: Response) => {
     }
 });
 
-router.get("/get-tests-by-type/:type", checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
+router.get("/get-tests-by-type/:type", checkStreamMiddleware, getSubscribedUserId, async (request: RequestExtended, response: Response) => {
     try {
         const { type } = request.params as { type: TTypeOfTest };
         const stream = request.stream;
@@ -340,6 +340,7 @@ router.get("/get-tests-by-type/:type", checkStreamMiddleware, async (request: Re
         }
         return response.status(201).json({ data: customTests, message: `Tests found` });
     } catch (error: any) {
+        console.log("🚀 ~ router.get ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });

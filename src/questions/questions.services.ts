@@ -14,8 +14,8 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
             question,
             answer,
             subject,
-            unit,
             chapter,
+            unit: unit || "",
             stream,
             explanation,
             difficulty,
@@ -64,10 +64,10 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
     if (!questions.length) return null;
 
     const { subject, chapter, stream } = questions[0];
-    console.log(stream)
+
     const addedQuestionIds: string[] = [];
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, difficulty, stream } = questionObject;
+        const { question, answer, explanation, options, difficulty, stream, unit , images} = questionObject;
 
         const newQuestion = await prisma.question.create({
             data: {
@@ -78,6 +78,7 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
                 stream,
                 explanation,
                 difficulty,
+                unit: unit || "",
             },
             select: {
                 id: true,
@@ -97,6 +98,18 @@ export const addMultipleQuestionsForSameSubjectAndChapter = async (
         });
 
         if (!newOption) return null;
+
+
+        if(images){
+            const newImages = await prisma.images.create({
+                data: {
+                    ...images,
+                    questionId: newQuestion.id,
+                },
+            });
+
+            if (!newImages) return null;
+        }
 
         // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
 
@@ -131,7 +144,7 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
     const addedQuestionIds: string[] = [];
 
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, subject, chapter, difficulty, stream } = questionObject;
+        const { question, answer, explanation, options, subject, chapter, difficulty,unit, stream, images } = questionObject;
 
         const newQuestion = await prisma.question.create({
             data: {
@@ -139,6 +152,7 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
                 answer,
                 subject,
                 chapter,
+                unit: unit || "",
                 explanation,
                 stream,
                 difficulty,
@@ -166,6 +180,17 @@ export const addMultipleQuestionsForDifferentSubjectAndChapter = async (
         });
 
         if (!newOption) return null;
+
+        if(images){
+            const newImages = await prisma.images.create({
+                data: {
+                    ...images,
+                    questionId: newQuestion.id,
+                },
+            });
+
+            if (!newImages) return null;
+        }
 
         // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
 

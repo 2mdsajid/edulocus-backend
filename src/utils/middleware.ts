@@ -25,6 +25,7 @@ export const getSubscribedUserId = async (
 ): Promise<any> => {
   try {
     const bearer = req.headers.authorization;
+    const streamFromHeader = req.headers.stream;
     const token = bearer ? bearer.split(" ")[1] : null;
 
     if (token && token !== 'undefined' && token !== null) {
@@ -35,6 +36,8 @@ export const getSubscribedUserId = async (
       if (user) {
         req.user = user;
         req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
+        req.stream = user.stream
+        console.log('ssadada',user.stream)
         next();
       }
     } else {
@@ -46,6 +49,19 @@ export const getSubscribedUserId = async (
       if (!admin) {
         return res.status(400).json({ message: "Can not create test!" });
       }
+      
+      // Handle case where stream could be string or string[] -- check if there is any present or not
+      // if user logged stream will be from their database as above
+      // if user not logged in then stream will be from header 
+      const streamValue = Array.isArray(streamFromHeader) ? streamFromHeader[0] : streamFromHeader;
+      const streamInUpperCase = streamValue?.toUpperCase() as TStream;
+      
+      const streams = getStreams();
+      if (!streamValue || !streams.includes(streamInUpperCase)) {
+        return res.status(400).json({ message: "Invalid Stream" });
+      }
+
+      req.stream = streamInUpperCase as TStream
 
       req.user = admin;
       req.mode = 'PUBLIC';
@@ -77,6 +93,7 @@ export const getUserSession = async (
     }
 
     req.user = user;
+    req.stream = user.stream
     next();
   } catch (error) {
     console.error(error);
@@ -127,7 +144,6 @@ export const checkStreamMiddleware = async (
   // Handle case where stream could be string or string[]
   const streamValue = Array.isArray(stream) ? stream[0] : stream;
   const streamInUpperCase = streamValue?.toUpperCase() as TStream;
-  console.log(streamInUpperCase)
 
   const streams = getStreams();
   if (!streamValue || !streams.includes(streamInUpperCase)) {

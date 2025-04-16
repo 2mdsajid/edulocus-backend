@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import * as QuestionServices from '../questions/questions.services';
-import { checkModerator, checkStreamMiddleware, RequestExtended } from '../utils/middleware';
+import { checkModerator, checkStreamMiddleware, getSubscribedUserId, RequestExtended } from '../utils/middleware';
 import { addMultipleQuestionsValidation, addSingleQuestionValidation } from './questions.validators';
 import { getStreams } from '../utils/functions';
 import { TStream } from '../utils/global-types';
@@ -53,6 +53,10 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', checkModerato
 // add multiple questions from different subject and chapter
 router.post('/add-multiple-question-for-different-subject-and-chapter', checkModerator, addMultipleQuestionsValidation, async (request: RequestExtended, response: Response) => {
     try {
+
+
+        console.log(request.body.questions.length)
+
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
@@ -61,6 +65,7 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', checkMod
         if (!request.user || request.user === undefined || request.user === null) {
             return response.status(400).json({ data: null, message: "Not Authorized" });
         }
+
 
         const questionIds = await QuestionServices.addMultipleQuestionsForDifferentSubjectAndChapter(request.body.questions, request.user.id)
         if (!questionIds || questionIds.length === 0) {
@@ -102,7 +107,7 @@ router.get('/get-questions', async (request: Request, response: Response) => {
 
 
 // users will get this for their own stream
-router.get('/get-total-questions-per-subject',checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
+router.get('/get-total-questions-per-subject',checkStreamMiddleware,getSubscribedUserId, async (request: RequestExtended, response: Response) => {
     try {
         if (!request.stream || !getStreams().includes(request.stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' })
@@ -119,7 +124,7 @@ router.get('/get-total-questions-per-subject',checkStreamMiddleware, async (requ
 })
 
 // users will get this for their own stream
-router.get('/get-total-questions-per-subject-and-chapter',checkStreamMiddleware, async (request: RequestExtended, response: Response) => {
+router.get('/get-total-questions-per-subject-and-chapter',checkStreamMiddleware,getSubscribedUserId, async (request: RequestExtended, response: Response) => {
     try {
         if (!request.stream || !getStreams().includes(request.stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' })

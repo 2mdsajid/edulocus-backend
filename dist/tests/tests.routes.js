@@ -141,7 +141,7 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
     }
 }));
 // to create tests by paid  users -- esp subjectwise, chapterwise tests creation
-router.post("/create-custom-tests-by-users", middleware_1.getSubscribedUserId, middleware_1.checkStreamMiddleware, tests_validators_1.createCustomTestByUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/create-custom-tests-by-users", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, tests_validators_1.createCustomTestByUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         const errors = (0, express_validator_1.validationResult)(request);
@@ -216,7 +216,6 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
             return response.status(400).json({ data: null, message: 'Stream Not Specified' });
         }
         const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
-        console.log(isDailyTestAlreadyExist);
         if (isDailyTestAlreadyExist) {
             return response.status(400).json({ data: null, message: 'Daily Test already exist' });
         }
@@ -239,7 +238,7 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-daily-test", middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-daily-test", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const date = new Date().toLocaleDateString('en-GB');
         const slug = `dt-${date}`;
@@ -303,7 +302,7 @@ router.get("/get-all-tests", (request, response) => __awaiter(void 0, void 0, vo
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-tests-by-type/:type", middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-tests-by-type/:type", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { type } = request.params;
         const stream = request.stream;
@@ -317,6 +316,7 @@ router.get("/get-tests-by-type/:type", middleware_1.checkStreamMiddleware, (requ
         return response.status(201).json({ data: customTests, message: `Tests found` });
     }
     catch (error) {
+        console.log("🚀 ~ router.get ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

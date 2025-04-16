@@ -1,4 +1,4 @@
-import { IsPastQuestion, Option, Question, QuestionCount } from "@prisma/client";
+import { IsPastQuestion, Images, Option, Question, QuestionCount } from "@prisma/client";
 
 export type TBaseQuestion = Omit<Question,
     'category' |
@@ -7,11 +7,13 @@ export type TBaseQuestion = Omit<Question,
     'userId' 
 >
 
+export type TBaseImages = Omit<Images, 'questionId'>
+
 export type TCreatePastQuestion = Omit<IsPastQuestion,'questionId'>
 
 export type TBaseOption = Omit<Option, 'questionId'>
 
-export type TQuestion = TBaseQuestion & { options: TBaseOption }
+export type TQuestion = TBaseQuestion & { images?: TBaseImages, options: TBaseOption }
 
 export type TAddQuestion = Omit<TQuestion, 'id'>
 

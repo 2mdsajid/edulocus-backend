@@ -82,6 +82,7 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.
 // add multiple questions from different subject and chapter
 router.post('/add-multiple-question-for-different-subject-and-chapter', middleware_1.checkModerator, questions_validators_1.addMultipleQuestionsValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log(request.body.questions.length);
         const errors = (0, express_validator_1.validationResult)(request);
         if (!errors.isEmpty()) {
             return response.status(400).json({ message: errors.array()[0].msg });
@@ -123,7 +124,7 @@ router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, vo
     }
 }));
 // users will get this for their own stream
-router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
@@ -139,7 +140,7 @@ router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddlewar
     }
 }));
 // users will get this for their own stream
-router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });

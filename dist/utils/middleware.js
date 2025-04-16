@@ -24,6 +24,7 @@ const functions_1 = require("./functions");
 const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const bearer = req.headers.authorization;
+        const streamFromHeader = req.headers.stream;
         const token = bearer ? bearer.split(" ")[1] : null;
         if (token && token !== 'undefined' && token !== null) {
             const secretKey = process.env.SECRET_KEY_FOR_AUTH;
@@ -32,6 +33,8 @@ const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0
             if (user) {
                 req.user = user;
                 req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
+                req.stream = user.stream;
+                console.log('ssadada', user.stream);
                 next();
             }
         }
@@ -43,6 +46,16 @@ const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0
             if (!admin) {
                 return res.status(400).json({ message: "Can not create test!" });
             }
+            // Handle case where stream could be string or string[] -- check if there is any present or not
+            // if user logged stream will be from their database as above
+            // if user not logged in then stream will be from header 
+            const streamValue = Array.isArray(streamFromHeader) ? streamFromHeader[0] : streamFromHeader;
+            const streamInUpperCase = streamValue === null || streamValue === void 0 ? void 0 : streamValue.toUpperCase();
+            const streams = (0, functions_1.getStreams)();
+            if (!streamValue || !streams.includes(streamInUpperCase)) {
+                return res.status(400).json({ message: "Invalid Stream" });
+            }
+            req.stream = streamInUpperCase;
             req.user = admin;
             req.mode = 'PUBLIC';
             next();
@@ -67,6 +80,7 @@ const getUserSession = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
             return res.status(401).json({ message: "Unauthenticated" });
         }
         req.user = user;
+        req.stream = user.stream;
         next();
     }
     catch (error) {
@@ -105,7 +119,6 @@ const checkStreamMiddleware = (req, res, next) => __awaiter(void 0, void 0, void
     // Handle case where stream could be string or string[]
     const streamValue = Array.isArray(stream) ? stream[0] : stream;
     const streamInUpperCase = streamValue === null || streamValue === void 0 ? void 0 : streamValue.toUpperCase();
-    console.log(streamInUpperCase);
     const streams = (0, functions_1.getStreams)();
     if (!streamValue || !streams.includes(streamInUpperCase)) {
         return res.status(401).json({ message: "Stream Not Specified" });

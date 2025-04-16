@@ -26,8 +26,8 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
             question,
             answer,
             subject,
-            unit,
             chapter,
+            unit: unit || "",
             stream,
             explanation,
             difficulty,
@@ -68,10 +68,9 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
     if (!questions.length)
         return null;
     const { subject, chapter, stream } = questions[0];
-    console.log(stream);
     const addedQuestionIds = [];
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, difficulty, stream } = questionObject;
+        const { question, answer, explanation, options, difficulty, stream, unit, images } = questionObject;
         const newQuestion = yield prisma_1.default.question.create({
             data: {
                 question,
@@ -81,6 +80,7 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
                 stream,
                 explanation,
                 difficulty,
+                unit: unit || "",
             },
             select: {
                 id: true,
@@ -96,6 +96,13 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
         });
         if (!newOption)
             return null;
+        if (images) {
+            const newImages = yield prisma_1.default.images.create({
+                data: Object.assign(Object.assign({}, images), { questionId: newQuestion.id }),
+            });
+            if (!newImages)
+                return null;
+        }
         // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
         yield prisma_1.default.isVerified.create({
             data: {
@@ -121,13 +128,14 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         return null;
     const addedQuestionIds = [];
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, subject, chapter, difficulty, stream } = questionObject;
+        const { question, answer, explanation, options, subject, chapter, difficulty, unit, stream, images } = questionObject;
         const newQuestion = yield prisma_1.default.question.create({
             data: {
                 question,
                 answer,
                 subject,
                 chapter,
+                unit: unit || "",
                 explanation,
                 stream,
                 difficulty,
@@ -153,6 +161,13 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         });
         if (!newOption)
             return null;
+        if (images) {
+            const newImages = yield prisma_1.default.images.create({
+                data: Object.assign(Object.assign({}, images), { questionId: newQuestion.id }),
+            });
+            if (!newImages)
+                return null;
+        }
         // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
         yield prisma_1.default.isVerified.create({
             data: {
