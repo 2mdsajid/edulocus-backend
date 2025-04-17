@@ -397,5 +397,22 @@ router.get("/get-dashboard-analytics/:id", async (request: Request, response: Re
 });
 
 
+router.post("/update-test-questions/:id", async (request: Request, response: Response) => {
+    try {
+        const { id } = request.params
+        const { questionIds } = request.body
+
+        const updatedTest = await TestsServices.updateTestQuestions(id, questionIds);
+        if (!updatedTest) {
+            return response.status(400).json({ data: null, message: 'Can not update test questions' });
+        }
+
+        return response.status(201).json({ data: updatedTest, message: `Test questions updated` });
+    } catch (error: any) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+})
+
+
 
 export default router

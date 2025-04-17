@@ -3,7 +3,7 @@ import { TStream, TStreamHierarchy, TSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { SYLLABUS } from "../utils/syllabus";
 import { getAllSubjects } from "./questions.methods";
-import { TAddQuestion, TAddQuestionCount, TCreatePastQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
+import { TAddQuestion, TAddQuestionCount, TBaseOption, TBaseQuestion, TCreatePastQuestion, TQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
 
 
 // add a single question
@@ -291,7 +291,7 @@ export const getQuestionsIds = async (limit: number, stream: TStream): Promise<s
 };
 
 // ot Fetch questions by subject with a limit -- esp for subjectwise tests
-export const getQuestionsBySubject = async (subject: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
+export const getQuestionsIdsBySubject = async (subject: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
     const limitValue = limit ? 10 : 50
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
@@ -304,7 +304,7 @@ export const getQuestionsBySubject = async (subject: string, limit: boolean, str
 };
 
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
-export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
+export const getQuestionsIdsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
     const limitValue = limit ? 10 : 50
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
@@ -316,6 +316,43 @@ export const getQuestionsBySubjectAndChapter = async (subject: string, chapter: 
     if (!selectedQuestions || selectedQuestions.length === 0) return null
     return selectedQuestions.map(question => question.id);
 };
+
+
+// reconside later this -- some buggy code this is
+export const getQuestionsBySubject = async (subject: string): Promise<TQuestion[] | null> => {
+    const questions = await prisma.question.findManyRandom(10, {
+        where: {
+            subject: subject
+        },
+        select: {
+            id: true,
+            question: true,
+            subject: true,
+            chapter: true,
+            options: true,
+            answer: true,
+            explanation: true,
+            difficulty: true,
+            unit: true,
+            stream: true,
+        }
+    });
+
+    const modifiedQuestions = questions.map(question => {
+        return {
+            ...question,
+            options: {
+                a: question.options?.a || "",
+                b: question.options?.b || "",
+                c: question.options?.c || "",
+                d: question.options?.d || "",
+            }
+        }
+    });
+
+    if (!modifiedQuestions || modifiedQuestions.length === 0) return null
+    return modifiedQuestions 
+}
 
 // get total questions count
 export const getTotalQuestionsCount = async (): Promise<number | null> => {

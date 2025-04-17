@@ -1,10 +1,9 @@
-import { getQuestionsBySubject, getQuestionsBySubjectAndChapter, getQuestionsIds, getTotalQuestionsPerSubjectAndChapter } from "../questions/questions.services";
-import { getRandomColor } from "../utils/functions";
+import { getQuestionsIdsBySubject, getQuestionsIdsBySubjectAndChapter } from "../questions/questions.services";
 import { typeOfTestsAndDescriptionData } from "../utils/global-data";
-import prisma from "../utils/prisma";
-import { calculateTotalQuestionsAttempt, calculateTotalCorrectAnswers, calculateTotalUnattemptQuestions, generateRecentTests, calculateAverageScorePerTest, calculateAverageScorePerQuestion, generateDailyTestProgress, getSubjectScoresForBarChart } from "./tests.methods";
-import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDailyTestProgressChartData, TDashboardAnalyticData, TRecentTestInDashboardData, TSaveUserScore, TSingleCustomTestWithQuestions, TSubjectwiseScoresChartData, TTestAnalyticsForDashboardData, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 import { TStream } from "../utils/global-types";
+import prisma from "../utils/prisma";
+import { calculateAverageScorePerQuestion, calculateAverageScorePerTest, calculateTotalCorrectAnswers, calculateTotalQuestionsAttempt, calculateTotalUnattemptQuestions, generateDailyTestProgress, generateRecentTests, getSubjectScoresForBarChart } from "./tests.methods";
+import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TSingleCustomTestWithQuestions, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
     const { name, slug, createdById, mode, questions, type, stream } = customTestData;
@@ -22,6 +21,16 @@ export const createCustomTest = async (customTestData: TcreateCustomTest): Promi
     if (!newCustomTest) return null
     return newCustomTest.id
 }
+
+export const updateTestQuestions = async (testId: string, questionIds: string[]): Promise<string | null> => {
+    const updatedTest = await prisma.customTest.update({
+        where: { id: testId },
+        data: { questions: questionIds }
+    })
+    if (!updatedTest) return null
+    return updatedTest.id
+}
+
 
 export const createPastTest = async (testData: TCreatePastPaper): Promise<TBasePastPaper | null> => {
     console.log("🚀 ~ createPastTest ~ testData:", testData)
@@ -49,7 +58,7 @@ export const createPastTest = async (testData: TCreatePastPaper): Promise<TBaseP
 
 export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string): Promise<string | null> => {
     const { name, createdById, type, mode, limit, stream } = customTestData;
-    const questions = await getQuestionsBySubject(subject, limit, stream)
+    const questions = await getQuestionsIdsBySubject(subject, limit, stream)
     if (!questions || questions.length === 0) return null;
 
     const newCustomTest = await prisma.customTest.create({
@@ -69,7 +78,7 @@ export const createSubjectWiseCustomTestByUser = async (customTestData: TcreateC
 
 export const createChapterWiseCustomTestByUser = async (customTestData: TcreateCustomTestByUser, subject: string, chapter: string): Promise<string | null> => {
     const { name, createdById, type, mode, limit, stream } = customTestData;
-    const questions = await getQuestionsBySubjectAndChapter(subject, chapter, limit, stream)
+    const questions = await getQuestionsIdsBySubjectAndChapter(subject, chapter, limit, stream)
     if (!questions || questions.length === 0) return null;
     const newCustomTest = await prisma.customTest.create({
         data: {
@@ -141,7 +150,7 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
     const modifiedCustomTest = {
         ...customTest,
         createdBy: customTest.createdBy.name,
-        fetchedQuestions: modifiedQuestions
+        questions: modifiedQuestions,
     };
 
     return modifiedCustomTest;
@@ -195,7 +204,7 @@ export const getDailyTestBySlug = async (slug: string): Promise<TSingleCustomTes
     const modifiedCustomTest = {
         ...customTest,
         createdBy: customTest.createdBy.name,
-        fetchedQuestions: modifiedQuestions
+        questions: modifiedQuestions
     };
 
     return modifiedCustomTest;

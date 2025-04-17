@@ -365,4 +365,18 @@ router.get("/get-dashboard-analytics/:id", (request, response) => __awaiter(void
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.post("/update-test-questions/:id", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        const { questionIds } = request.body;
+        const updatedTest = yield TestsServices.updateTestQuestions(id, questionIds);
+        if (!updatedTest) {
+            return response.status(400).json({ data: null, message: 'Can not update test questions' });
+        }
+        return response.status(201).json({ data: updatedTest, message: `Test questions updated` });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 exports.default = router;

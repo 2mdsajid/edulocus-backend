@@ -184,6 +184,26 @@ router.get('/get-stream-hierarchy', async (request: Request, response: Response)
     }
 })
 
+// get questions by subject while making tests
+//  not ading stream -- as the subjects are totally different as foe now
+router.get('/get-questions-by-subject',checkModerator, async (request: Request, response: Response) => {
+    try {
+        const subject = request.query.subject as string
+        if (!subject) {
+            return response.status(400).json({ data: null, message: 'Invalid Subject' })
+        }
+
+        const questions = await QuestionServices.getQuestionsBySubject(subject)
+        if (!questions) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' })
+        }
+        return response.status(200).json({ data: questions, message: 'Questions Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
+
 
 router.get('/get-subjects', async (request: Request, response: Response) => {
     try {
@@ -218,6 +238,8 @@ router.get('/download-questions', async (request: Request, response: Response) =
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+
 
 
 

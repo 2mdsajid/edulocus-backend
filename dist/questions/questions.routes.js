@@ -196,6 +196,24 @@ router.get('/get-stream-hierarchy', (request, response) => __awaiter(void 0, voi
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// get questions by subject while making tests
+//  not ading stream -- as the subjects are totally different as foe now
+router.get('/get-questions-by-subject', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const subject = request.query.subject;
+        if (!subject) {
+            return response.status(400).json({ data: null, message: 'Invalid Subject' });
+        }
+        const questions = yield QuestionServices.getQuestionsBySubject(subject);
+        if (!questions) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: questions, message: 'Questions Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;

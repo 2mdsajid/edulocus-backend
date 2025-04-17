@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -35,6 +35,16 @@ const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, f
     return newCustomTest.id;
 });
 exports.createCustomTest = createCustomTest;
+const updateTestQuestions = (testId, questionIds) => __awaiter(void 0, void 0, void 0, function* () {
+    const updatedTest = yield prisma_1.default.customTest.update({
+        where: { id: testId },
+        data: { questions: questionIds }
+    });
+    if (!updatedTest)
+        return null;
+    return updatedTest.id;
+});
+exports.updateTestQuestions = updateTestQuestions;
 const createPastTest = (testData) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("🚀 ~ createPastTest ~ testData:", testData);
     const { customTestId, affiliation, year, stream, category } = testData;
@@ -54,7 +64,7 @@ const createPastTest = (testData) => __awaiter(void 0, void 0, void 0, function*
 exports.createPastTest = createPastTest;
 const createSubjectWiseCustomTestByUser = (customTestData, subject) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, createdById, type, mode, limit, stream } = customTestData;
-    const questions = yield (0, questions_services_1.getQuestionsBySubject)(subject, limit, stream);
+    const questions = yield (0, questions_services_1.getQuestionsIdsBySubject)(subject, limit, stream);
     if (!questions || questions.length === 0)
         return null;
     const newCustomTest = yield prisma_1.default.customTest.create({
@@ -75,7 +85,7 @@ const createSubjectWiseCustomTestByUser = (customTestData, subject) => __awaiter
 exports.createSubjectWiseCustomTestByUser = createSubjectWiseCustomTestByUser;
 const createChapterWiseCustomTestByUser = (customTestData, subject, chapter) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, createdById, type, mode, limit, stream } = customTestData;
-    const questions = yield (0, questions_services_1.getQuestionsBySubjectAndChapter)(subject, chapter, limit, stream);
+    const questions = yield (0, questions_services_1.getQuestionsIdsBySubjectAndChapter)(subject, chapter, limit, stream);
     if (!questions || questions.length === 0)
         return null;
     const newCustomTest = yield prisma_1.default.customTest.create({
@@ -142,7 +152,7 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
         }
     });
     const modifiedQuestions = questions.map((q) => (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" } })));
-    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, fetchedQuestions: modifiedQuestions });
+    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, questions: modifiedQuestions });
     return modifiedCustomTest;
 });
 exports.getCustomTestById = getCustomTestById;
@@ -184,7 +194,7 @@ const getDailyTestBySlug = (slug) => __awaiter(void 0, void 0, void 0, function*
         }
     });
     const modifiedQuestions = questions.map((q) => (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" } })));
-    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, fetchedQuestions: modifiedQuestions });
+    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, questions: modifiedQuestions });
     return modifiedCustomTest;
 });
 exports.getDailyTestBySlug = getDailyTestBySlug;

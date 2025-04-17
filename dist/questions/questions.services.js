@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubjectAndChapter = exports.getQuestionsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -259,7 +259,7 @@ const getQuestionsIds = (limit, stream) => __awaiter(void 0, void 0, void 0, fun
 });
 exports.getQuestionsIds = getQuestionsIds;
 // ot Fetch questions by subject with a limit -- esp for subjectwise tests
-const getQuestionsBySubject = (subject, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
+const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const limitValue = limit ? 10 : 50;
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
@@ -271,9 +271,9 @@ const getQuestionsBySubject = (subject, limit, stream) => __awaiter(void 0, void
         return null;
     return selectedQuestions.map(question => question.id);
 });
-exports.getQuestionsBySubject = getQuestionsBySubject;
+exports.getQuestionsIdsBySubject = getQuestionsIdsBySubject;
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
-const getQuestionsBySubjectAndChapter = (subject, chapter, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
+const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const limitValue = limit ? 10 : 50;
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
@@ -286,7 +286,40 @@ const getQuestionsBySubjectAndChapter = (subject, chapter, limit, stream) => __a
         return null;
     return selectedQuestions.map(question => question.id);
 });
-exports.getQuestionsBySubjectAndChapter = getQuestionsBySubjectAndChapter;
+exports.getQuestionsIdsBySubjectAndChapter = getQuestionsIdsBySubjectAndChapter;
+// reconside later this -- some buggy code this is
+const getQuestionsBySubject = (subject) => __awaiter(void 0, void 0, void 0, function* () {
+    const questions = yield prisma_1.default.question.findManyRandom(10, {
+        where: {
+            subject: subject
+        },
+        select: {
+            id: true,
+            question: true,
+            subject: true,
+            chapter: true,
+            options: true,
+            answer: true,
+            explanation: true,
+            difficulty: true,
+            unit: true,
+            stream: true,
+        }
+    });
+    const modifiedQuestions = questions.map(question => {
+        var _a, _b, _c, _d;
+        return Object.assign(Object.assign({}, question), { options: {
+                a: ((_a = question.options) === null || _a === void 0 ? void 0 : _a.a) || "",
+                b: ((_b = question.options) === null || _b === void 0 ? void 0 : _b.b) || "",
+                c: ((_c = question.options) === null || _c === void 0 ? void 0 : _c.c) || "",
+                d: ((_d = question.options) === null || _d === void 0 ? void 0 : _d.d) || "",
+            } });
+    });
+    if (!modifiedQuestions || modifiedQuestions.length === 0)
+        return null;
+    return modifiedQuestions;
+});
+exports.getQuestionsBySubject = getQuestionsBySubject;
 // get total questions count
 const getTotalQuestionsCount = () => __awaiter(void 0, void 0, void 0, function* () {
     const totalQuestions = yield prisma_1.default.question.count();
