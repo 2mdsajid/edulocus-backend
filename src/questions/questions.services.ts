@@ -56,6 +56,27 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
     return newQuestion.id ?? null
 }
 
+// check if question is reported
+export const checkIfQuestionIsReported = async (questionId: string): Promise<boolean> => {
+    const reportedQuestion = await prisma.isReported.findUnique({
+        where: { questionId }
+    })
+    return reportedQuestion ? true : false
+}
+
+// report question
+export const reportQuestion = async (questionId: string, description: string): Promise<string | null> => {
+    const reportedQuestion = await prisma.isReported.create({
+        data: {
+            questionId,
+            state: true,
+            message: description
+        }
+    })
+    return reportedQuestion.message
+}
+
+
 // add multiple questions from same chapter and subject
 export const addMultipleQuestionsForSameSubjectAndChapter = async (
     questions: TAddQuestion[],

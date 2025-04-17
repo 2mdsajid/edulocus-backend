@@ -5,6 +5,19 @@ export const chapterScoreSchema = z.object({
   score: z.number(),
 });
 
+export const questionSchemaForGemini = z.object({
+  question: z.string(),
+  options: z.object({
+    a: z.string(),
+    b: z.string(),
+    c: z.string(),
+    d: z.string(),
+  }),
+  correctAnswer: z.string().nullable(),
+});
+
+export type TQuestionSchemaForGemini = z.infer<typeof questionSchemaForGemini>;
+
 // Define the schema for a subject, which contains multiple chapters
 export const subjectSchema = z.record(chapterScoreSchema);
 

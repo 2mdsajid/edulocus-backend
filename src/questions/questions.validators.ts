@@ -16,6 +16,10 @@ export const addSingleQuestionValidation: ValidationChain[] = [
     body('options.d').notEmpty().withMessage('Option D must be provided').isString().withMessage('Option D must be a string'),
 ];
 
+export const reportQuestionValidation: ValidationChain[] = [
+    body('description').notEmpty().withMessage('Description must be provided').isString().withMessage('Description must be a string'),
+];
+
 export const addMultipleQuestionsValidation: ValidationChain[] = [
     body('questions').isArray().withMessage('Questions must be an array'),
     body('questions.*.question').notEmpty().withMessage('Question must be provided').isString().withMessage('Question must be a string'),

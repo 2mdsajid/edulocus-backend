@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -63,6 +63,26 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
     return (_a = newQuestion.id) !== null && _a !== void 0 ? _a : null;
 });
 exports.addSingleQuestion = addSingleQuestion;
+// check if question is reported
+const checkIfQuestionIsReported = (questionId) => __awaiter(void 0, void 0, void 0, function* () {
+    const reportedQuestion = yield prisma_1.default.isReported.findUnique({
+        where: { questionId }
+    });
+    return reportedQuestion ? true : false;
+});
+exports.checkIfQuestionIsReported = checkIfQuestionIsReported;
+// report question
+const reportQuestion = (questionId, description) => __awaiter(void 0, void 0, void 0, function* () {
+    const reportedQuestion = yield prisma_1.default.isReported.create({
+        data: {
+            questionId,
+            state: true,
+            message: description
+        }
+    });
+    return reportedQuestion.message;
+});
+exports.reportQuestion = reportQuestion;
 // add multiple questions from same chapter and subject
 const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __awaiter(void 0, void 0, void 0, function* () {
     if (!questions.length)

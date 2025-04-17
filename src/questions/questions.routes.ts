@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import * as QuestionServices from '../questions/questions.services';
-import { checkModerator, checkStreamMiddleware, getSubscribedUserId, RequestExtended } from '../utils/middleware';
-import { addMultipleQuestionsValidation, addSingleQuestionValidation } from './questions.validators';
+import { checkModerator, checkStreamMiddleware, getSubscribedUserId, getUserSession, RequestExtended } from '../utils/middleware';
+import { addMultipleQuestionsValidation, addSingleQuestionValidation, reportQuestionValidation } from './questions.validators';
 import { getStreams } from '../utils/functions';
 import { TStream } from '../utils/global-types';
 
@@ -23,6 +23,34 @@ router.post('/add-single-question', checkModerator, addSingleQuestionValidation,
         const questionId = await QuestionServices.addSingleQuestion(request.body, request.user.id)
         return response.status(200).json({ data: questionId, message: 'Question Created' });
     } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
+// adding this middleqare so everyone can report a question.. not only logged in ones
+// for non logged users -- admin id will be added in the report entries
+router.post('/report-question/:questionId', reportQuestionValidation, async (request: RequestExtended, response: Response) => {
+    try {
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+
+        const questionId = request.params.questionId
+        const description = request.body.description
+
+        const isReported = await QuestionServices.checkIfQuestionIsReported(questionId)
+        if (isReported) {
+            return response.status(400).json({ data: null, message: 'Question Already Reported' });
+        }
+
+        const reportedQuestion = await QuestionServices.reportQuestion(questionId, description)
+        if (!reportedQuestion) {
+            return response.status(400).json({ data: null, message: 'Question Not Reported' });
+        }
+        return response.status(200).json({ data: reportedQuestion, message: 'Question Reported' });
+    } catch (error) {
+        console.log("🚀 ~ router.post ~ error:", error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
@@ -238,6 +266,7 @@ router.get('/download-questions', async (request: Request, response: Response) =
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
 
 
 

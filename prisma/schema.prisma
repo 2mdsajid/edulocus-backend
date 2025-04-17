@@ -198,7 +198,6 @@ model IsReported {
     questionId String    @id
     question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
     state      Boolean   @default(false)
-    by         String?
     message    String?
     date       DateTime?
 }

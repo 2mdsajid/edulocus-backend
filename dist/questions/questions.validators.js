@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addMultipleQuestionsValidation = exports.addSingleQuestionValidation = void 0;
+exports.addMultipleQuestionsValidation = exports.reportQuestionValidation = exports.addSingleQuestionValidation = void 0;
 const express_validator_1 = require("express-validator");
 exports.addSingleQuestionValidation = [
     (0, express_validator_1.body)('question').notEmpty().withMessage('Question must be provided').isString().withMessage('Question must be a string'),
@@ -15,6 +15,9 @@ exports.addSingleQuestionValidation = [
     (0, express_validator_1.body)('options.b').notEmpty().withMessage('Option B must be provided').isString().withMessage('Option B must be a string'),
     (0, express_validator_1.body)('options.c').notEmpty().withMessage('Option C must be provided').isString().withMessage('Option C must be a string'),
     (0, express_validator_1.body)('options.d').notEmpty().withMessage('Option D must be provided').isString().withMessage('Option D must be a string'),
+];
+exports.reportQuestionValidation = [
+    (0, express_validator_1.body)('description').notEmpty().withMessage('Description must be provided').isString().withMessage('Description must be a string'),
 ];
 exports.addMultipleQuestionsValidation = [
     (0, express_validator_1.body)('questions').isArray().withMessage('Questions must be an array'),

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.askGemini = exports.getChapterAndSubjectScores = exports.isUserLegibleForAiAsk = void 0;
+exports.getGeminiExplanation = exports.askGemini = exports.getChapterAndSubjectScores = exports.isUserLegibleForAiAsk = void 0;
 const generative_ai_1 = require("@google/generative-ai");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const google_schema_1 = require("./google.schema");
@@ -136,3 +136,54 @@ const askGemini = (userId, prompt) => __awaiter(void 0, void 0, void 0, function
     return result.response.text();
 });
 exports.askGemini = askGemini;
+const getGeminiExplanation = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { question, options, correctAnswer } = data;
+        const prompt = `
+  You are an expert tutor providing a comprehensive explanation of a question and its solution. Below is the question data in JSON format:
+  \`\`\`json
+  {
+    "question": "${question}",
+    "options": ${JSON.stringify(options)},
+    "correctAnswer": "${correctAnswer}"
+  }
+  \`\`\`
+
+  Provide a detailed explanation in **pure HTML format** following these guidelines:
+
+  1. Start with a clear explanation of the question's concept and what it's testing
+  2. Analyze each option individually:
+     - Explain why it's correct or incorrect
+     - Provide reasoning and supporting evidence
+     - Mention any common misconceptions related to the option
+     - Use <br> tags in between for better readability
+  3. For the correct answer:
+     - Provide a step-by-step explanation of how to arrive at the solution
+     - Include any relevant formulas, theories, or principles
+     - Suggest alternative approaches to solving the problem
+     - Use <br> tags in between for better readability
+  4. Include practical examples or analogies to enhance understanding
+  5. Use proper HTML structure with semantic tags:
+     - Use <h3> for section headings
+     - Use <ul> and <li> for lists
+     - Use <p> for paragraphs
+     - Use <strong> for emphasis
+     - Use <code> for technical terms or formulas
+  6. Make the explanation engaging and easy to follow
+  7. Do not include any other text or comments in the response
+  8. Do not include the <body>, <head>, <html> tags in the response
+  9. Use <br> tags in between for better readability
+
+  `;
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash-lite",
+            systemInstruction: prompt,
+        });
+        const result = yield model.generateContent(prompt);
+        return result.response.text();
+    }
+    catch (error) {
+        return null;
+    }
+});
+exports.getGeminiExplanation = getGeminiExplanation;

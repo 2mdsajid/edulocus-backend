@@ -58,6 +58,31 @@ router.post('/add-single-question', middleware_1.checkModerator, questions_valid
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// adding this middleqare so everyone can report a question.. not only logged in ones
+// for non logged users -- admin id will be added in the report entries
+router.post('/report-question/:questionId', questions_validators_1.reportQuestionValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const questionId = request.params.questionId;
+        const description = request.body.description;
+        const isReported = yield QuestionServices.checkIfQuestionIsReported(questionId);
+        if (isReported) {
+            return response.status(400).json({ data: null, message: 'Question Already Reported' });
+        }
+        const reportedQuestion = yield QuestionServices.reportQuestion(questionId, description);
+        if (!reportedQuestion) {
+            return response.status(400).json({ data: null, message: 'Question Not Reported' });
+        }
+        return response.status(200).json({ data: reportedQuestion, message: 'Question Reported' });
+    }
+    catch (error) {
+        console.log("🚀 ~ router.post ~ error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 // add multiple questions from same chapter
 router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.checkModerator, questions_validators_1.addMultipleQuestionsValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {

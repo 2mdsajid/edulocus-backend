@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const google_services_1 = require("../google/google.services");
 const middleware_1 = require("../utils/middleware");
+const google_schema_1 = require("./google.schema");
 const router = express_1.default.Router();
 router.get('/ask-gemini', middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -33,7 +34,6 @@ router.get('/ask-gemini', middleware_1.getUserSession, (request, response) => __
         return response.status(200).json({ data: geminiResponse, message: 'Gemini Response' });
     }
     catch (error) {
-        console.log("🚀 ~ router.get ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -46,6 +46,22 @@ router.get("/get-chapter-and-subject-scores", middleware_1.getUserSession, (requ
         }
         const scores = yield (0, google_services_1.getChapterAndSubjectScores)(userId);
         return response.status(200).json({ data: scores, message: 'Scores retrieved' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post("/get-gemini-explanation", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { question, options, correctAnswer } = google_schema_1.questionSchemaForGemini.parse(request.body);
+        if (!question || !options) {
+            return response.status(400).json({ data: null, message: 'Invalid request body' });
+        }
+        const explanation = yield (0, google_services_1.getGeminiExplanation)(request.body);
+        if (!explanation) {
+            return response.status(400).json({ data: null, message: 'Explanation not found' });
+        }
+        return response.status(200).json({ data: explanation, message: 'Explanation retrieved' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
