@@ -40,11 +40,10 @@ export type TCustomTestMetadata = Pick<CustomTest,
 export type TSingleCustomTestWithQuestions = Pick<CustomTest,
     'id' |
     'name' |
-    'slug' |
-    'questions'
+    'slug' 
 > & {
     createdBy: string,
-    fetchedQuestions: TQuestion[]
+    questions: TQuestion[]
 }
 
 
