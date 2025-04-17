@@ -6,14 +6,14 @@ export type ShadcnToast = {
 };
 
 export type TSyllabus = {
-  [key: string]: { //this is the chapter name
-    marks: number, //this is the marks of the chapter
-    topics: string[] //this is the topics in the chapter
+  [key: string]: { //this is the subject name
+    marks: number, //this is the marks of the subject
+    topics: string[] //this is the topics in the subject
   }
 }
 
 export type TSyllabusCombined = {
-  [key: string]: TSyllabus //this is the subject name
+  [key: string]: TSyllabus //this is the stream name
 }
 
 

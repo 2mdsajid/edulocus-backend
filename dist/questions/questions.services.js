@@ -280,7 +280,7 @@ const getQuestionsIds = (limit, stream) => __awaiter(void 0, void 0, void 0, fun
 exports.getQuestionsIds = getQuestionsIds;
 // ot Fetch questions by subject with a limit -- esp for subjectwise tests
 const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
-    const limitValue = limit ? 10 : 50;
+    const limitValue = limit !== null && limit !== void 0 ? limit : 10;
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
@@ -294,7 +294,7 @@ const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, v
 exports.getQuestionsIdsBySubject = getQuestionsIdsBySubject;
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
 const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
-    const limitValue = limit ? 10 : 50;
+    const limitValue = limit !== null && limit !== void 0 ? limit : 10;
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
             subject: subject,

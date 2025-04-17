@@ -282,6 +282,7 @@ model PastPaper {
     customTest   CustomTest @relation(fields: [customTestId], references: [id], onDelete: Cascade)
     stream       STREAM     @default(PG)
     year         Int
+    isUnlocked   Boolean    @default(false)
     category     String?    @default("")
     affiliation  String?    @default("")
 }

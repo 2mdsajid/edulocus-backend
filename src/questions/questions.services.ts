@@ -312,8 +312,8 @@ export const getQuestionsIds = async (limit: number, stream: TStream): Promise<s
 };
 
 // ot Fetch questions by subject with a limit -- esp for subjectwise tests
-export const getQuestionsIdsBySubject = async (subject: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
-    const limitValue = limit ? 10 : 50
+export const getQuestionsIdsBySubject = async (subject: string, limit: number, stream: TStream): Promise<string[] | null> => {
+    const limitValue = limit ?? 10
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
@@ -325,8 +325,8 @@ export const getQuestionsIdsBySubject = async (subject: string, limit: boolean, 
 };
 
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
-export const getQuestionsIdsBySubjectAndChapter = async (subject: string, chapter: string, limit: boolean, stream: TStream): Promise<string[] | null> => {
-    const limitValue = limit ? 10 : 50
+export const getQuestionsIdsBySubjectAndChapter = async (subject: string, chapter: string, limit: number, stream: TStream): Promise<string[] | null> => {
+    const limitValue = limit ?? 10
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,

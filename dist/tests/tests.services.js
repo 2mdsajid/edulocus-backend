@@ -247,6 +247,7 @@ const getAllTestsByType = (type, stream) => __awaiter(void 0, void 0, void 0, fu
                 select: {
                     stream: true,
                     category: true,
+                    isUnlocked: true,
                     year: true,
                     affiliation: true,
                 }
@@ -269,6 +270,7 @@ const getAllTests = () => __awaiter(void 0, void 0, void 0, function* () {
                 select: {
                     stream: true,
                     category: true,
+                    isUnlocked: true,
                     year: true,
                     affiliation: true,
                 }

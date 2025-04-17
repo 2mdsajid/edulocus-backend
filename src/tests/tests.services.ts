@@ -265,6 +265,7 @@ export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Pro
                 select: {
                     stream: true,
                     category: true,
+                    isUnlocked: true,
                     year: true,
                     affiliation: true,
                 }
@@ -287,6 +288,7 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
                 select: {
                     stream: true,
                     category: true,
+                    isUnlocked: true,
                     year: true,
                     affiliation: true,
                 }

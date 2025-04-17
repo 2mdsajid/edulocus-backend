@@ -1,5 +1,5 @@
 import { STREAM_HIERARCHY } from "./global-data";
-import { TStream, TStreamHierarchy } from "./global-types";
+import { TStream, TStreamHierarchy, TSyllabusCombined } from "./global-types";
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -50,3 +50,19 @@ export const getRandomColor = () => colors[Math.floor(Math.random() * colors.len
 export const getStreams = (): TStream[] => {
   return STREAM_HIERARCHY.map(stream => stream.name);
 };
+
+export function getSubjectsAndMarks(
+  syllabus: TSyllabusCombined,
+  stream: string
+): { subject: string; marks: number }[] {
+  const result: { subject: string; marks: number }[] = [];
+
+  const subjects = syllabus[stream];
+  if (!subjects) return result;
+
+  for (const [subject, { marks }] of Object.entries(subjects)) {
+    result.push({ subject, marks });
+  }
+
+  return result;
+}

@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getStreams = exports.getRandomColor = exports.generateRandomCode = exports.isCuid = exports.isUUID = exports.formatDate = void 0;
+exports.getSubjectsAndMarks = getSubjectsAndMarks;
 const global_data_1 = require("./global-data");
 const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -48,3 +49,13 @@ const getStreams = () => {
     return global_data_1.STREAM_HIERARCHY.map(stream => stream.name);
 };
 exports.getStreams = getStreams;
+function getSubjectsAndMarks(syllabus, stream) {
+    const result = [];
+    const subjects = syllabus[stream];
+    if (!subjects)
+        return result;
+    for (const [subject, { marks }] of Object.entries(subjects)) {
+        result.push({ subject, marks });
+    }
+    return result;
+}

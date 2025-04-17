@@ -43,8 +43,9 @@ const tests_validators_1 = require("./tests.validators");
 const questions_services_1 = require("../questions/questions.services");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const functions_1 = require("../utils/functions");
+const syllabus_1 = require("../utils/syllabus");
 const router = express_1.default.Router();
-// Create a new custom test
+// Create a new custom test -- model test only as of now
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -60,7 +61,21 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
-        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), request.body.stream);
+        const subjectsAndMarks = (0, functions_1.getSubjectsAndMarks)(syllabus_1.SYLLABUS, request.body.stream);
+        console.log(subjectsAndMarks);
+        // Calculate total marks across all subjects
+        const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
+        console.log(totalMarks);
+        // Fetch questions for each subject based on their mark ratio
+        const questionsPromises = subjectsAndMarks.map((subject) => __awaiter(void 0, void 0, void 0, function* () {
+            const subjectLimit = Math.floor((subject.marks / totalMarks) * Number(limit));
+            if (subjectLimit > 0) {
+                return yield (0, questions_services_1.getQuestionsIdsBySubject)(subject.subject, subjectLimit, request.body.stream);
+            }
+            return [];
+        }));
+        const questionsArrays = yield Promise.all(questionsPromises);
+        const questionsIds = questionsArrays.flat().filter((id) => typeof id === "string");
         if (!questionsIds || questionsIds.length === 0) {
             return response.status(400).json({ data: null, message: 'No questions found' });
         }
@@ -80,6 +95,7 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
     }
     catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -123,6 +139,7 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
             affiliation: affiliation,
             category: category,
             stream: stream,
+            isUnlocked: false,
             customTestId: newCustomTestId
         };
         const updatedIsPastQuestions = yield (0, questions_services_1.updateIsPastQuestion)(pastTestData, questionsIds);
@@ -151,7 +168,7 @@ router.post("/create-custom-tests-by-users", middleware_1.checkStreamMiddleware,
         const subject = request.query.subject;
         const chapter = request.query.chapter;
         const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
-        const limit = !((_b = request.user) === null || _b === void 0 ? void 0 : _b.isSubscribed) || false;
+        const limit = !((_b = request.user) === null || _b === void 0 ? void 0 : _b.isSubscribed) ? 10 : 50;
         const mode = request.mode || 'ALL';
         const type = request.body.type;
         const stream = request.stream;

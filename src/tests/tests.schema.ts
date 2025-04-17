@@ -21,7 +21,7 @@ export type TcreateCustomTestByUser = Pick<CustomTest,
     'mode' |
     'stream'
 > & {
-    limit: boolean,
+    limit: number,
 }
 
 export type TCustomTestMetadata = Pick<CustomTest,

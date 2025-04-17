@@ -4,14 +4,15 @@ import { checkModerator, checkStreamMiddleware, getSubscribedUserId, RequestExte
 import { TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TTypeOfTest } from './tests.schema';
 import * as TestsServices from './tests.services';
 import { createCustomTestByUserValidation, createCustomTestValidation, createPastTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
-import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, updateIsPastQuestion } from '../questions/questions.services';
+import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, getQuestionsIdsBySubject, updateIsPastQuestion } from '../questions/questions.services';
 import prisma from '../utils/prisma';
-import { getStreams } from '../utils/functions';
+import { getStreams, getSubjectsAndMarks } from '../utils/functions';
 import { TStream } from '../utils/global-types';
+import { SYLLABUS } from '../utils/syllabus';
 
 const router = express.Router();
 
-// Create a new custom test
+// Create a new custom test -- model test only as of now
 router.post("/create-custom-tests",
     checkModerator,
     createCustomTestValidation,
@@ -33,9 +34,29 @@ router.post("/create-custom-tests",
                 return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
             }
 
-            const questionsIds = await getQuestionsIds(Number(limit), request.body.stream)
+
+            const subjectsAndMarks = getSubjectsAndMarks(SYLLABUS, request.body.stream);
+            console.log(subjectsAndMarks);
+
+            // Calculate total marks across all subjects
+            const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
+            console.log(totalMarks)
+
+
+            // Fetch questions for each subject based on their mark ratio
+            const questionsPromises = subjectsAndMarks.map(async (subject) => {
+                const subjectLimit = Math.floor((subject.marks / totalMarks) * Number(limit));
+                if (subjectLimit > 0) {
+                    return await getQuestionsIdsBySubject(subject.subject, subjectLimit, request.body.stream);
+                }
+                return [];
+            });
+
+            const questionsArrays = await Promise.all(questionsPromises);
+
+            const questionsIds = questionsArrays.flat().filter((id): id is string => typeof id === "string");
             if (!questionsIds || questionsIds.length === 0) {
-                return response.status(400).json({ data: null, message: 'No questions found' })
+                return response.status(400).json({ data: null, message: 'No questions found' });
             }
 
             const data: TcreateCustomTest = {
@@ -55,6 +76,7 @@ router.post("/create-custom-tests",
 
             return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
         } catch (error: any) {
+            console.log(error)
             return response.status(500).json({ data: null, message: 'Internal Server Error' });
         }
     });
@@ -110,6 +132,7 @@ router.post("/create-past-tests",
                 affiliation: affiliation,
                 category: category,
                 stream: stream,
+                isUnlocked: false,
                 customTestId: newCustomTestId
             }
             const updatedIsPastQuestions = await updateIsPastQuestion(pastTestData, questionsIds)
@@ -146,7 +169,7 @@ router.post("/create-custom-tests-by-users",
             const chapter = request.query.chapter as string;
 
             const createdById = request.user?.id
-            const limit = !request.user?.isSubscribed || false
+            const limit = !request.user?.isSubscribed ? 10 : 50
             const mode = request.mode || 'ALL'
             const type = request.body.type as TTypeOfTest
 
