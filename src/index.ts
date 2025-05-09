@@ -30,8 +30,10 @@ app.use("/users", usersRouter);
 app.use("/questions", questionsRouter);
 app.use("/mail", mailRouter);
 
+
 app.get("/", async (req: Request, res: Response): Promise<any> => {
   try {
+    console.log('trigeredddg')
     return res.status(200).json({
       message: "Hello, please do not cause unnecessary API calls",
     });
