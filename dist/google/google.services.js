@@ -13,10 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getGeminiExplanation = exports.askGemini = exports.getChapterAndSubjectScores = exports.isUserLegibleForAiAsk = void 0;
-const generative_ai_1 = require("@google/generative-ai");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const google_schema_1 = require("./google.schema");
-const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const google_model_1 = require("./google.model");
+const google_methods_1 = require("./google.methods");
 const isUserLegibleForAiAsk = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const allUsersTests = yield prisma_1.default.testAnalytic.findMany({
         where: {
@@ -127,62 +127,76 @@ const askGemini = (userId, prompt) => __awaiter(void 0, void 0, void 0, function
     5. Provide actionable suggestions for improvement and highlight strong areas.
     `;
     // Initialize the Gemini model with the system instruction
-    const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction,
-    });
     // Generate content using the provided prompt
-    const result = yield model.generateContent(prompt);
+    const result = yield google_model_1.model.generateContent(prompt);
     return result.response.text();
 });
 exports.askGemini = askGemini;
 const getGeminiExplanation = (data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { question, options, correctAnswer } = data;
+        const { question, options, correctAnswer } = data; // Assuming correctAnswer is also available from your data.
         const prompt = `
-  You are an expert tutor providing a comprehensive explanation of a question and its solution. Below is the question data in JSON format:
-  \`\`\`json
-  {
-    "question": "${question}",
-    "options": ${JSON.stringify(options)},
-    "correctAnswer": "${correctAnswer}"
-  }
-  \`\`\`
-
-  Provide a detailed explanation in **pure HTML format** following these guidelines:
-
-  1. Start with a clear explanation of the question's concept and what it's testing
-  2. Analyze each option individually:
-     - Explain why it's correct or incorrect
-     - Provide reasoning and supporting evidence
-     - Mention any common misconceptions related to the option
-     - Use <br> tags in between for better readability
-  3. For the correct answer:
-     - Provide a step-by-step explanation of how to arrive at the solution
-     - Include any relevant formulas, theories, or principles
-     - Suggest alternative approaches to solving the problem
-     - Use <br> tags in between for better readability
-  4. Include practical examples or analogies to enhance understanding
-  5. Use proper HTML structure with semantic tags:
-     - Use <h3> for section headings
-     - Use <ul> and <li> for lists
-     - Use <p> for paragraphs
-     - Use <strong> for emphasis
-     - Use <code> for technical terms or formulas
-  6. Make the explanation engaging and easy to follow
-  7. Do not include any other text or comments in the response
-  8. Do not include the <body>, <head>, <html> tags in the response
-  9. Use <br> tags in between for better readability
-
-  `;
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-lite",
-            systemInstruction: prompt,
-        });
-        const result = yield model.generateContent(prompt);
-        return result.response.text();
+    You are an expert tutor providing a comprehensive explanation of a question and its solution. Your explanation must be in **pure HTML format**, following a strict, predefined structure.
+  
+    Here's the structure you MUST adhere to:
+  
+    <b>Understanding the Question</b>
+    <p>Explain the core concept of the question and what it is asking.</p>
+  <br/>
+    <b>Analyzing the Options</b>
+    <ul>
+      <li>
+        <b>Option A: [Option Text]</b>
+        <p>Analyze this option. Explain why it is correct or incorrect.</p>
+      </li>
+      <li>
+        <b>Option B: [Option Text]</b>
+        <p>Analyze this option. Explain why it is correct or incorrect.</p>
+      </li>
+      </ul>
+  <br/>
+    <p><strong>The correct answer is: [Correct Answer Option e.g., Option A: Text]</strong></p>
+    <br/>
+    <b>Step-by-Step Solution:</b>
+    <p>Provide a detailed, step-by-step explanation of how to arrive at the solution. Include any relevant formulas, theories, or principles using <code>code</code> tags for technical terms or formulas.</p>
+    <br/>
+    <p><strong>Relevant Formula/Principle:</strong> <code>[Insert Formula or Principle Here if applicable]</code></p>
+    <br>
+    <b>Alternative Approaches:</b>
+    <p>Suggest other ways to solve the problem or think about the concept.</p>
+    <br>
+    <b>Practical Examples and Analogies:</b>
+    <p>Offer practical examples or analogies to enhance understanding of the concept.</p>
+    <p><strong>Analogy:</strong> [Provide a clear analogy]</p>
+    <p><strong>Practical Application:</strong> [Provide a real-world example]</p>
+    <br><br><br>
+  
+    ---
+  
+    Now, apply this structure to the following question data:
+    \`\`\`json
+    {
+      "question": "${question}",
+      "options": ${JSON.stringify(options)},
+      "correctAnswer": "${correctAnswer}" // Pass the correct answer directly if you have it. This makes it easier for Gemini to identify and elaborate on it.
+    }
+    \`\`\`
+  
+    **Important Guidelines for Generation:**
+    1.  **Strictly follow the HTML structure provided above.** Do not deviate from the headings, list items, and paragraph tags.
+    2.  Replace bracketed placeholders (e.g., [Option Text], [Correct Answer Option]) with actual content.
+    3.  Use <strong> for emphasis.
+    4.  Use <code> for technical terms or formulas.
+    5.  Ensure multiple <br> tags are used as specified after the correct answer explanation, alternative approaches, and practical examples sections.
+    6.  Do not include any other text or comments outside the structured HTML.
+    7.  Do not include <body>, <head>, <html> tags.
+    8.  Make the explanation engaging and easy to follow.
+    `;
+        const result = yield google_model_1.model.generateContent(prompt);
+        return (0, google_methods_1.truncatedGenAiOutput)(result.response.text());
     }
     catch (error) {
+        console.error("Error generating Gemini explanation:", error); // Use console.error for errors
         return null;
     }
 });

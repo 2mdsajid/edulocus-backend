@@ -61,6 +61,7 @@ app.use("/questions", questions_routes_1.default);
 app.use("/mail", mail_routes_1.default);
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        console.log('trigeredddg');
         return res.status(200).json({
             message: "Hello, please do not cause unnecessary API calls",
         });

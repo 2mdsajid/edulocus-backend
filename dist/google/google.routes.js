@@ -58,8 +58,8 @@ router.post("/get-gemini-explanation", (request, response) => __awaiter(void 0, 
             return response.status(400).json({ data: null, message: 'Invalid request body' });
         }
         const explanation = yield (0, google_services_1.getGeminiExplanation)(request.body);
-        if (!explanation) {
-            return response.status(400).json({ data: null, message: 'Explanation not found' });
+        if (!explanation || explanation === '' || explanation === null) {
+            return response.status(400).json({ data: null, message: 'Explanation can\'t be generated' });
         }
         return response.status(200).json({ data: explanation, message: 'Explanation retrieved' });
     }
