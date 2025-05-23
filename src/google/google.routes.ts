@@ -47,8 +47,8 @@ router.post("/get-gemini-explanation", async (request: RequestExtended, response
             return response.status(400).json({ data: null, message: 'Invalid request body' })
         }
         const explanation = await getGeminiExplanation(request.body)
-        if (!explanation) {
-            return response.status(400).json({ data: null, message: 'Explanation not found' })
+        if (!explanation || explanation === '' || explanation === null) {
+            return response.status(400).json({ data: null, message: 'Explanation can\'t be generated' })
         }
         
         return response.status(200).json({ data: explanation, message: 'Explanation retrieved' });
