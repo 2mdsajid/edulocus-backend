@@ -58,7 +58,8 @@ exports.userFeedbackValidation = [
 exports.subscriptionRequestValidation = [
     (0, express_validator_1.body)('name').notEmpty().withMessage('Name is required').isString().withMessage('Name must be a string'),
     (0, express_validator_1.body)('email').notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-    (0, express_validator_1.body)('phone').notEmpty().withMessage('Phone is required').isString().withMessage('Phone must be a string')
+    (0, express_validator_1.body)('phone').notEmpty().withMessage('Phone is required').isString().withMessage('Phone must be a string'),
+    (0, express_validator_1.body)('stream').notEmpty().withMessage('Stream is required').isString().withMessage('Stream must be a string')
 ];
 // import { z } from 'zod';
 // export const createUserSchema = z.object({

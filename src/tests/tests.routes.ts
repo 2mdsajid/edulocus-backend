@@ -336,6 +336,22 @@ router.get("/get-single-test/:id", async (request: Request, response: Response) 
     }
 });
 
+router.get("/get-test-basic-scores/:id", async (request: Request, response: Response) => {
+    try {
+        const { id } = request.params;
+        const testScores = await TestsServices.getTestBasicScores(id);
+        if (!testScores || testScores === undefined) {
+            return response.status(404).json({ data: null, message: "Test scores not found" });
+        }
+
+        return response.status(200).json({ data: testScores, message: `Test scores retrieved successfully` });
+    } catch (error: any) {
+        console.error("Error getting test scores:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
 
 router.get("/get-all-tests", async (request: Request, response: Response) => {
     try {

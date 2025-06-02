@@ -3,7 +3,7 @@ import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import { TStream } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { calculateAverageScorePerQuestion, calculateAverageScorePerTest, calculateTotalCorrectAnswers, calculateTotalQuestionsAttempt, calculateTotalUnattemptQuestions, generateDailyTestProgress, generateRecentTests, getSubjectScoresForBarChart } from "./tests.methods";
-import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TSingleCustomTestWithQuestions, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
+import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TScoreBreakdown, TSingleCustomTestWithQuestions, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
     const { name, slug, createdById, mode, questions, type, stream } = customTestData;
@@ -33,7 +33,6 @@ export const updateTestQuestions = async (testId: string, questionIds: string[])
 
 
 export const createPastTest = async (testData: TCreatePastPaper): Promise<TBasePastPaper | null> => {
-    console.log("🚀 ~ createPastTest ~ testData:", testData)
     const {
         customTestId,
         affiliation,
@@ -99,7 +98,7 @@ export const isDailyTestSlugExist = async (slug: string): Promise<boolean> => {
     const dailyTest = await prisma.customTest.findFirst({
         where: {
             slug,
-            type:"DAILY_TEST"
+            type: "DAILY_TEST"
         }
     });
     if (!dailyTest) return false;
@@ -155,6 +154,68 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 
     return modifiedCustomTest;
 };
+
+
+export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdown | null> => {
+    const test = await prisma.customTest.findUnique({
+        where: { id: testid },
+        select: {
+            id: true,
+            name: true,
+            questions: true, // This will give us the total number of questions
+            testAnalytic: {
+                select: {
+                    testQuestionAnswer: {
+                        select: {
+                            question: {
+                                select: {
+                                    answer: true // The correct answer
+                                }
+                            },
+                            userAnswer: true // The user's submitted answer
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!test) return null;
+
+    const total = test.questions.length;
+    let attempt = 0;
+    let correct = 0;
+    let incorrect = 0;
+
+    // testAnalytic is an array, typically it might contain one entry per test attempt
+    // For calculating basic scores, we'll assume we're looking at the first (or only) analytic entry
+    // You might need to adjust this logic if you have multiple testAnalytic entries for a single test and need to choose a specific one.
+    if (test.testAnalytic && test.testAnalytic.length > 0) {
+        const latestAnalytic = test.testAnalytic[0]; // Assuming we take the first analytic entry
+
+        latestAnalytic.testQuestionAnswer.forEach(qa => {
+            // A question is "attempted" if the userAnswer is not empty or null
+            if (qa.userAnswer !== null && qa.userAnswer !== undefined && qa.userAnswer !== '') {
+                attempt++;
+
+                // Check if the user's answer matches the correct answer
+                if (qa.userAnswer === qa.question.answer) {
+                    correct++;
+                } else {
+                    incorrect++;
+                }
+            }
+        });
+    }
+
+    return {
+        total,
+        unattempt : total - attempt,
+        correct,
+        incorrect,
+    };
+};
+
 
 
 export const getDailyTestBySlug = async (slug: string): Promise<TSingleCustomTestWithQuestions | null> => {

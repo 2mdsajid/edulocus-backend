@@ -40,7 +40,7 @@ export type TCustomTestMetadata = Pick<CustomTest,
 export type TSingleCustomTestWithQuestions = Pick<CustomTest,
     'id' |
     'name' |
-    'slug' 
+    'slug'
 > & {
     createdBy: string,
     questions: TQuestion[]
@@ -144,6 +144,13 @@ export type TTestAnalyticsForDashboardData = Prisma.TestAnalyticGetPayload<{
         },
     },
 }>;
+
+export type TScoreBreakdown = {
+    total: number;
+    correct: number;
+    incorrect: number;
+    unattempt: number;
+}
 
 
 // for leaderboard

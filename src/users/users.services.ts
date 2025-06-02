@@ -206,13 +206,14 @@ export const createUserFeedback = async (userData: TCreateUserFeedback): Promise
 }
 
 export const createSubscriptionRequest = async (subscriptionData: TCreateSubscriptionRequest): Promise<string | null> => {
-    const { name, email, phone } = subscriptionData;
+    const { name, email, phone , stream} = subscriptionData;
 
     const newSubscription = await prisma.subscriptionRequest.create({
         data: {
             name,
             email,
-            phone
+            phone,
+            stream
         }
     });
 

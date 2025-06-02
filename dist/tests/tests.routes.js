@@ -307,6 +307,20 @@ router.get("/get-single-test/:id", (request, response) => __awaiter(void 0, void
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.get("/get-test-basic-scores/:id", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        const testScores = yield TestsServices.getTestBasicScores(id);
+        if (!testScores || testScores === undefined) {
+            return response.status(404).json({ data: null, message: "Test scores not found" });
+        }
+        return response.status(200).json({ data: testScores, message: `Test scores retrieved successfully` });
+    }
+    catch (error) {
+        console.error("Error getting test scores:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 router.get("/get-all-tests", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const customTests = yield TestsServices.getAllTests();

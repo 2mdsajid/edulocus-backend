@@ -221,12 +221,13 @@ const createUserFeedback = (userData) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.createUserFeedback = createUserFeedback;
 const createSubscriptionRequest = (subscriptionData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, email, phone } = subscriptionData;
+    const { name, email, phone, stream } = subscriptionData;
     const newSubscription = yield prisma_1.default.subscriptionRequest.create({
         data: {
             name,
             email,
-            phone
+            phone,
+            stream
         }
     });
     if (!newSubscription)

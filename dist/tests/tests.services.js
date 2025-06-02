@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -46,7 +46,6 @@ const updateTestQuestions = (testId, questionIds) => __awaiter(void 0, void 0, v
 });
 exports.updateTestQuestions = updateTestQuestions;
 const createPastTest = (testData) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("🚀 ~ createPastTest ~ testData:", testData);
     const { customTestId, affiliation, year, stream, category } = testData;
     const newPastPaper = yield prisma_1.default.pastPaper.create({
         data: {
@@ -156,6 +155,62 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
     return modifiedCustomTest;
 });
 exports.getCustomTestById = getCustomTestById;
+const getTestBasicScores = (testid) => __awaiter(void 0, void 0, void 0, function* () {
+    const test = yield prisma_1.default.customTest.findUnique({
+        where: { id: testid },
+        select: {
+            id: true,
+            name: true,
+            questions: true, // This will give us the total number of questions
+            testAnalytic: {
+                select: {
+                    testQuestionAnswer: {
+                        select: {
+                            question: {
+                                select: {
+                                    answer: true // The correct answer
+                                }
+                            },
+                            userAnswer: true // The user's submitted answer
+                        }
+                    }
+                }
+            }
+        }
+    });
+    if (!test)
+        return null;
+    const total = test.questions.length;
+    let attempt = 0;
+    let correct = 0;
+    let incorrect = 0;
+    // testAnalytic is an array, typically it might contain one entry per test attempt
+    // For calculating basic scores, we'll assume we're looking at the first (or only) analytic entry
+    // You might need to adjust this logic if you have multiple testAnalytic entries for a single test and need to choose a specific one.
+    if (test.testAnalytic && test.testAnalytic.length > 0) {
+        const latestAnalytic = test.testAnalytic[0]; // Assuming we take the first analytic entry
+        latestAnalytic.testQuestionAnswer.forEach(qa => {
+            // A question is "attempted" if the userAnswer is not empty or null
+            if (qa.userAnswer !== null && qa.userAnswer !== undefined && qa.userAnswer !== '') {
+                attempt++;
+                // Check if the user's answer matches the correct answer
+                if (qa.userAnswer === qa.question.answer) {
+                    correct++;
+                }
+                else {
+                    incorrect++;
+                }
+            }
+        });
+    }
+    return {
+        total,
+        unattempt: total - attempt,
+        correct,
+        incorrect,
+    };
+});
+exports.getTestBasicScores = getTestBasicScores;
 const getDailyTestBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: {

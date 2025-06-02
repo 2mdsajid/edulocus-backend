@@ -69,7 +69,8 @@ export const userFeedbackValidation: ValidationChain[] = [
 export const subscriptionRequestValidation: ValidationChain[] = [
     body('name').notEmpty().withMessage('Name is required').isString().withMessage('Name must be a string'),
     body('email').notEmpty().withMessage('Email is required').isEmail().withMessage('Invalid email format'),
-    body('phone').notEmpty().withMessage('Phone is required').isString().withMessage('Phone must be a string')
+    body('phone').notEmpty().withMessage('Phone is required').isString().withMessage('Phone must be a string'),
+    body('stream').notEmpty().withMessage('Stream is required').isString().withMessage('Stream must be a string')
 ]
 
 
