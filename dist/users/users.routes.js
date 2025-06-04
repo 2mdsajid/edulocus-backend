@@ -44,6 +44,19 @@ const mail_services_1 = require("../mail/mail.services");
 const mail_templates_1 = require("../mail/mail.templates");
 const functions_1 = require("../utils/functions");
 const router = express_1.default.Router();
+// to get all the streams
+router.get('/get-all-users', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield UserServices.getAllUsers();
+        if (!users || users.length === 0) {
+            return response.status(400).json({ data: null, message: 'Users Not Found' });
+        }
+        return response.status(200).json({ data: users, message: 'Streams fetched successfully' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 router.post('/signup', users_validators_1.createUserValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);
@@ -219,6 +232,24 @@ router.post('/create-subscription-request', users_validators_1.subscriptionReque
         return response.status(201).json({ data: subscriptionId, message: 'Subscription created successfully' });
     }
     catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get('/set-user-subscription/:id', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        const isUserExist = yield UserServices.isUserExist(id);
+        if (!isUserExist) {
+            return response.status(401).json({ message: 'User Not Found' });
+        }
+        const updatedUser = yield UserServices.setUserSubscription(id);
+        if (!updatedUser) {
+            return response.status(401).json({ message: 'cant set subscription' });
+        }
+        return response.status(200).json({ data: updatedUser === null || updatedUser === void 0 ? void 0 : updatedUser.stream, message: 'Subscription set successfully' });
+    }
+    catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

@@ -25,6 +25,14 @@ export const isUserExist = async (id: string): Promise<boolean> => {
     return true;
 }
 
+export const getAllUsers = async (): Promise<TBaseUser[] | null> => {
+    const users = await prisma.user.findMany()
+    if (!users) {
+        return null
+    }
+    return users
+}
+
 export const userSignUp = async (userData: TSignUpUser): Promise<TLogInUser> => {
     const { name, email, password, role } = userData
     const newUser = await prisma.user.create({
@@ -96,7 +104,7 @@ export const loginWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Prom
                 email,
                 googleId
             },
-            select:{
+            select: {
                 id: true,
                 name: true,
                 email: true,
@@ -125,7 +133,7 @@ export const signupWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Pro
                 name,
                 image
             },
-            select:{
+            select: {
                 id: true,
                 name: true,
                 email: true,
@@ -144,9 +152,9 @@ export const signupWithLuciaGoogleUser = async (userData: TLuciaGoogleAuth): Pro
     }
 }
 
-export const generateAuthToken = async (userData:TBaseUser): Promise<string | null> => {
+export const generateAuthToken = async (userData: TBaseUser): Promise<string | null> => {
     try {
-        const { id,email,name,role,isSubscribed, googleId } = userData
+        const { id, email, name, role, isSubscribed, googleId } = userData
 
         const token = jwt.sign({
             id: id,
@@ -206,7 +214,7 @@ export const createUserFeedback = async (userData: TCreateUserFeedback): Promise
 }
 
 export const createSubscriptionRequest = async (subscriptionData: TCreateSubscriptionRequest): Promise<string | null> => {
-    const { name, email, phone , stream} = subscriptionData;
+    const { name, email, phone, stream } = subscriptionData;
 
     const newSubscription = await prisma.subscriptionRequest.create({
         data: {
@@ -246,6 +254,16 @@ export const setUserStream = async (userId: string, stream: TStream): Promise<TB
     const user = await prisma.user.update({
         where: { id: userId },
         data: { stream, isCompleted: true }
+    })
+    if (!user) return null
+    return user
+}
+
+
+export const setUserSubscription = async (userId: string): Promise<TBaseUser | null> => {
+    const user = await prisma.user.update({
+        where: { id: userId },
+        data: { isSubscribed: true }
     })
     if (!user) return null
     return user

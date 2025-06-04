@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { getUserSession, RequestExtended } from '../utils/middleware';
+import { checkModerator, getUserSession, RequestExtended } from '../utils/middleware';
 import * as UserServices from './users.services';
 import { changeRoleValidation, createUserValidation, generateAuthTokenValidation, loginUserValidation, loginWithLuciaGoogleUserValidation, subscriptionRequestValidation, userFeedbackValidation } from './users.validators';
 import { sendEmail } from '../mail/mail.services';
@@ -9,6 +9,20 @@ import { getStreams } from '../utils/functions';
 
 
 const router = express.Router();
+
+
+// to get all the streams
+router.get('/get-all-users', async (request: Request, response: Response) => {
+    try {
+        const users =await  UserServices.getAllUsers()
+        if (!users || users.length === 0) {
+            return response.status(400).json({ data: null, message: 'Users Not Found' })
+        }
+        return response.status(200).json({ data: users, message: 'Streams fetched successfully' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+})
 
 router.post('/signup', createUserValidation, async (request: Request, response: Response) => {
     try {
@@ -160,7 +174,7 @@ router.post('/create-user-feedback', userFeedbackValidation, async (request: Req
         const newUserFeedbackId = await UserServices.createUserFeedback(request.body)
         if (!newUserFeedbackId) return response.status(400).json({ message: 'Can not create feedback' });
 
-        const sendFeedbackEmail =  sendEmail({
+        const sendFeedbackEmail = sendEmail({
             to: request.body.email,
             subject: 'Feedback',
             html: sendFeedbackMailToAdmin({
@@ -189,13 +203,13 @@ router.post('/create-subscription-request', subscriptionRequestValidation, async
             return response.status(500).json({ message: 'Failed to create subscription' });
         }
 
-        const sendSubscriptionRequestEmail =  sendEmail({
+        const sendSubscriptionRequestEmail = sendEmail({
             to: request.body.email,
             subject: 'Subscription Request',
             html: sendSubscriptionRequestMailToUser(request.body.email)
         })
 
-        const sentRequestToAdmin =  sendEmail({
+        const sentRequestToAdmin = sendEmail({
             to: process.env.ADMIN_EMAIL as string,
             subject: 'Subscription Request',
             html: sendSubscriptionRequestMailToAdmin({
@@ -210,6 +224,29 @@ router.post('/create-subscription-request', subscriptionRequestValidation, async
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 })
+
+
+router.get('/set-user-subscription/:id', checkModerator, async (request: RequestExtended, response: Response) => {
+    try {
+        const { id } = request.params
+        const isUserExist = await UserServices.isUserExist(id)
+        if (!isUserExist) {
+            return response.status(401).json({ message: 'User Not Found' });
+        }
+
+        const updatedUser = await UserServices.setUserSubscription(id)
+        if (!updatedUser) {
+            return response.status(401).json({ message: 'cant set subscription' });
+        }
+
+        return response.status(200).json({ data: updatedUser?.stream, message: 'Subscription set successfully' });
+    } catch (error) {
+        console.log(error)
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+})
+
+
 
 // to get all the streams
 router.get('/get-all-streams', async (request: Request, response: Response) => {
@@ -241,8 +278,6 @@ router.post('/set-user-stream', getUserSession, async (request: RequestExtended,
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 })
-
-
 
 router.get('/get-user-session', getUserSession, async (request: RequestExtended, response: Response) => {
     try {

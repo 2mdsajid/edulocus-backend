@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.isUserExist = exports.checkEmailExist = void 0;
+exports.setUserSubscription = exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.getAllUsers = exports.isUserExist = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -37,6 +37,14 @@ const isUserExist = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return true;
 });
 exports.isUserExist = isUserExist;
+const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
+    const users = yield prisma_1.default.user.findMany();
+    if (!users) {
+        return null;
+    }
+    return users;
+});
+exports.getAllUsers = getAllUsers;
 const userSignUp = (userData) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password, role } = userData;
     const newUser = yield prisma_1.default.user.create({
@@ -266,3 +274,13 @@ const setUserStream = (userId, stream) => __awaiter(void 0, void 0, void 0, func
     return user;
 });
 exports.setUserStream = setUserStream;
+const setUserSubscription = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.update({
+        where: { id: userId },
+        data: { isSubscribed: true }
+    });
+    if (!user)
+        return null;
+    return user;
+});
+exports.setUserSubscription = setUserSubscription;
