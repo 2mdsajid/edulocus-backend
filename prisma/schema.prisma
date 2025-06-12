@@ -65,6 +65,7 @@ enum TypeOfTest {
     REVISION
     RETAKE
     PAST_PAPER
+    LIVE //newly added --- not in the tests types global data
 }
 
 // USER ------------------------------------------------------------
@@ -275,6 +276,8 @@ model CustomTest {
     Group     Group?     @relation(fields: [groupId], references: [id])
     groupId   String?
 }
+
+
 
 // to store past papers 
 model PastPaper {
