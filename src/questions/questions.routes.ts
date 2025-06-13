@@ -236,10 +236,10 @@ router.get('/get-questions-by-subject',checkModerator, async (request: Request, 
 router.get('/get-subjects', async (request: Request, response: Response) => {
     try {
         const stream = request.query.stream as TStream
+        console.log(stream)
         if (!stream || !getStreams().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' })
         }
-
 
         const subjects = await QuestionServices.getSubjects(stream)
         if (!subjects || subjects.length === 0) {

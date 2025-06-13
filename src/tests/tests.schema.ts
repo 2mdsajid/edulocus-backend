@@ -57,9 +57,11 @@ export type TBaseCustomTest = Pick<CustomTest,
     'id' |
     'name' |
     'date' |
+    'archive'|
     'questions'
 > & {
-    pastPaper: TBasePastPaper | null
+    creator?: string,
+    pastPaper?: TBasePastPaper | null
 }
 
 export type TBasePastPaper = Omit<PastPaper, 'customTestId'>

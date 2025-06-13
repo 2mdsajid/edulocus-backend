@@ -43,6 +43,7 @@ const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
 const users_routes_1 = __importDefault(require("./users/users.routes"));
 const google_routes_1 = __importDefault(require("./google/google.routes"));
 const mail_routes_1 = __importDefault(require("./mail/mail.routes"));
+const groups_routes_1 = __importDefault(require("./groups/groups.routes"));
 dotenv.config();
 if (!process.env.PORT) {
     console.log("Please specify port number ");
@@ -57,6 +58,7 @@ app.use((0, cors_1.default)()); // To avoid cross-origin blocking
 app.use("/tests", tests_routes_1.default);
 app.use("/google", google_routes_1.default);
 app.use("/users", users_routes_1.default);
+app.use("/groups", groups_routes_1.default);
 app.use("/questions", questions_routes_1.default);
 app.use("/mail", mail_routes_1.default);
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {

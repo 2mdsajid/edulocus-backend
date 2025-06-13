@@ -21,6 +21,23 @@ export const createCustomTestValidation: ValidationChain[] = [
         .isString().withMessage('Slug must be a string'),
 ];
 
+export const createDailyTestValidation: ValidationChain[] = [
+    body('date')
+        .notEmpty().withMessage('Date must be provided')
+        .isString().withMessage('Date must be a string')
+        .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date must be in format yyyy-mm-dd'),
+
+    body('stream')
+        .notEmpty().withMessage('Stream must be provided')
+        .isString().withMessage('Stream must be a string')
+        .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
+
+    body('questions')
+        .isArray().withMessage('Questions must be an array')
+        .notEmpty().withMessage('Questions array cannot be empty'),
+];
+
+
 
 export const createPastTestValidation: ValidationChain[] = [
     body('stream')

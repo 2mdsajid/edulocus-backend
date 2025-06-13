@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveUserScoreValidation = exports.createTestAnalyticValidation = exports.createCustomTestByUserValidation = exports.createPastTestValidation = exports.createCustomTestValidation = void 0;
+exports.saveUserScoreValidation = exports.createTestAnalyticValidation = exports.createCustomTestByUserValidation = exports.createPastTestValidation = exports.createDailyTestValidation = exports.createCustomTestValidation = void 0;
 const express_validator_1 = require("express-validator");
 const client_1 = require("@prisma/client");
 const typeOfStream = Object.values(client_1.STREAM);
@@ -15,6 +15,19 @@ exports.createCustomTestValidation = [
     (0, express_validator_1.body)('slug')
         .notEmpty().withMessage('Slug must be provided')
         .isString().withMessage('Slug must be a string'),
+];
+exports.createDailyTestValidation = [
+    (0, express_validator_1.body)('date')
+        .notEmpty().withMessage('Date must be provided')
+        .isString().withMessage('Date must be a string')
+        .matches(/^\d{4}-\d{2}-\d{2}$/).withMessage('Date must be in format yyyy-mm-dd'),
+    (0, express_validator_1.body)('stream')
+        .notEmpty().withMessage('Stream must be provided')
+        .isString().withMessage('Stream must be a string')
+        .isIn(typeOfStream).withMessage('Stream must be a valid stream'),
+    (0, express_validator_1.body)('questions')
+        .isArray().withMessage('Questions must be an array')
+        .notEmpty().withMessage('Questions array cannot be empty'),
 ];
 exports.createPastTestValidation = [
     (0, express_validator_1.body)('stream')

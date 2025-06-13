@@ -39,6 +39,7 @@ const express_1 = __importDefault(require("express"));
 const express_validator_1 = require("express-validator");
 const middleware_1 = require("../utils/middleware");
 const TestsServices = __importStar(require("./tests.services"));
+const GroupServices = __importStar(require("../groups/groups.services"));
 const tests_validators_1 = require("./tests.validators");
 const questions_services_1 = require("../questions/questions.services");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -46,6 +47,8 @@ const functions_1 = require("../utils/functions");
 const syllabus_1 = require("../utils/syllabus");
 const router = express_1.default.Router();
 // Create a new custom test -- model test only as of now
+// due to server issues, can't create 200 marks as of now
+// so wont use now
 router.post("/create-custom-tests", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -54,6 +57,7 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
             return response.status(400).json({ message: errors.array()[0].msg });
         }
         const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        console.log(createdById);
         if (!request.user || !createdById) {
             return response.status(400).json({ message: 'Unauthorized' });
         }
@@ -62,7 +66,7 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
             return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
         }
         const subjectsAndMarks = (0, functions_1.getSubjectsAndMarks)(syllabus_1.SYLLABUS, request.body.stream);
-        console.log(subjectsAndMarks);
+        // console.log(subjectsAndMarks);
         // Calculate total marks across all subjects
         const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
         console.log(totalMarks);
@@ -91,6 +95,72 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" });
+        }
+        return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
+    }
+    catch (error) {
+        console.log(error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.post("/create-custom-test-metadata", middleware_1.checkModerator, tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const errors = (0, express_validator_1.validationResult)(request);
+        if (!errors.isEmpty()) {
+            return response.status(400).json({ message: errors.array()[0].msg });
+        }
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!request.user || !createdById) {
+            return response.status(400).json({ message: 'Unauthorized' });
+        }
+        const gid = request.query.gid;
+        console.log(gid);
+        // const limit = request.query.limit;
+        // if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
+        //     return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
+        // }
+        // const subjectsAndMarks = getSubjectsAndMarks(SYLLABUS, request.body.stream);
+        // console.log(subjectsAndMarks);
+        // Calculate total marks across all subjects
+        // const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
+        // console.log(totalMarks)
+        // Fetch questions for each subject based on their mark ratio
+        // const questionsPromises = subjectsAndMarks.map(async (subject) => {
+        //     const subjectLimit = Math.floor((subject.marks / totalMarks) * Number(limit));
+        //     if (subjectLimit > 0) {
+        //         return await getQuestionsIdsBySubject(subject.subject, subjectLimit, request.body.stream);
+        //     }
+        //     return [];
+        // });
+        const questionsArrays = []; //await Promise.all(questionsPromises);
+        // const questionsIds = questionsArrays.flat().filter((id): id is string => typeof id === "string");
+        // if (!questionsIds || questionsIds.length === 0) {
+        //     return response.status(400).json({ data: null, message: 'No questions found' });
+        // }
+        // mode is USER -- it wont be shown in model tests
+        const mode = gid ? 'USER' : 'ALL';
+        const data = {
+            name: request.body.name,
+            slug: request.body.slug,
+            createdById: createdById,
+            stream: request.body.stream,
+            mode: mode,
+            type: "MODEL",
+            questions: questionsArrays,
+        };
+        const newCustomTestId = yield TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === undefined) {
+            return response.status(404).json({ data: null, message: "Custom test not found" });
+        }
+        console.log(newCustomTestId);
+        // to add tests to the group -- crreated by the group
+        if (gid && gid !== 'null' && gid !== null && gid !== null && gid !== undefined) {
+            const isGroupExist = yield GroupServices.isGroupIdExist(gid);
+            if (!isGroupExist) {
+                return response.status(404).json({ data: null, message: "Group not found" });
+            }
+            const newTestInGroup = yield TestsServices.addTestToGroup(gid, newCustomTestId);
         }
         return response.status(201).json({ data: newCustomTestId, message: `${request.body.name} test created` });
     }
@@ -205,30 +275,88 @@ router.post("/create-custom-tests-by-users", middleware_1.checkStreamMiddleware,
 // create daily tests -- normal custom tests but will of type DAILY_TEST and will be fetched daily
 router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const date = new Date();
+        const currentDayOfMonth = date.getDate(); // Get the current day of the month (1-31)
+        // Check if the current day is an "alternate day" (odd number)
+        if (currentDayOfMonth % 2 === 0) {
+            return response.status(403).json({ data: null, message: 'Daily test can only be created on alternate days.' });
+        }
         const admin = yield prisma_1.default.user.findFirst({
             where: {
                 role: "SAJID"
             }
         });
         if (!admin) {
-            return response.status(400).json({ data: null, message: 'Noooops No Test' });
+            return response.status(400).json({ data: null, message: 'No admin user with role SAJID found.' });
         }
         const createdById = admin.id;
         if (!createdById) {
-            return response.status(400).json({ data: null, message: 'Unauthorized' });
+            // This case should ideally not be hit if admin is found, but good to keep as a safeguard
+            return response.status(400).json({ data: null, message: 'Unauthorized: Admin ID not found.' });
         }
-        const limit = 50;
+        const limit = 30;
         const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'PG');
         if (!questionsIds || questionsIds.length === 0) {
-            return null;
+            return response.status(404).json({ data: null, message: 'No questions found for the daily test.' });
         }
-        const date = new Date();
-        const formattedDate = `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`;
         // default PG as of now
-        // Might edit laterr
+        // Might edit later
         const stream = request.stream || 'PG';
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
+        }
+        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
+        if (isDailyTestAlreadyExist) {
+            return response.status(400).json({ data: null, message: 'Daily Test for today already exists.' });
+        }
+        const data = {
+            name: name,
+            slug: slug,
+            createdById: createdById,
+            mode: "ALL",
+            type: "DAILY_TEST",
+            questions: questionsIds,
+            stream: stream,
+        };
+        const newCustomTestId = yield TestsServices.createCustomTest(data);
+        if (!newCustomTestId || newCustomTestId === null) {
+            return response.status(500).json({ data: null, message: "Failed to create custom test." });
+        }
+        return response.status(201).json({ data: newCustomTestId, message: `${slug} test created successfully.` });
+    }
+    catch (error) {
+        console.error("Error creating daily test:", error); // Log the actual error for debugging
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// daily tests for everyone --
+router.get("/create-daily-test-by-users/:date", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!createdById) {
+            return response.status(400).json({ data: null, message: 'Unauthorized' });
+        }
+        const { date } = request.params;
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return response.status(400).json({
+                data: null,
+                message: 'Invalid date format. Please use yyyy-mm-dd format'
+            });
+        }
+        const limit = 50;
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'UG');
+        if (!questionsIds || questionsIds.length === 0) {
+            return null;
+        }
+        const slug = `dt-${date}`;
+        const name = `Daily Test - ${date}`;
+        // default PG as of now
+        // Might edit laterr
+        const stream = request.stream || 'UG';
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Stream Not Specified' });
         }
@@ -252,21 +380,51 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         return response.status(201).json({ data: newCustomTestId, message: `${slug} test created` });
     }
     catch (error) {
+        console.log("🚀 ~ router.get ~ error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-daily-test", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-daily-tests/:date", middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const date = new Date().toLocaleDateString('en-GB');
+        const { date } = request.params;
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            return response.status(400).json({
+                data: null,
+                message: 'Invalid date format. Please use yyyy-mm-dd format'
+            });
+        }
         const slug = `dt-${date}`;
-        const dailyTest = yield TestsServices.getDailyTestBySlug(slug);
+        const dailyTest = yield TestsServices.getDailyTestsBySlug(slug);
         if (!dailyTest) {
             return response.status(404).json({ data: null, message: "Daily test not found" });
         }
-        return response.status(201).json({ data: dailyTest, message: `Daily Test ${dailyTest.name} found` });
+        return response.status(201).json({ data: dailyTest, message: `Daily Tests found` });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.patch("/archive-test/:id", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        const updatedTest = yield TestsServices.archiveTestById(id);
+        if (!updatedTest) {
+            return response.status(404).json({
+                data: null,
+                message: "Daily test not found"
+            });
+        }
+        return response.status(200).json({
+            data: updatedTest,
+            message: `Test has been disabled`
+        });
+    }
+    catch (error) {
+        console.error("Error disabling daily test:", error);
+        return response.status(500).json({
+            data: null,
+            message: 'Internal Server Error'
+        });
     }
 }));
 router.get("/get-types-of-tests", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
@@ -330,6 +488,25 @@ router.get("/get-all-tests", (request, response) => __awaiter(void 0, void 0, vo
         return response.status(201).json({ data: customTests, message: `Tests found` });
     }
     catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get("/get-all-tests-created-by-user", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = request === null || request === void 0 ? void 0 : request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId) {
+            return response.status(400).json({ data: null, message: 'User ID not found' });
+        }
+        console.log(userId);
+        const customTests = yield TestsServices.getAllTestsCreatedByUser(userId);
+        if (!customTests || customTests.length === 0) {
+            return response.status(400).json({ data: null, message: 'No Tests Found!' });
+        }
+        return response.status(201).json({ data: customTests, message: `Tests found` });
+    }
+    catch (error) {
+        console.error("Error getting user's tests:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

@@ -22,6 +22,22 @@ export const createCustomTest = async (customTestData: TcreateCustomTest): Promi
     return newCustomTest.id
 }
 
+export const addTestToGroup = async (groupId: string, testId: string): Promise<boolean> => {
+    try {
+        const updatedTest = await prisma.customTest.update({
+            where: { id: testId },
+            data: {
+                groupId: groupId
+            }
+        });
+        
+        return !!updatedTest;
+    } catch (error) {
+        console.error("Error adding test to group:", error);
+        return false;
+    }
+}
+
 export const updateTestQuestions = async (testId: string, questionIds: string[]): Promise<string | null> => {
     const updatedTest = await prisma.customTest.update({
         where: { id: testId },
@@ -112,6 +128,8 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
             name: true,
             id: true,
             slug: true,
+            stream:true,
+            archive:true,
             createdBy: { select: { name: true } },
             questions: true
         }
@@ -218,57 +236,24 @@ export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdow
 
 
 
-export const getDailyTestBySlug = async (slug: string): Promise<TSingleCustomTestWithQuestions | null> => {
-    const customTest = await prisma.customTest.findFirst({
+export const    getDailyTestsBySlug = async (slug: string): Promise<TBaseCustomTest[] | null> => {
+    const customTests = await prisma.customTest.findMany({
         where: {
-            slug: slug
+            slug: slug,
+            archive:false,
         },
         select: {
             name: true,
             id: true,
-            slug: true,
+            date: true,
+            archive: true,
             createdBy: { select: { name: true } },
-            questions: true
+            questions:true,
+            pastPaper:true
         }
     })
 
-    if (!customTest) return null;
-
-    const questions = await prisma.question.findMany({
-        where: { id: { in: customTest.questions } },
-        select: {
-            id: true,
-            question: true,
-            options: {
-                select: {
-                    a: true,
-                    b: true,
-                    c: true,
-                    d: true,
-                }
-            },
-            answer: true,
-            explanation: true,
-            subject: true,
-            chapter: true,
-            stream: true,
-            unit: true,
-            difficulty: true,
-        }
-    });
-
-    const modifiedQuestions = questions.map((q) => ({
-        ...q,
-        options: q.options || { a: "", b: "", c: "", d: "" }
-    }));
-
-    const modifiedCustomTest = {
-        ...customTest,
-        createdBy: customTest.createdBy.name,
-        questions: modifiedQuestions
-    };
-
-    return modifiedCustomTest;
+    return customTests;
 
 }
 
@@ -311,17 +296,40 @@ export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMeta
     return modifiedTestData
 }
 
+export const archiveTestById = async (id: string): Promise<boolean | null> => {
+    const customTest = await prisma.customTest.update({
+        where: {
+            id
+        },
+        data:{
+            archive:true
+        }
+    });
+ 
+    if(!customTest) return null
+
+    return true
+}
+
+
 export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Promise<TBaseCustomTest[] | []> => {
     const customTests = await prisma.customTest.findMany({
         where: {
             type: type,
-            stream: stream
+            stream: stream,
+            mode:'ALL',
         },
         select: {
             name: true,
             id: true,
             date: true,
+            archive:true,
             questions: true,
+            createdBy:{
+                select:{
+                    name:true
+                }
+            },
             pastPaper: {
                 select: {
                     stream: true,
@@ -335,7 +343,14 @@ export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Pro
     })
 
     if (!customTests || customTests.length === 0) return []
-    return customTests
+    
+    // Map over tests to add creator field
+    const modifiedTests = customTests.map(test => ({
+        ...test,
+        creator: test.createdBy.name
+    }))
+
+    return modifiedTests
 }
 
 export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
@@ -344,6 +359,7 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
             name: true,
             id: true,
             date: true,
+            archive:true,
             questions: true,
             pastPaper: {
                 select: {
@@ -360,6 +376,37 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
     if (!customTests || customTests.length === 0) return []
     return customTests
 }
+
+export const getAllTestsCreatedByUser = async (userId: string): Promise<TBaseCustomTest[] | []> => {
+    const customTests = await prisma.customTest.findMany({
+        where: {
+            createdById: userId
+        },
+        select: {
+            name: true,
+            id: true,
+            date: true,
+            archive: true,
+            questions: true,
+            createdBy: {
+                select: {
+                    name: true
+                }
+            }
+        }
+    })
+
+    if (!customTests || customTests.length === 0) return []
+    
+    // Map over tests to add creator field
+    const modifiedTests = customTests.map(test => ({
+        ...test,
+        creator: test.createdBy.name
+    }))
+
+    return modifiedTests
+}
+
 
 export const getTypesOfTests = (): TTypeOfTestsAndDescription[] | [] => {
     return typeOfTestsAndDescriptionData.length > 0 ? typeOfTestsAndDescriptionData : []

@@ -242,6 +242,7 @@ router.get('/get-questions-by-subject', middleware_1.checkModerator, (request, r
 router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;
+        console.log(stream);
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
         }

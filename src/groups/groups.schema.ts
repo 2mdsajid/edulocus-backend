@@ -26,6 +26,9 @@ export const groupSchema = z.object({
   name: z.string({
     required_error: "Group name is required",
   }),
+  createdBy: z.string({
+    required_error :"User Id of Creator required"
+  }),
   description: z.string().nullable(),
   image: z.string().nullable(),
   slug: z.string({
@@ -42,6 +45,7 @@ export const groupBaseSchema = z.object({
   name: z.string({
     required_error: "Group name is required",
   }),
+  creatorName : z.string(),
   description: z.string().nullable(),
   image: z.string().nullable(),
   slug: z.string({
@@ -49,8 +53,48 @@ export const groupBaseSchema = z.object({
   }),
 });
 
+export const GroupDetailSchema = z.object({
+  id: z.string().uuid("Invalid group ID format."),
+  name: z.string().min(1, "Group name cannot be empty."),
+  slug: z.string().min(1, "Group slug cannot be empty."),
+  description: z.string().nullable(), // Assuming description can be null
+  image: z.string().url("Invalid image URL format.").nullable(), // Assuming image can be null
+  creatorName:  z.string(), // Assuming creator.name is always a string,
+  members: z.array(
+    z.object({
+      user: z.object({
+        id: z.string().uuid("Invalid member user ID format."),
+        name: z.string().nullable(), // Assuming member user name can be null
+        email: z.string().email("Invalid email format."),
+        image: z.string().url("Invalid image URL format.").nullable(), // Assuming member user image can be null
+      }),
+      joinedAt: z.date(), // Assuming joinedAt is a Date object
+    })
+  ),
+  customTests: z.array(
+    z.object({
+      id: z.string().uuid("Invalid test ID format."),
+      name: z.string().min(1, "Test name cannot be empty."),
+      date: z.date(),
+    })
+  ),
+});
+
+
+export const addMemberSchema = z.object({
+  email: z.string().email("Invalid email address. Please enter a valid email."),
+});
+
+
+
+
+
+
 // Schema for creating a Group
-export const groupCreateSchema = groupBaseSchema
+export const groupCreateSchema = groupBaseSchema.omit({
+  creatorName:true,
+  id:true
+})
 
 // Schema for updating a Group
 export const groupUpdateSchema = groupBaseSchema.partial();
@@ -68,17 +112,11 @@ export const groupMemberBaseSchema = z.object({
   status: memberStatusSchema.default("ACTIVE"),
 });
 
-// Schema for adding a member to a Group
-export const groupAddMemberSchema = groupMemberBaseSchema.extend({
-  groupId: z.string({
-    required_error: "Group ID is required",
-  }),
-});
 
 // Schema for updating a Group Member
 export const groupUpdateMemberSchema = groupMemberSchema
-  .pick({ groupRole: true, status: true })
-  .partial();
+.pick({ groupRole: true, status: true })
+.partial();
 
 // Schema for Group Response
 export const groupResponseSchema = groupBaseSchema.extend({
@@ -101,9 +139,12 @@ export type TGroup = z.infer<typeof groupSchema>;
 
 
 export type TGroupBase = z.infer<typeof groupBaseSchema>;
+export type TGroupDetail = z.infer<typeof GroupDetailSchema>;
+
+export type TAddMember = z.infer<typeof addMemberSchema>;
+
 export type TGroupCreate = z.infer<typeof groupCreateSchema>;
 export type TGroupUpdate = z.infer<typeof groupUpdateSchema>;
 export type TGroupMember = z.infer<typeof groupMemberSchema>;
-export type TGroupAddMember = z.infer<typeof groupAddMemberSchema>;
 export type TGroupUpdateMember = z.infer<typeof groupUpdateMemberSchema>;
 export type TGroupResponse = z.infer<typeof groupResponseSchema>;

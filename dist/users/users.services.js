@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setUserSubscription = exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.getAllUsers = exports.isUserExist = exports.checkEmailExist = void 0;
+exports.setUserSubscription = exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.getAllUsers = exports.isUserExist = exports.getUserIdByEmail = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -25,6 +25,16 @@ const checkEmailExist = (email) => __awaiter(void 0, void 0, void 0, function* (
     return false;
 });
 exports.checkEmailExist = checkEmailExist;
+const getUserIdByEmail = (email) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield prisma_1.default.user.findFirst({
+        where: { email },
+        select: { id: true }
+    });
+    if (!user)
+        return null;
+    return user.id;
+});
+exports.getUserIdByEmail = getUserIdByEmail;
 const isUserExist = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const isIdUuid = (0, functions_1.isUUID)(id);
     if (!isIdUuid)

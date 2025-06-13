@@ -13,6 +13,17 @@ export const checkEmailExist = async (email: string): Promise<boolean> => {
     return false;
 }
 
+export const getUserIdByEmail = async (email: string): Promise<string | null> => {
+    const user = await prisma.user.findFirst({
+        where: { email },
+        select: { id: true }
+    });
+
+    if (!user) return null;
+    return user.id;
+}
+
+
 export const isUserExist = async (id: string): Promise<boolean> => {
     const isIdUuid = isUUID(id)
     if (!isIdUuid) return false

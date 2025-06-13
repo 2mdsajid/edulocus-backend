@@ -54,6 +54,7 @@ router.get('/get-all-users', (request, response) => __awaiter(void 0, void 0, vo
         return response.status(200).json({ data: users, message: 'Streams fetched successfully' });
     }
     catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const UserServices = __importStar(require("../users/users.services"));
 const middleware_1 = require("../utils/middleware");
 const groups_schema_1 = require("./groups.schema");
 const GroupServices = __importStar(require("./groups.services"));
@@ -53,18 +54,25 @@ router.post('/create-group', middleware_1.checkModerator, (request, response) =>
             return response.status(400).json({ data: null, message: 'User not found' });
         }
         const groupId = yield GroupServices.createGroup(request.body, userId);
+        console.log(groupId);
         if (!groupId) {
             return response.status(400).json({ data: null, message: 'Group creation failed' });
         }
         return response.status(201).json({ data: groupId, message: 'Group created' });
     }
     catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get('/get-all-groups', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/get-all-groups-by-moderator', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        const groups = yield GroupServices.getAllGroups();
+        const userId = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId) {
+            return response.status(400).json({ data: null, message: 'User not found' });
+        }
+        const groups = yield GroupServices.getAllGroupsByModerator(userId);
         if (!groups || groups.length === 0) {
             return response.status(404).json({ data: null, message: 'No groups found' });
         }
@@ -74,18 +82,50 @@ router.get('/get-all-groups', (request, response) => __awaiter(void 0, void 0, v
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.get('/get-group-by-id/:groupId', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const groupId = request.params.groupId;
+        if (!groupId) {
+            return response.status(400).json({ data: null, message: 'Group ID is required' });
+        }
+        const group = yield GroupServices.getGroupById(groupId);
+        if (!group) {
+            return response.status(404).json({ data: null, message: 'Group not found' });
+        }
+        return response.status(200).json({ data: group, message: 'Group fetched successfully' });
+    }
+    catch (error) {
+        console.error('Error fetching group:', error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 // add member to group
-router.post('/add-member-to-group', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/add-member/:groupId', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
-        const validationResult = groups_schema_1.groupAddMemberSchema.safeParse(request.body);
+        const validationResult = groups_schema_1.addMemberSchema.safeParse(request.body);
         if (!validationResult.success) {
             const zodErrorElement = JSON.parse(validationResult.error.message)[0];
             return response.status(400).json({ data: null, message: zodErrorElement.message });
         }
-        const userId = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
-        if (!userId) {
-            return response.status(400).json({ data: null, message: 'User not found' });
+        const email = request.body.email;
+        const { groupId } = request.params;
+        const isGroupExist = yield GroupServices.isGroupIdExist(groupId);
+        if (!isGroupExist) {
+            return response.status(404).json({ data: null, message: "Group Does not exist" });
+        }
+        const adminUserId = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!adminUserId) {
+            return response.status(400).json({ data: null, message: 'Not authorized' });
+        }
+        const userToAddId = yield UserServices.getUserIdByEmail(email);
+        if (!userToAddId) {
+            return response.status(400).json({ data: null, message: 'There is no user with this email address' });
+        }
+        const isUserAlreadyInGroup = yield GroupServices.isUserAlreadyInGroup(email, groupId);
+        console.log(isUserAlreadyInGroup);
+        if (isUserAlreadyInGroup) {
+            return response.status(400).json({ data: null, message: 'User with this email already in the group' });
         }
         // const sendGroupInvititationEmail = sendEmail({
         //     to: request.body.email,
@@ -96,13 +136,14 @@ router.post('/add-member-to-group', middleware_1.checkModerator, (request, respo
         //         groupTitle: request.body.groupTitle
         //     })
         // })
-        const groupId = yield GroupServices.addMemberToGroup(request.body, userId);
-        if (!groupId) {
-            return response.status(400).json({ data: null, message: 'Group not found' });
+        const newGroupMember = yield GroupServices.addMemberToGroup(userToAddId, groupId);
+        if (!newGroupMember) {
+            return response.status(400).json({ data: null, message: 'Unable to add member to the group' });
         }
-        return response.status(200).json({ data: groupId, message: 'Member added to group' });
+        return response.status(200).json({ data: groupId, message: 'Member added to group successfully' });
     }
     catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

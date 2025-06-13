@@ -12,7 +12,7 @@ const main = async () => {
     // Define user data
     const userData = {
         name: 'EduLocus',
-        email: '2mdsajid@gmail.com',
+        email: '2mdsajissad@gmail.com',
         password: '2mdsajid@gmail.com',
         role: "SAJID"
     };
@@ -20,16 +20,16 @@ const main = async () => {
 
     try {
         // Sign up a new user
-        const newUser = await userSignUp(userData as any);
-        console.log('User created:', newUser);
+        // const newUser = await userSignUp(userData as any);
+        // console.log('User created:', newUser);
 
-        // const newUser2 = await userSignUp(userData2 as any);
-        // console.log('User created:', newUser2);
+        // // const newUser2 = await userSignUp(userData2 as any);
+        // // console.log('User created:', newUser2);
 
-        // Check if the user was successfully created
-        if (!newUser?.id) {
-            throw new Error('User creation failed');
-        }
+        // // Check if the user was successfully created
+        // if (!newUser?.id) {
+        //     throw new Error('User creation failed');
+        // }
 
         // Seed questions
         const question1 = {
@@ -37,7 +37,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'Paris is the capital of France.',
             options: { a: 'Paris', b: 'Berlin', c: 'Madrid', d: 'Rome' },
-            subject: 'Paediatrics',
+            subject: 'zoology',
             chapter: 'chapter1',
             unit: 'Capital Cities',
             difficulty: 'easy',
@@ -48,8 +48,8 @@ const main = async () => {
             answer: 'b',
             explanation: 'Water is represented by H2O in chemistry.',
             options: { a: 'CO2', b: 'H2O', c: 'O2', d: 'He' },
-            subject: 'Paediatrics',
-            chapter: 'Chemistry',
+            subject: 'zoology',
+            chapter: 'chemistry',
             unit: 'Molecules',
             difficulty: 'medium',
         } as TQuestion
@@ -59,7 +59,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Paediatrics',
+            subject: 'zoology',
             chapter: 'human',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -70,7 +70,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Paediatrics',
+            subject: 'zoology',
             chapter: 'cell',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -80,7 +80,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Gyne',
+            subject: 'physics',
             chapter: 'plant',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -90,7 +90,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Gyne',
+            subject: 'physics',
             chapter: 'plant',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -100,7 +100,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Gyne',
+            subject: 'physics',
             chapter: 'plant',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -110,7 +110,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Gyne',
+            subject: 'physics',
             chapter: 'plant',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -120,7 +120,7 @@ const main = async () => {
             answer: 'a',
             explanation: 'William Shakespeare is the author of "Hamlet".',
             options: { a: 'Charles Dickens', b: 'William Shakespeare', c: 'Mark Twain', d: 'Ernest Hemingway' },
-            subject: 'Paediatrics',
+            subject: 'zoology',
             chapter: 'plant',
             unit: 'Classic Works',
             difficulty: 'hard',
@@ -128,36 +128,36 @@ const main = async () => {
 
 
         // Add the questions
-        const questionId1 = await addSingleQuestion(question1, newUser?.id) as string
-        const questionId2 = await addSingleQuestion(question2, newUser?.id) as string
-        const questionId3 = await addSingleQuestion(question3, newUser?.id) as string
-        const questionId4 = await addSingleQuestion(question4, newUser?.id) as string
-        const questionId5 = await addSingleQuestion(question5, newUser?.id) as string
-        const questionId6 = await addSingleQuestion(question6, newUser?.id) as string
-        const questionId7 = await addSingleQuestion(question7, newUser?.id) as string
-        const questionId8 = await addSingleQuestion(question8, newUser?.id) as string
-        const questionId9 = await addSingleQuestion(question9, newUser?.id) as string
+        const questionId1 = await addSingleQuestion(question1, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId2 = await addSingleQuestion(question2, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId3 = await addSingleQuestion(question3, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId4 = await addSingleQuestion(question4, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId5 = await addSingleQuestion(question5, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId6 = await addSingleQuestion(question6, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId7 = await addSingleQuestion(question7, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId8 = await addSingleQuestion(question8, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
+        const questionId9 = await addSingleQuestion(question9, '6d5b884f-474d-4623-9259-cdd3e2f4c18c') as string
 
 
         // // Create a test using the newly added questions
-        const customTestData = {
-            name: 'Combined Gyne Pediatric',
-            slug: 'GKT2024',
-            mode:'ALL',
-            createdById: newUser?.id, //newUser.id,
-            questions: [questionId1, questionId2, questionId3,questionId4,questionId5,questionId6,questionId7,questionId8,questionId9]
-        } as TcreateCustomTest
-        const customTestData2 = {
-            name: 'branching ',
-            slug: 'GKT2024',
-            mode:'ALL',
-            createdById: newUser?.id,
-            questions: [questionId1, questionId2, questionId3,questionId4,questionId5]
-        } as TcreateCustomTest
+        // const customTestData = {
+        //     name: 'Combined physics Pediatric',
+        //     slug: 'GKT2024',
+        //     mode:'ALL',
+        //     createdById: '6d5b884f-474d-4623-9259-cdd3e2f4c18c', //newUser.id,
+        //     questions: [questionId1, questionId2, questionId3,questionId4,questionId5,questionId6,questionId7,questionId8,questionId9]
+        // } as TcreateCustomTest
+        // const customTestData2 = {
+        //     name: 'branching ',
+        //     slug: 'GKT2024',
+        //     mode:'ALL',
+        //     createdById: '6d5b884f-474d-4623-9259-cdd3e2f4c18c',
+        //     questions: [questionId1, questionId2, questionId3,questionId4,questionId5]
+        // } as TcreateCustomTest
 
-        const newTest = await createCustomTest(customTestData);
+        // const newTest = await createCustomTest(customTestData);
 
-        const newTest2 = await createCustomTest(customTestData2);
+        // const newTest2 = await createCustomTest(customTestData2);
         // let results = [] as any
         // for (const item of questionsCountData) {
         //     try {

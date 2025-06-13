@@ -310,7 +310,7 @@ const sendWelcomeMailToUser = (data) => {
                                   We're absolutely thrilled to have you join our community! Thank you for creating an account with us using the email: <strong>${data.email}</strong>.
                               </p>
                               <p>
-                                  At EduLocus, we're dedicated to helping you [mention a key benefit or purpose, e.g., "achieve your learning goals", "streamline your workflow", "discover amazing content"].
+                                  At EduLocus, we're dedicated to helping you excel at CEE preparation whether you are UG or PG aspirant.
                               </p>
                               <p>
                                   To get started and explore everything we have to offer, click the button below:
@@ -333,9 +333,7 @@ const sendWelcomeMailToUser = (data) => {
                                   You received this email because you created an account with EduLocus.
                               </p>
                               <p style="margin-bottom: 10px;">
-                                  <a href="${process.env.FRONTEND}/privacy-policy" style="color: #2563eb; text-decoration: underline;">Privacy Policy</a>
-                                  &nbsp;&bull;&nbsp;
-                                  <a href="${process.env.FRONTEND}/terms-of-service" style="color: #2563eb; text-decoration: underline;">Terms of Service</a>
+                                  <a href="${process.env.FRONTEND}/privacy" style="color: #2563eb; text-decoration: underline;">Privacy Policy</a>
                               </p>
                               <p style="margin-bottom: 0;">
                                   &copy; ${new Date().getFullYear()} EduLocus. All rights reserved.

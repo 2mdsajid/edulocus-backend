@@ -1,5 +1,37 @@
 import prisma from "../utils/prisma"
-import { TGroup, TGroupAddMember, TGroupBase, TGroupCreate } from "./groups.schema";
+import { TGroup,  TGroupBase, TGroupCreate, TGroupDetail } from "./groups.schema";
+
+export const isGroupIdExist = async (groupId: string): Promise<boolean> => {
+    const group = await prisma.group.findUnique({
+        where: {
+            id: groupId
+        }
+    });
+
+    return !!group;
+}
+
+
+export const isUserAlreadyInGroup = async (email: string, groupId: string): Promise<boolean> => {
+    const user = await prisma.user.findUnique({
+        where: {
+            email
+        }
+    });
+
+    if (!user) return false;
+
+    const groupMember = await prisma.groupMember.findFirst({
+        where: {
+            groupId,
+            userId: user.id
+        }
+    });
+
+    return !!groupMember;
+}
+
+
 
 export const createGroup = async (createGroupData: TGroupCreate, userId: string): Promise<string | null> => {
     const { name, description, image, slug } = createGroupData;
@@ -10,6 +42,7 @@ export const createGroup = async (createGroupData: TGroupCreate, userId: string)
             description,
             image,
             slug,
+            createdBy: userId,
             members: {
                 create: {
                     userId,
@@ -33,21 +66,107 @@ export const getAllGroups = async (): Promise<TGroupBase[] | null> => {
             slug: true,
             description: true,
             image: true,
+            creator: {
+                select: {
+                    name: true
+                }
+            }
         }
     })
 
     if(!groups || groups.length === 0) return null
 
-    return groups
+    const modifiedGroups = groups.map(group => ({
+        ...group,
+        creatorName: group.creator.name
+    }));
+
+    return modifiedGroups
 }
 
-export const addMemberToGroup = async (addMemberToGroupData: TGroupAddMember, userId: string): Promise<string | null> => {
-    const { groupId, userId: memberId } = addMemberToGroupData;
+export const getAllGroupsByModerator = async (userId: string): Promise<TGroupBase[] | null> => {
+    const groups = await prisma.group.findMany({
+        where: {
+            createdBy: userId
+        },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            creator: {
+                select: {
+                    name: true
+                }
+            }
+        }
+    });
+
+    if (!groups || groups.length === 0) return null;
+
+    const modifiedGroups = groups.map(group => ({
+        ...group,
+        creatorName: group.creator.name
+    }));
+
+    return modifiedGroups;
+}
+
+export const getGroupById = async (groupId: string): Promise<TGroupDetail | null> => {
+    const group = await prisma.group.findUnique({
+        where: {
+            id: groupId
+        },
+        select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            image: true,
+            creator: {
+                select: {
+                    name: true
+                }
+            },
+            customTests:{
+                select:{
+                    name:true,
+                    id:true,
+                    date:true,
+                }
+            },
+            members:{
+                select:{
+                    user:{
+                        select:{
+                            id:true,
+                            name:true,
+                            email:true,
+                            image:true,
+                        },
+                    },
+                    joinedAt:true,
+                }
+            }
+        }
+    });
+
+    if (!group) return null;
+
+    return {
+        ...group,
+        creatorName: group.creator.name
+    };
+}
+
+
+export const addMemberToGroup = async (userToAddId:string, groupId:string): Promise<string | null> => {
 
     const newMember = await prisma.groupMember.create({
         data: {
             groupId,
-            userId: memberId,
+            userId: userToAddId,
             groupRole: "MEMBER",
             status: "ACTIVE",
         }

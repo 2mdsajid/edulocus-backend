@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTests = exports.getAllTestsByType = exports.getCustomTestMetadata = exports.getDailyTestBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -35,6 +35,22 @@ const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, f
     return newCustomTest.id;
 });
 exports.createCustomTest = createCustomTest;
+const addTestToGroup = (groupId, testId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const updatedTest = yield prisma_1.default.customTest.update({
+            where: { id: testId },
+            data: {
+                groupId: groupId
+            }
+        });
+        return !!updatedTest;
+    }
+    catch (error) {
+        console.error("Error adding test to group:", error);
+        return false;
+    }
+});
+exports.addTestToGroup = addTestToGroup;
 const updateTestQuestions = (testId, questionIds) => __awaiter(void 0, void 0, void 0, function* () {
     const updatedTest = yield prisma_1.default.customTest.update({
         where: { id: testId },
@@ -122,6 +138,8 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
             name: true,
             id: true,
             slug: true,
+            stream: true,
+            archive: true,
             createdBy: { select: { name: true } },
             questions: true
         }
@@ -211,48 +229,25 @@ const getTestBasicScores = (testid) => __awaiter(void 0, void 0, void 0, functio
     };
 });
 exports.getTestBasicScores = getTestBasicScores;
-const getDailyTestBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
-    const customTest = yield prisma_1.default.customTest.findFirst({
+const getDailyTestsBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTests = yield prisma_1.default.customTest.findMany({
         where: {
-            slug: slug
+            slug: slug,
+            archive: false,
         },
         select: {
             name: true,
             id: true,
-            slug: true,
+            date: true,
+            archive: true,
             createdBy: { select: { name: true } },
-            questions: true
+            questions: true,
+            pastPaper: true
         }
     });
-    if (!customTest)
-        return null;
-    const questions = yield prisma_1.default.question.findMany({
-        where: { id: { in: customTest.questions } },
-        select: {
-            id: true,
-            question: true,
-            options: {
-                select: {
-                    a: true,
-                    b: true,
-                    c: true,
-                    d: true,
-                }
-            },
-            answer: true,
-            explanation: true,
-            subject: true,
-            chapter: true,
-            stream: true,
-            unit: true,
-            difficulty: true,
-        }
-    });
-    const modifiedQuestions = questions.map((q) => (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" } })));
-    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, questions: modifiedQuestions });
-    return modifiedCustomTest;
+    return customTests;
 });
-exports.getDailyTestBySlug = getDailyTestBySlug;
+exports.getDailyTestsBySlug = getDailyTestsBySlug;
 const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: {
@@ -287,17 +282,38 @@ const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function
     return modifiedTestData;
 });
 exports.getCustomTestMetadata = getCustomTestMetadata;
+const archiveTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.update({
+        where: {
+            id
+        },
+        data: {
+            archive: true
+        }
+    });
+    if (!customTest)
+        return null;
+    return true;
+});
+exports.archiveTestById = archiveTestById;
 const getAllTestsByType = (type, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const customTests = yield prisma_1.default.customTest.findMany({
         where: {
             type: type,
-            stream: stream
+            stream: stream,
+            mode: 'ALL',
         },
         select: {
             name: true,
             id: true,
             date: true,
+            archive: true,
             questions: true,
+            createdBy: {
+                select: {
+                    name: true
+                }
+            },
             pastPaper: {
                 select: {
                     stream: true,
@@ -311,7 +327,9 @@ const getAllTestsByType = (type, stream) => __awaiter(void 0, void 0, void 0, fu
     });
     if (!customTests || customTests.length === 0)
         return [];
-    return customTests;
+    // Map over tests to add creator field
+    const modifiedTests = customTests.map(test => (Object.assign(Object.assign({}, test), { creator: test.createdBy.name })));
+    return modifiedTests;
 });
 exports.getAllTestsByType = getAllTestsByType;
 const getAllTests = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -320,6 +338,7 @@ const getAllTests = () => __awaiter(void 0, void 0, void 0, function* () {
             name: true,
             id: true,
             date: true,
+            archive: true,
             questions: true,
             pastPaper: {
                 select: {
@@ -337,6 +356,31 @@ const getAllTests = () => __awaiter(void 0, void 0, void 0, function* () {
     return customTests;
 });
 exports.getAllTests = getAllTests;
+const getAllTestsCreatedByUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTests = yield prisma_1.default.customTest.findMany({
+        where: {
+            createdById: userId
+        },
+        select: {
+            name: true,
+            id: true,
+            date: true,
+            archive: true,
+            questions: true,
+            createdBy: {
+                select: {
+                    name: true
+                }
+            }
+        }
+    });
+    if (!customTests || customTests.length === 0)
+        return [];
+    // Map over tests to add creator field
+    const modifiedTests = customTests.map(test => (Object.assign(Object.assign({}, test), { creator: test.createdBy.name })));
+    return modifiedTests;
+});
+exports.getAllTestsCreatedByUser = getAllTestsCreatedByUser;
 const getTypesOfTests = () => {
     return global_data_1.typeOfTestsAndDescriptionData.length > 0 ? global_data_1.typeOfTestsAndDescriptionData : [];
 };

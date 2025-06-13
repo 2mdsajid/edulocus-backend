@@ -7,6 +7,7 @@ import testsRouter from "./tests/tests.routes";
 import usersRouter from "./users/users.routes";
 import googleRouter from "./google/google.routes";
 import mailRouter from "./mail/mail.routes";
+import groupsRouter from "./groups/groups.routes"
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use(cors()); // To avoid cross-origin blocking
 app.use("/tests", testsRouter);
 app.use("/google", googleRouter)
 app.use("/users", usersRouter);
+app.use("/groups", groupsRouter)
 app.use("/questions", questionsRouter);
 app.use("/mail", mailRouter);
 

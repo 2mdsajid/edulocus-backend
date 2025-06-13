@@ -20,6 +20,7 @@ router.get('/get-all-users', async (request: Request, response: Response) => {
         }
         return response.status(200).json({ data: users, message: 'Streams fetched successfully' });
     } catch (error) {
+        console.log(error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 })
