@@ -404,14 +404,15 @@ router.get("/get-daily-tests/:date", middleware_1.checkStreamMiddleware, (reques
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.patch("/archive-test/:id", middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.post("/archive-test/:id", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = request.params;
+        console.log(id);
         const updatedTest = yield TestsServices.archiveTestById(id);
         if (!updatedTest) {
             return response.status(404).json({
                 data: null,
-                message: "Daily test not found"
+                message: "Test not found"
             });
         }
         return response.status(200).json({

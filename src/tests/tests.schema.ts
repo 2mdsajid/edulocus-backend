@@ -40,7 +40,9 @@ export type TCustomTestMetadata = Pick<CustomTest,
 export type TSingleCustomTestWithQuestions = Pick<CustomTest,
     'id' |
     'name' |
-    'slug'
+    'slug' |
+    'stream' |
+    'archive'
 > & {
     createdBy: string,
     questions: TQuestion[]

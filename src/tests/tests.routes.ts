@@ -457,16 +457,16 @@ router.get("/get-daily-tests/:date", checkStreamMiddleware, async (request: Requ
     }
 });
 
-router.patch("/archive-test/:id", checkStreamMiddleware, getSubscribedUserId, async (request: Request, response: Response) => {
+router.post("/archive-test/:id", checkModerator, async (request: Request, response: Response) => {
     try {
         const { id } = request.params;
-
+console.log(id)
 
         const updatedTest = await TestsServices.archiveTestById(id);
         if (!updatedTest) {
             return response.status(404).json({
                 data: null,
-                message: "Daily test not found"
+                message: "Test not found"
             });
         }
 
