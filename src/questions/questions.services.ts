@@ -341,7 +341,7 @@ export const getQuestionsIdsBySubjectAndChapter = async (subject: string, chapte
 
 // reconside later this -- some buggy code this is
 export const getQuestionsBySubject = async (subject: string): Promise<TQuestion[] | null> => {
-    const questions = await prisma.question.findManyRandom(10, {
+    const questions = await prisma.question.findManyRandom(25, {
         where: {
             subject: subject
         },

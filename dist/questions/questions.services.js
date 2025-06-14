@@ -309,7 +309,7 @@ const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => 
 exports.getQuestionsIdsBySubjectAndChapter = getQuestionsIdsBySubjectAndChapter;
 // reconside later this -- some buggy code this is
 const getQuestionsBySubject = (subject) => __awaiter(void 0, void 0, void 0, function* () {
-    const questions = yield prisma_1.default.question.findManyRandom(10, {
+    const questions = yield prisma_1.default.question.findManyRandom(25, {
         where: {
             subject: subject
         },
