@@ -289,28 +289,28 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         if (!admin) {
             return response.status(400).json({ data: null, message: 'No admin user with role SAJID found.' });
         }
+        // default PG as of now
+        // Might edit later
+        const stream = request.stream || 'UG';
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
+        }
         const createdById = admin.id;
         if (!createdById) {
             // This case should ideally not be hit if admin is found, but good to keep as a safeguard
             return response.status(400).json({ data: null, message: 'Unauthorized: Admin ID not found.' });
         }
         const limit = 30;
-        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'PG');
+        const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'UG');
         if (!questionsIds || questionsIds.length === 0) {
             return response.status(404).json({ data: null, message: 'No questions found for the daily test.' });
         }
         const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`;
-        // default PG as of now
-        // Might edit later
-        const stream = request.stream || 'PG';
-        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
-            return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
-        }
-        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
+        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug, stream);
         if (isDailyTestAlreadyExist) {
-            return response.status(400).json({ data: null, message: 'Daily Test for today already exists.' });
+            return response.status(400).json({ data: null, message: `Daily Test ${slug} already exists.` });
         }
         const data = {
             name: name,
@@ -360,7 +360,7 @@ router.get("/create-daily-test-by-users/:date", middleware_1.checkModerator, (re
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Stream Not Specified' });
         }
-        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug);
+        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug, stream);
         if (isDailyTestAlreadyExist) {
             return response.status(400).json({ data: null, message: 'Daily Test already exist' });
         }
@@ -407,8 +407,48 @@ router.get("/get-daily-tests/:date", middleware_1.checkStreamMiddleware, (reques
 router.post("/archive-test/:id", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = request.params;
-        console.log(id);
         const updatedTest = yield TestsServices.archiveTestById(id);
+        if (!updatedTest) {
+            return response.status(404).json({
+                data: null,
+                message: "Test not found"
+            });
+        }
+        return response.status(200).json({
+            data: updatedTest,
+            message: `Test has been disabled`
+        });
+    }
+    catch (error) {
+        console.error("Error disabling daily test:", error);
+        return response.status(500).json({
+            data: null,
+            message: 'Internal Server Error'
+        });
+    }
+}));
+router.get("/archive-test", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const date = new Date();
+        const currentDayOfMonth = date.getDate(); // Get the current day of the month (1-31)
+        // Check if the current day is an "alternate day" (odd number)
+        if (currentDayOfMonth % 2 === 0) {
+            return response.status(403).json({ data: null, message: 'Daily test can only be created on alternate days.' });
+        }
+        const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const slug = `dt-${formattedDate}`;
+        const name = `Daily Test - ${formattedDate}`;
+        // default PG as of now
+        // Might edit later
+        const stream = request.stream || 'UG';
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
+        }
+        const isDailyTestAlreadyExist = yield TestsServices.isDailyTestSlugExist(slug, stream);
+        if (!isDailyTestAlreadyExist) {
+            return response.status(404).json({ data: null, message: `Daily Test ${slug} not exists.` });
+        }
+        const updatedTest = yield TestsServices.archiveTestBySlugAndStream(slug, stream);
         if (!updatedTest) {
             return response.status(404).json({
                 data: null,

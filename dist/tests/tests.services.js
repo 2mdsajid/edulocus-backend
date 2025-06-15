@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -119,11 +119,12 @@ const createChapterWiseCustomTestByUser = (customTestData, subject, chapter) => 
     return newCustomTest.id;
 });
 exports.createChapterWiseCustomTestByUser = createChapterWiseCustomTestByUser;
-const isDailyTestSlugExist = (slug) => __awaiter(void 0, void 0, void 0, function* () {
+const isDailyTestSlugExist = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const dailyTest = yield prisma_1.default.customTest.findFirst({
         where: {
             slug,
-            type: "DAILY_TEST"
+            type: "DAILY_TEST",
+            stream: stream,
         }
     });
     if (!dailyTest)
@@ -296,6 +297,27 @@ const archiveTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     return true;
 });
 exports.archiveTestById = archiveTestById;
+const archiveTestBySlugAndStream = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.findFirst({
+        where: {
+            slug,
+            stream,
+            type: 'DAILY_TEST'
+        },
+    });
+    if (!customTest)
+        return null;
+    yield prisma_1.default.customTest.update({
+        where: {
+            id: customTest.id
+        },
+        data: {
+            archive: true
+        }
+    });
+    return true;
+});
+exports.archiveTestBySlugAndStream = archiveTestBySlugAndStream;
 const getAllTestsByType = (type, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const customTests = yield prisma_1.default.customTest.findMany({
         where: {

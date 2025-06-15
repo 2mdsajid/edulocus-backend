@@ -30,7 +30,7 @@ export const addTestToGroup = async (groupId: string, testId: string): Promise<b
                 groupId: groupId
             }
         });
-        
+
         return !!updatedTest;
     } catch (error) {
         console.error("Error adding test to group:", error);
@@ -110,11 +110,12 @@ export const createChapterWiseCustomTestByUser = async (customTestData: TcreateC
     return newCustomTest.id
 }
 
-export const isDailyTestSlugExist = async (slug: string): Promise<boolean> => {
+export const isDailyTestSlugExist = async (slug: string, stream: TStream): Promise<boolean> => {
     const dailyTest = await prisma.customTest.findFirst({
         where: {
             slug,
-            type: "DAILY_TEST"
+            type: "DAILY_TEST",
+            stream: stream,
         }
     });
     if (!dailyTest) return false;
@@ -128,8 +129,8 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
             name: true,
             id: true,
             slug: true,
-            stream:true,
-            archive:true,
+            stream: true,
+            archive: true,
             createdBy: { select: { name: true } },
             questions: true
         }
@@ -228,7 +229,7 @@ export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdow
 
     return {
         total,
-        unattempt : total - attempt,
+        unattempt: total - attempt,
         correct,
         incorrect,
     };
@@ -236,11 +237,11 @@ export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdow
 
 
 
-export const    getDailyTestsBySlug = async (slug: string): Promise<TBaseCustomTest[] | null> => {
+export const getDailyTestsBySlug = async (slug: string): Promise<TBaseCustomTest[] | null> => {
     const customTests = await prisma.customTest.findMany({
         where: {
             slug: slug,
-            archive:false,
+            archive: false,
         },
         select: {
             name: true,
@@ -248,8 +249,8 @@ export const    getDailyTestsBySlug = async (slug: string): Promise<TBaseCustomT
             date: true,
             archive: true,
             createdBy: { select: { name: true } },
-            questions:true,
-            pastPaper:true
+            questions: true,
+            pastPaper: true
         }
     })
 
@@ -301,12 +302,35 @@ export const archiveTestById = async (id: string): Promise<boolean | null> => {
         where: {
             id
         },
-        data:{
-            archive:true
+        data: {
+            archive: true
         }
     });
- 
-    if(!customTest) return null
+
+    if (!customTest) return null
+
+    return true
+}
+
+export const archiveTestBySlugAndStream = async (slug: string, stream: TStream): Promise<boolean | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: {
+            slug,
+            stream,
+            type: 'DAILY_TEST'
+        },
+    });
+
+    if (!customTest) return null
+
+    await prisma.customTest.update({
+        where: {
+            id: customTest.id
+        },
+        data: {
+            archive: true
+        }
+    })
 
     return true
 }
@@ -317,17 +341,17 @@ export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Pro
         where: {
             type: type,
             stream: stream,
-            mode:'ALL',
+            mode: 'ALL',
         },
         select: {
             name: true,
             id: true,
             date: true,
-            archive:true,
+            archive: true,
             questions: true,
-            createdBy:{
-                select:{
-                    name:true
+            createdBy: {
+                select: {
+                    name: true
                 }
             },
             pastPaper: {
@@ -343,7 +367,7 @@ export const getAllTestsByType = async (type: TTypeOfTest, stream: TStream): Pro
     })
 
     if (!customTests || customTests.length === 0) return []
-    
+
     // Map over tests to add creator field
     const modifiedTests = customTests.map(test => ({
         ...test,
@@ -359,7 +383,7 @@ export const getAllTests = async (): Promise<TBaseCustomTest[] | []> => {
             name: true,
             id: true,
             date: true,
-            archive:true,
+            archive: true,
             questions: true,
             pastPaper: {
                 select: {
@@ -397,7 +421,7 @@ export const getAllTestsCreatedByUser = async (userId: string): Promise<TBaseCus
     })
 
     if (!customTests || customTests.length === 0) return []
-    
+
     // Map over tests to add creator field
     const modifiedTests = customTests.map(test => ({
         ...test,
