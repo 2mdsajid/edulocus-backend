@@ -456,6 +456,12 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
             id: userId
         },
         select: {
+            Groups: {
+                select: {
+                    name: true,
+                    id: true,
+                }
+            },
             testAnalytics: {
                 select: {
                     testQuestionAnswer: {
@@ -513,7 +519,8 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
         averageScorePerQuestion: roundedAverageScorePerQuestion,
         recentTests,
         dailyTestProgressChartData: dailyTestProgressData,
-        subjectWiseScoreChartData
+        subjectWiseScoreChartData,
+        groupData: currentUser.Groups
     };
     return analyticData;
 });

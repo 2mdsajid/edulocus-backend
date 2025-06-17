@@ -37,7 +37,6 @@ export const getSubscribedUserId = async (
         req.user = user;
         req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
         req.stream = user.stream
-        console.log('ssadada',user.stream)
         next();
       }
     } else {

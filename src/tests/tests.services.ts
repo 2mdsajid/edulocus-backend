@@ -486,6 +486,12 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
             id: userId
         },
         select: {
+            Groups:{
+                select:{
+                    name:true,
+                    id:true,
+                }
+            },
             testAnalytics: {
                 select: {
                     testQuestionAnswer: {
@@ -552,7 +558,8 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         averageScorePerQuestion: roundedAverageScorePerQuestion,
         recentTests,
         dailyTestProgressChartData: dailyTestProgressData,
-        subjectWiseScoreChartData
+        subjectWiseScoreChartData,
+        groupData: currentUser.Groups
     };
 
     return analyticData;

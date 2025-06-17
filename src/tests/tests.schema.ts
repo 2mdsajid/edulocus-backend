@@ -111,6 +111,11 @@ export type TSubjectwiseScoresChartData = {
     fill: string;
 }
 
+export type TGroupDataInDashboard = {
+    id:string
+    name: string
+}
+
 export type TDashboardAnalyticData = {
     totalTests: number,
     totalQuestionsAttempt: number,
@@ -119,10 +124,11 @@ export type TDashboardAnalyticData = {
     totalIncorrectanswers: number,
     averageScorePerTest: number,
     averageScorePerQuestion: number,
-    scoreParametersData: TScoreParametersData[],
+    scoreParametersData:TScoreParametersData[],
     recentTests: TRecentTestInDashboardData[],
     dailyTestProgressChartData: TDailyTestProgressChartData[],
     subjectWiseScoreChartData: TSubjectwiseScoresChartData[],
+    groupData?:TGroupDataInDashboard[]
 }
 
 // to strongly type the dashboard process
