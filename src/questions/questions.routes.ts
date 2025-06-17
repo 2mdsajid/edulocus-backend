@@ -236,7 +236,6 @@ router.get('/get-questions-by-subject',checkModerator, async (request: Request, 
 router.get('/get-subjects', async (request: Request, response: Response) => {
     try {
         const stream = request.query.stream as TStream
-        console.log(stream)
         if (!stream || !getStreams().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' })
         }
@@ -250,6 +249,31 @@ router.get('/get-subjects', async (request: Request, response: Response) => {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+
+router.get('/get-chapters-by-subject', async (request: Request, response: Response) => {
+    try {
+        const stream = request.query.stream as TStream
+        const subject = request.query.subject as string
+        
+        if (!stream || !getStreams().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' })
+        }
+        
+        if (!subject || !QuestionServices.isSubjectInTheStream(stream, subject)) {
+            return response.status(400).json({ data: null, message: 'Invalid Subject' })
+        }
+
+        const chapters = await QuestionServices.getChaptersBySubject(stream, subject)
+        if (!chapters || chapters.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Chapters Found' })
+        }
+        return response.status(200).json({ data: chapters, message: 'Chapters Found' });
+    } catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' })
+    }
+})
+
 
 
 // a route to read all the questions from the database and then download them in json format

@@ -6,7 +6,6 @@ export const addSingleQuestionValidation: ValidationChain[] = [
     body('explanation').notEmpty().withMessage('Explanation must be provided').isString().withMessage('Explanation must be a string'),
     body('subject').notEmpty().withMessage('Subject must be provided').isString().withMessage('Subject must be a string'),
     body('chapter').notEmpty().withMessage('Chapter must be provided').isString().withMessage('Chapter must be a string'),
-    body('unit').notEmpty().withMessage('Unit must be provided').isString().withMessage('Unit must be a string'),
     body('difficulty').notEmpty().withMessage('Difficulty must be provided').isString().withMessage('Difficulty must be a string'),
     
     // Validation for options object

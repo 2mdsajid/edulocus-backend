@@ -242,7 +242,6 @@ router.get('/get-questions-by-subject', middleware_1.checkModerator, (request, r
 router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;
-        console.log(stream);
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
         }
@@ -251,6 +250,26 @@ router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, voi
             return response.status(404).json({ data: null, message: 'No Subjects Found' });
         }
         return response.status(200).json({ data: subjects, message: 'Subjects Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get('/get-chapters-by-subject', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const stream = request.query.stream;
+        const subject = request.query.subject;
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        if (!subject || !QuestionServices.isSubjectInTheStream(stream, subject)) {
+            return response.status(400).json({ data: null, message: 'Invalid Subject' });
+        }
+        const chapters = yield QuestionServices.getChaptersBySubject(stream, subject);
+        if (!chapters || chapters.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Chapters Found' });
+        }
+        return response.status(200).json({ data: chapters, message: 'Chapters Found' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

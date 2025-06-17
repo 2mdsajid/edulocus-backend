@@ -2,7 +2,7 @@ import { STREAM_HIERARCHY } from "../utils/global-data";
 import { TStream, TStreamHierarchy, TSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { SYLLABUS } from "../utils/syllabus";
-import { getAllSubjects } from "./questions.methods";
+import { doesSubjectExist, getAllSubjects, getAllTopicsBySubject } from "./questions.methods";
 import { TAddQuestion, TAddQuestionCount, TBaseOption, TBaseQuestion, TCreatePastQuestion, TQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
 
 
@@ -391,10 +391,21 @@ export const getStreamHierarchy = async (): Promise<TStreamHierarchy[] | null> =
     return STREAM_HIERARCHY ?? null
 };
 
+// if subject exist
+export const isSubjectInTheStream = async (stream: TStream, subject: string): Promise<boolean> => {
+    return doesSubjectExist(SYLLABUS, stream, subject);
+};
+
+
 // get Subjects
 export const getSubjects = async (stream: TStream): Promise<string[] | null> => {
     return getAllSubjects(SYLLABUS, stream) ?? null
 };
+
+// get chapters of a subject
+export const getChaptersBySubject = async (stream:TStream, subject:string) : Promise<string[] | null> =>{
+    return getAllTopicsBySubject(SYLLABUS,stream, subject )
+}
 
 // get count of questions in each subject -- exp for subject wise test models
 export const getTotalQuestionsPerSubject = async (stream: TStream): Promise<TTotalQuestionsPerSubject[] | null> => {

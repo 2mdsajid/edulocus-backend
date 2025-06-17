@@ -1,6 +1,14 @@
 import { TSyllabusCombined, TStreamHierarchy } from '../utils/global-types';
 
 
+
+export function doesSubjectExist(syllabus: TSyllabusCombined, stream: string, subject: string): boolean {
+    if (!syllabus[stream]) {
+        return false;
+    }
+    return subject in syllabus[stream];
+}
+
 export function getAllSubjects(syllabus: TSyllabusCombined, stream: string): string[] {
     if (syllabus[stream]) {
         return Object.keys(syllabus[stream]);
@@ -8,7 +16,7 @@ export function getAllSubjects(syllabus: TSyllabusCombined, stream: string): str
     return [];
 }
 
-export function getTopicsBySubject(syllabus: TSyllabusCombined, stream: string, subject: string): string[] | null {
+export function getAllTopicsBySubject(syllabus: TSyllabusCombined, stream: string, subject: string): string[] | null {
     if (syllabus[stream]?.[subject]) {
         return syllabus[stream][subject].topics;
     }

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getSubjects = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -357,12 +357,22 @@ const getStreamHierarchy = () => __awaiter(void 0, void 0, void 0, function* () 
     return global_data_1.STREAM_HIERARCHY !== null && global_data_1.STREAM_HIERARCHY !== void 0 ? global_data_1.STREAM_HIERARCHY : null;
 });
 exports.getStreamHierarchy = getStreamHierarchy;
+// if subject exist
+const isSubjectInTheStream = (stream, subject) => __awaiter(void 0, void 0, void 0, function* () {
+    return (0, questions_methods_1.doesSubjectExist)(syllabus_1.SYLLABUS, stream, subject);
+});
+exports.isSubjectInTheStream = isSubjectInTheStream;
 // get Subjects
 const getSubjects = (stream) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     return (_a = (0, questions_methods_1.getAllSubjects)(syllabus_1.SYLLABUS, stream)) !== null && _a !== void 0 ? _a : null;
 });
 exports.getSubjects = getSubjects;
+// get chapters of a subject
+const getChaptersBySubject = (stream, subject) => __awaiter(void 0, void 0, void 0, function* () {
+    return (0, questions_methods_1.getAllTopicsBySubject)(syllabus_1.SYLLABUS, stream, subject);
+});
+exports.getChaptersBySubject = getChaptersBySubject;
 // get count of questions in each subject -- exp for subject wise test models
 const getTotalQuestionsPerSubject = (stream) => __awaiter(void 0, void 0, void 0, function* () {
     const questionCounts = yield prisma_1.default.questionCount.findMany({

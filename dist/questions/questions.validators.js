@@ -8,7 +8,6 @@ exports.addSingleQuestionValidation = [
     (0, express_validator_1.body)('explanation').notEmpty().withMessage('Explanation must be provided').isString().withMessage('Explanation must be a string'),
     (0, express_validator_1.body)('subject').notEmpty().withMessage('Subject must be provided').isString().withMessage('Subject must be a string'),
     (0, express_validator_1.body)('chapter').notEmpty().withMessage('Chapter must be provided').isString().withMessage('Chapter must be a string'),
-    (0, express_validator_1.body)('unit').notEmpty().withMessage('Unit must be provided').isString().withMessage('Unit must be a string'),
     (0, express_validator_1.body)('difficulty').notEmpty().withMessage('Difficulty must be provided').isString().withMessage('Difficulty must be a string'),
     // Validation for options object
     (0, express_validator_1.body)('options.a').notEmpty().withMessage('Option A must be provided').isString().withMessage('Option A must be a string'),

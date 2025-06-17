@@ -1,18 +1,25 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.doesSubjectExist = doesSubjectExist;
 exports.getAllSubjects = getAllSubjects;
-exports.getTopicsBySubject = getTopicsBySubject;
+exports.getAllTopicsBySubject = getAllTopicsBySubject;
 exports.getMarksOfAllSubjects = getMarksOfAllSubjects;
 exports.getAllStreams = getAllStreams;
 exports.getCategoriesOfStream = getCategoriesOfStream;
 exports.getAffiliationsOfStreamCategory = getAffiliationsOfStreamCategory;
+function doesSubjectExist(syllabus, stream, subject) {
+    if (!syllabus[stream]) {
+        return false;
+    }
+    return subject in syllabus[stream];
+}
 function getAllSubjects(syllabus, stream) {
     if (syllabus[stream]) {
         return Object.keys(syllabus[stream]);
     }
     return [];
 }
-function getTopicsBySubject(syllabus, stream, subject) {
+function getAllTopicsBySubject(syllabus, stream, subject) {
     var _a;
     if ((_a = syllabus[stream]) === null || _a === void 0 ? void 0 : _a[subject]) {
         return syllabus[stream][subject].topics;
