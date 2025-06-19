@@ -34,7 +34,6 @@ const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0
                 req.user = user;
                 req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
                 req.stream = user.stream;
-                console.log('ssadada', user.stream);
                 next();
             }
         }

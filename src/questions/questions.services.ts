@@ -317,7 +317,6 @@ export const getQuestionsIdsBySubject = async (subject: string, limit: number, s
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
-            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
@@ -329,9 +328,7 @@ export const getQuestionsIdsBySubjectAndChapter = async (subject: string, chapte
     const limitValue = limit ?? 10
     const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
         where: {
-            subject: subject,
             chapter: chapter,
-            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0) return null
@@ -401,6 +398,10 @@ export const isSubjectInTheStream = async (stream: TStream, subject: string): Pr
 export const getSubjects = async (stream: TStream): Promise<string[] | null> => {
     return getAllSubjects(SYLLABUS, stream) ?? null
 };
+
+
+
+
 
 // get chapters of a subject
 export const getChaptersBySubject = async (stream:TStream, subject:string) : Promise<string[] | null> =>{

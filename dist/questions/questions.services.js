@@ -284,7 +284,6 @@ const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, v
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
             subject: subject,
-            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0)
@@ -297,9 +296,7 @@ const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => 
     const limitValue = limit !== null && limit !== void 0 ? limit : 10;
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
-            subject: subject,
             chapter: chapter,
-            stream: stream
         },
     });
     if (!selectedQuestions || selectedQuestions.length === 0)
