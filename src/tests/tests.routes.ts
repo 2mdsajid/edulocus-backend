@@ -259,7 +259,7 @@ router.post("/create-custom-tests-by-users",
             const chapter = request.query.chapter as string;
 
             const createdById = request.user?.id
-            const limit = !request.user?.isSubscribed ? 10 : 50
+            const limit = request.user?.isSubscribed ? 35 : 10
             const mode = request.mode || 'ALL'
             const type = request.body.type as TTypeOfTest
 

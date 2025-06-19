@@ -238,7 +238,7 @@ router.post("/create-custom-tests-by-users", middleware_1.checkStreamMiddleware,
         const subject = request.query.subject;
         const chapter = request.query.chapter;
         const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
-        const limit = !((_b = request.user) === null || _b === void 0 ? void 0 : _b.isSubscribed) ? 10 : 50;
+        const limit = ((_b = request.user) === null || _b === void 0 ? void 0 : _b.isSubscribed) ? 35 : 10;
         const mode = request.mode || 'ALL';
         const type = request.body.type;
         const stream = request.stream;
