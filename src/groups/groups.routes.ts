@@ -1,6 +1,6 @@
 import express, { Response } from 'express';
 import * as UserServices from '../users/users.services';
-import { checkModerator, RequestExtended } from '../utils/middleware';
+import { checkModerator, getUserSession, RequestExtended } from '../utils/middleware';
 import { addMemberSchema, groupCreateSchema } from './groups.schema';
 import * as GroupServices from './groups.services';
 const router = express.Router();
@@ -50,7 +50,7 @@ router.get('/get-all-groups-by-moderator', checkModerator, async (request: Reque
 })
 
 
-router.get('/get-group-by-id/:groupId', checkModerator, async (request: RequestExtended, response: Response) => {
+router.get('/get-group-by-id/:groupId', getUserSession, async (request: RequestExtended, response: Response) => {
     try {
         const groupId = request.params.groupId;
         if (!groupId) {

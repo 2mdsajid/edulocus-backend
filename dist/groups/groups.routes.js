@@ -82,7 +82,7 @@ router.get('/get-all-groups-by-moderator', middleware_1.checkModerator, (request
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get('/get-group-by-id/:groupId', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get('/get-group-by-id/:groupId', middleware_1.getUserSession, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const groupId = request.params.groupId;
         if (!groupId) {

@@ -456,10 +456,14 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
             id: userId
         },
         select: {
-            Groups: {
+            GroupMember: {
                 select: {
-                    name: true,
-                    id: true,
+                    group: {
+                        select: {
+                            name: true,
+                            id: true,
+                        }
+                    }
                 }
             },
             testAnalytics: {
@@ -489,6 +493,7 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
     if (!currentUser) {
         return null; // If no user data is found, return null
     }
+    console.log(currentUser);
     const totalTests = currentUser.testAnalytics.length;
     const totalQuestionsAttempt = (0, tests_methods_1.calculateTotalQuestionsAttempt)(currentUser.testAnalytics);
     const totalCorrectAnswers = (0, tests_methods_1.calculateTotalCorrectAnswers)(currentUser.testAnalytics);
@@ -508,6 +513,11 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
         { name: 'incorrect', value: totalIncorrectanswers, total: totalQuestionsAttempt, fill: `var(--color-incorrect)` },
         { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)` },
     ];
+    const groupData = currentUser.GroupMember && Array.isArray(currentUser.GroupMember)
+        ? currentUser.GroupMember
+            .map((gm) => gm.group)
+            .filter((g) => g && g.id && g.name)
+        : [];
     const analyticData = {
         totalTests,
         totalQuestionsAttempt,
@@ -520,7 +530,7 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
         recentTests,
         dailyTestProgressChartData: dailyTestProgressData,
         subjectWiseScoreChartData,
-        groupData: currentUser.Groups
+        groupData, // {id, name}[]
     };
     return analyticData;
 });

@@ -486,10 +486,14 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
             id: userId
         },
         select: {
-            Groups:{
+            GroupMember:{
                 select:{
-                    name:true,
-                    id:true,
+                    group:{
+                        select:{
+                            name:true,
+                            id:true, 
+                        }
+                    }
                 }
             },
             testAnalytics: {
@@ -521,6 +525,8 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         return null; // If no user data is found, return null
     }
 
+    console.log(currentUser)
+
     const totalTests = currentUser.testAnalytics.length;
     const totalQuestionsAttempt = calculateTotalQuestionsAttempt(currentUser.testAnalytics);
     const totalCorrectAnswers = calculateTotalCorrectAnswers(currentUser.testAnalytics);
@@ -547,6 +553,15 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)` },
     ]
 
+    
+
+    const groupData =
+        currentUser.GroupMember && Array.isArray(currentUser.GroupMember)
+            ? currentUser.GroupMember
+                  .map((gm: any) => gm.group)
+                  .filter((g: any) => g && g.id && g.name)
+            : [];
+
     const analyticData: TDashboardAnalyticData = {
         totalTests,
         totalQuestionsAttempt,
@@ -559,7 +574,7 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         recentTests,
         dailyTestProgressChartData: dailyTestProgressData,
         subjectWiseScoreChartData,
-        groupData: currentUser.Groups
+        groupData, // {id, name}[]
     };
 
     return analyticData;
