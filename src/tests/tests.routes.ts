@@ -72,6 +72,11 @@ router.post("/create-custom-tests",
                 mode: "ALL",
                 type: "MODEL",
                 questions: questionsIds,
+                description: null,
+                imageUrl: null,
+                specialUrl: null,
+                specialImage: null,
+                isLocked: false,
             }
 
             const newCustomTestId = await TestsServices.createCustomTest(data);
@@ -102,7 +107,6 @@ router.post("/create-custom-test-metadata",
             }
 
             const gid = request.query.gid as string
-            console.log(gid)
 
 
             // const limit = request.query.limit;
@@ -143,17 +147,24 @@ router.post("/create-custom-test-metadata",
                 slug: request.body.slug,
                 createdById: createdById,
                 stream: request.body.stream,
+                description: request.body.description || null,
+                imageUrl: request.body.imageUrl || null,
+                specialUrl: request.body.specialUrl || null,
+                specialImage: request.body.specialImage || null,
+
+                isLocked: request.body.isLocked || false,
+
                 mode: mode,
                 type: "MODEL",
                 questions: questionsArrays,
             }
 
+            console.log(data)
+
             const newCustomTestId = await TestsServices.createCustomTest(data);
             if (!newCustomTestId || newCustomTestId === undefined) {
                 return response.status(404).json({ data: null, message: "Custom test not found" })
             }
-
-            console.log(newCustomTestId)
 
             // to add tests to the group -- crreated by the group
             if (gid && gid !== 'null' && gid !== null && gid !== null && gid !== undefined) {
@@ -170,6 +181,32 @@ router.post("/create-custom-test-metadata",
             return response.status(500).json({ data: null, message: 'Internal Server Error' });
         }
     });
+
+
+// Route to create test codes for locked tests
+router.post("/generate-test-codes",
+    checkModerator,
+    async (request: RequestExtended, response: Response) => {
+        try {
+            const testId = request.body.testId;
+            const limit = request.body.limit || 1;
+
+            if (!testId) {
+                return response.status(400).json({ message: 'Test ID is required' });
+            }
+
+            const testCodes = await TestsServices.createTestCodes(testId, limit);
+            if (!testCodes) {
+                return response.status(404).json({ message: 'Failed to create test codes' });
+            }
+
+            return response.status(201).json({ data: testCodes, message: 'Test codes created successfully' });
+        } catch (error) {
+            console.error(error);
+            return response.status(500).json({ message: 'Internal Server Error' });
+        }
+    });
+
 
 
 // Create a new past test
@@ -209,7 +246,13 @@ router.post("/create-past-tests",
                 mode: "ALL",
                 type: "PAST_PAPER",
                 questions: questionsIds,
-                stream: stream
+                stream: stream,
+                description: null,
+                imageUrl: null,
+                specialUrl: null,
+                specialImage: null,
+                isLocked: false,
+
             }
 
             const newCustomTestId = await TestsServices.createCustomTest(data);
@@ -324,7 +367,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
             return response.status(400).json({ data: null, message: 'No admin user with role SAJID found.' });
         }
 
-               // default PG as of now
+        // default PG as of now
         // Might edit later
         const stream = request.stream as TStream || 'UG';
         if (!stream || !getStreams().includes(stream)) {
@@ -348,7 +391,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         const slug = `dt-${formattedDate}`;
         const name = `Daily Test - ${formattedDate}`;
 
- 
+
 
         const isDailyTestAlreadyExist = await TestsServices.isDailyTestSlugExist(slug, stream);
 
@@ -364,6 +407,11 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
             type: "DAILY_TEST",
             questions: questionsIds,
             stream: stream,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         };
 
         const newCustomTestId = await TestsServices.createCustomTest(data);
@@ -423,7 +471,12 @@ router.get("/create-daily-test-by-users/:date", checkModerator, async (request: 
             mode: "ALL",
             type: "DAILY_TEST",
             questions: questionsIds,
-            stream: stream
+            stream: stream,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         }
 
         const newCustomTestId = await TestsServices.createCustomTest(data);
@@ -547,7 +600,7 @@ router.get("/get-types-of-tests", async (request: Request, response: Response) =
 });
 
 
-router.get("/get-test-metadata/:id", createCustomTestValidation, async (request: Request, response: Response) => {
+router.get("/get-test-metadata/:id", async (request: Request, response: Response) => {
     try {
         const { id } = request.params
         const newCustomTest = await TestsServices.getCustomTestMetadata(id);
@@ -564,13 +617,44 @@ router.get("/get-test-metadata/:id", createCustomTestValidation, async (request:
 router.get("/get-single-test/:id", async (request: Request, response: Response) => {
     try {
         const { id } = request.params
+
+        const testIsLocked = await TestsServices.isTestLocked(id)
+        if (testIsLocked) {
+            const c = request.query.c as string | undefined;
+            if (!c || c === undefined || c === '') {
+                return response.status(400).json({ data: null, message: "Invalid request" })
+            }
+            const isTestRequestValid = await TestsServices.checkTestValidity(id, c);
+            if (!isTestRequestValid) {
+                return response.status(400).json({ data: null, message: "Invalid request" })
+            }
+        }
+        
         const newCustomTest = await TestsServices.getCustomTestById(id);
-        if (!newCustomTest || newCustomTest === undefined) {
+        if (!newCustomTest) {
             return response.status(404).json({ data: null, message: "Custom test metadata not found" })
         }
 
         return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
     } catch (error: any) {
+        console.log(error)
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+router.get("/get-single-test-for-edit/:id",checkModerator, async (request: Request, response: Response) => {
+    try {
+        const { id } = request.params
+
+        const newCustomTest = await TestsServices.getCustomTestById(id);
+        if (!newCustomTest) {
+            return response.status(404).json({ data: null, message: "Custom test metadata not found" })
+        }
+
+        return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
+    } catch (error: any) {
+        console.log(error)
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });

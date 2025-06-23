@@ -139,3 +139,24 @@ export const getSubjectScoresForBarChart = (
 
     return chartData;
 };
+
+export function generateRandomCodesForTest(limit = 1) {
+    if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1) {
+        console.warn("Warning: 'limit' must be a positive integer. Defaulting to 1.");
+        limit = 1;
+    }
+
+    const codes = [];
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const codeLength = 7;
+
+    for (let i = 0; i < limit; i++) {
+        let code = '';
+        for (let j = 0; j < codeLength; j++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        codes.push(code);
+    }
+
+    return codes;
+}

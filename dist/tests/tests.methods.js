@@ -8,6 +8,7 @@ exports.generateRecentTests = generateRecentTests;
 exports.calculateAverageScorePerTest = calculateAverageScorePerTest;
 exports.calculateAverageScorePerQuestion = calculateAverageScorePerQuestion;
 exports.generateDailyTestProgress = generateDailyTestProgress;
+exports.generateRandomCodesForTest = generateRandomCodesForTest;
 const functions_1 = require("../utils/functions");
 // Function to calculate total questions attempted
 function calculateTotalQuestionsAttempt(testAnalytics) {
@@ -118,3 +119,20 @@ const getSubjectScoresForBarChart = (testAnalytics) => {
     return chartData;
 };
 exports.getSubjectScoresForBarChart = getSubjectScoresForBarChart;
+function generateRandomCodesForTest(limit = 1) {
+    if (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 1) {
+        console.warn("Warning: 'limit' must be a positive integer. Defaulting to 1.");
+        limit = 1;
+    }
+    const codes = [];
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const codeLength = 7;
+    for (let i = 0; i < limit; i++) {
+        let code = '';
+        for (let j = 0; j < codeLength; j++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        codes.push(code);
+    }
+    return codes;
+}

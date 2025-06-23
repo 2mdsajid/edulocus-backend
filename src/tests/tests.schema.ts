@@ -9,8 +9,14 @@ export type TcreateCustomTest = Pick<CustomTest,
     'mode' |
     'type' |
     'questions' |
-    'stream'
->
+    'stream' |
+    'description'|
+    'imageUrl'|
+    'specialImage'|
+    'specialUrl'
+> & {
+    isLocked : boolean
+}
 
 export type TCreatePastPaper = PastPaper
 
@@ -24,17 +30,29 @@ export type TcreateCustomTestByUser = Pick<CustomTest,
     limit: number,
 }
 
+export type TTestLock = {
+    isLocked : boolean,
+    keysUsed : string[],
+    lockCodes:string[]
+}
+
+
 export type TCustomTestMetadata = Pick<CustomTest,
     'name' |
     'slug' |
     'date' |
     'archive' |
     'id' |
-    'usersConnected'
+    'usersConnected' | 
+    'description'|
+    'specialImage'|
+    'specialUrl'|
+    'imageUrl' 
 > & {
     createdBy: string,
     questionsCount: number
     usersAttended: TBaseUserScore[]
+    testLock : TTestLock | null
 }
 
 export type TSingleCustomTestWithQuestions = Pick<CustomTest,

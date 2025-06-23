@@ -2,11 +2,11 @@ import { getQuestionsIdsBySubject, getQuestionsIdsBySubjectAndChapter } from "..
 import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import { TStream } from "../utils/global-types";
 import prisma from "../utils/prisma";
-import { calculateAverageScorePerQuestion, calculateAverageScorePerTest, calculateTotalCorrectAnswers, calculateTotalQuestionsAttempt, calculateTotalUnattemptQuestions, generateDailyTestProgress, generateRecentTests, getSubjectScoresForBarChart } from "./tests.methods";
+import { calculateAverageScorePerQuestion, calculateAverageScorePerTest, calculateTotalCorrectAnswers, calculateTotalQuestionsAttempt, calculateTotalUnattemptQuestions, generateDailyTestProgress, generateRandomCodesForTest, generateRecentTests, getSubjectScoresForBarChart } from "./tests.methods";
 import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TScoreBreakdown, TSingleCustomTestWithQuestions, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
-    const { name, slug, createdById, mode, questions, type, stream } = customTestData;
+    const { name, slug, createdById, mode, questions, type, stream, description, specialImage, specialUrl, imageUrl, isLocked } = customTestData;
     const newCustomTest = await prisma.customTest.create({
         data: {
             name,
@@ -14,13 +14,54 @@ export const createCustomTest = async (customTestData: TcreateCustomTest): Promi
             stream,
             createdById,
             type,
+            description,
+            specialImage,
+            specialUrl,
+            imageUrl,
             mode: mode || 'ALL',
             questions: questions
         }
     })
     if (!newCustomTest) return null
+
+    if (customTestData.isLocked) {
+        const newLockedTest = await prisma.testLock.create({
+            data: {
+                testId: newCustomTest.id,
+            }
+        })
+
+        if (!newLockedTest) return null
+    }
+
     return newCustomTest.id
 }
+export const createTestCodes = async (testId: string, limit: number): Promise<string[] | null> => {
+    try {
+        // Get existing codes first
+        const existingTestLock = await prisma.testLock.findUnique({
+            where: { testId }
+        });
+
+        const existingCodes = existingTestLock?.lockCodes || [];
+        const newCodes = generateRandomCodesForTest(limit);
+
+        // Combine existing codes with new ones
+        const updatedCodes = [...existingCodes, ...newCodes];
+
+        const newTestCodes = await prisma.testLock.update({
+            where: { testId },
+            data: { lockCodes: updatedCodes }
+        });
+
+        if (!newTestCodes) return null;
+        return newTestCodes.lockCodes;
+    } catch (error) {
+        console.error("Error creating test code:", error);
+        return null;
+    }
+}
+
 
 export const addTestToGroup = async (groupId: string, testId: string): Promise<boolean> => {
     try {
@@ -120,6 +161,59 @@ export const isDailyTestSlugExist = async (slug: string, stream: TStream): Promi
     });
     if (!dailyTest) return false;
     return true
+}
+
+export const isTestLocked = async (id:string) : Promise<boolean | null> =>{
+    const customTest = await prisma.customTest.findUnique({
+        where: {
+            id
+        },
+        select: {
+            testLock: true
+        }
+    })
+
+    if (!customTest) return null
+    if(customTest.testLock?.isLocked) return true
+    return false
+}
+
+
+export const checkTestValidity = async (id: string, testCode?: string): Promise<boolean | null> => {
+    const customTest = await prisma.customTest.findUnique({
+        where: {
+            id
+        },
+        select: {
+            testLock: true
+        }
+    })
+
+    if (!customTest) return null
+
+    if (customTest.testLock?.isLocked) {
+        if (!testCode || testCode === '' || testCode === undefined) return false
+        if (!customTest.testLock?.lockCodes.includes(testCode)) return false
+        if (customTest.testLock?.keysUsed.includes(testCode)) return false
+
+        await prisma.testLock.update({
+            where: {
+                testId: id
+            },
+            data: {
+                keysUsed: {
+                    push: testCode
+                }
+            }
+        });
+
+        return true
+
+    }
+
+
+    return true
+
 }
 
 export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWithQuestions | null> => {
@@ -276,6 +370,17 @@ export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMeta
             date: true,
             usersConnected: true,
             questions: true,
+            description: true,
+            imageUrl: true,
+            specialImage: true,
+            specialUrl: true,
+            testLock: {
+                select: {
+                    isLocked: true,
+                    keysUsed: true,
+                    lockCodes: true,
+                }
+            },
             usersAttended: {
                 select: {
                     username: true,
@@ -486,12 +591,12 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
             id: userId
         },
         select: {
-            GroupMember:{
-                select:{
-                    group:{
-                        select:{
-                            name:true,
-                            id:true, 
+            GroupMember: {
+                select: {
+                    group: {
+                        select: {
+                            name: true,
+                            id: true,
                         }
                     }
                 }
@@ -553,13 +658,13 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         { name: 'unattempt', value: totalUnattemptQuestions, total: totalQuestionsAttempt, fill: `var(--color-unattempt)` },
     ]
 
-    
+
 
     const groupData =
         currentUser.GroupMember && Array.isArray(currentUser.GroupMember)
             ? currentUser.GroupMember
-                  .map((gm: any) => gm.group)
-                  .filter((g: any) => g && g.id && g.name)
+                .map((gm: any) => gm.group)
+                .filter((g: any) => g && g.id && g.name)
             : [];
 
     const analyticData: TDashboardAnalyticData = {

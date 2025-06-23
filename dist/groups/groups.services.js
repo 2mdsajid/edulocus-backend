@@ -128,6 +128,11 @@ const getGroupById = (groupId) => __awaiter(void 0, void 0, void 0, function* ()
                     name: true,
                     id: true,
                     date: true,
+                    testLock: {
+                        select: {
+                            isLocked: true,
+                        }
+                    }
                 }
             },
             members: {
@@ -147,7 +152,10 @@ const getGroupById = (groupId) => __awaiter(void 0, void 0, void 0, function* ()
     });
     if (!group)
         return null;
-    return Object.assign(Object.assign({}, group), { creatorName: group.creator.name });
+    return Object.assign(Object.assign({}, group), { creatorName: group.creator.name, customTests: group.customTests.map(test => {
+            var _a;
+            return (Object.assign(Object.assign({}, test), { isLocked: ((_a = test.testLock) === null || _a === void 0 ? void 0 : _a.isLocked) || false }));
+        }) });
 });
 exports.getGroupById = getGroupById;
 const addMemberToGroup = (userToAddId, groupId) => __awaiter(void 0, void 0, void 0, function* () {

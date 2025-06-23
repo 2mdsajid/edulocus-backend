@@ -91,6 +91,11 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
             mode: "ALL",
             type: "MODEL",
             questions: questionsIds,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
@@ -115,7 +120,6 @@ router.post("/create-custom-test-metadata", middleware_1.checkModerator, tests_v
             return response.status(400).json({ message: 'Unauthorized' });
         }
         const gid = request.query.gid;
-        console.log(gid);
         // const limit = request.query.limit;
         // if (!limit || isNaN(Number(limit)) || Number(limit) < 1) {
         //     return response.status(400).json({ data: null, message: 'Please specify a valid limit' });
@@ -145,15 +149,20 @@ router.post("/create-custom-test-metadata", middleware_1.checkModerator, tests_v
             slug: request.body.slug,
             createdById: createdById,
             stream: request.body.stream,
+            description: request.body.description || null,
+            imageUrl: request.body.imageUrl || null,
+            specialUrl: request.body.specialUrl || null,
+            specialImage: request.body.specialImage || null,
+            isLocked: request.body.isLocked || false,
             mode: mode,
             type: "MODEL",
             questions: questionsArrays,
         };
+        console.log(data);
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" });
         }
-        console.log(newCustomTestId);
         // to add tests to the group -- crreated by the group
         if (gid && gid !== 'null' && gid !== null && gid !== null && gid !== undefined) {
             const isGroupExist = yield GroupServices.isGroupIdExist(gid);
@@ -167,6 +176,25 @@ router.post("/create-custom-test-metadata", middleware_1.checkModerator, tests_v
     catch (error) {
         console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// Route to create test codes for locked tests
+router.post("/generate-test-codes", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const testId = request.body.testId;
+        const limit = request.body.limit || 1;
+        if (!testId) {
+            return response.status(400).json({ message: 'Test ID is required' });
+        }
+        const testCodes = yield TestsServices.createTestCodes(testId, limit);
+        if (!testCodes) {
+            return response.status(404).json({ message: 'Failed to create test codes' });
+        }
+        return response.status(201).json({ data: testCodes, message: 'Test codes created successfully' });
+    }
+    catch (error) {
+        console.error(error);
+        return response.status(500).json({ message: 'Internal Server Error' });
     }
 }));
 // Create a new past test
@@ -198,7 +226,12 @@ router.post("/create-past-tests", middleware_1.checkModerator, tests_validators_
             mode: "ALL",
             type: "PAST_PAPER",
             questions: questionsIds,
-            stream: stream
+            stream: stream,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
@@ -320,6 +353,11 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
             type: "DAILY_TEST",
             questions: questionsIds,
             stream: stream,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === null) {
@@ -371,7 +409,12 @@ router.get("/create-daily-test-by-users/:date", middleware_1.checkModerator, (re
             mode: "ALL",
             type: "DAILY_TEST",
             questions: questionsIds,
-            stream: stream
+            stream: stream,
+            description: null,
+            imageUrl: null,
+            specialUrl: null,
+            specialImage: null,
+            isLocked: false,
         };
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === null) {
@@ -480,7 +523,7 @@ router.get("/get-types-of-tests", (request, response) => __awaiter(void 0, void 
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.get("/get-test-metadata/:id", tests_validators_1.createCustomTestValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-test-metadata/:id", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = request.params;
         const newCustomTest = yield TestsServices.getCustomTestMetadata(id);
@@ -496,13 +539,39 @@ router.get("/get-test-metadata/:id", tests_validators_1.createCustomTestValidati
 router.get("/get-single-test/:id", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = request.params;
+        const testIsLocked = yield TestsServices.isTestLocked(id);
+        if (testIsLocked) {
+            const c = request.query.c;
+            if (!c || c === undefined || c === '') {
+                return response.status(400).json({ data: null, message: "Invalid request" });
+            }
+            const isTestRequestValid = yield TestsServices.checkTestValidity(id, c);
+            if (!isTestRequestValid) {
+                return response.status(400).json({ data: null, message: "Invalid request" });
+            }
+        }
         const newCustomTest = yield TestsServices.getCustomTestById(id);
-        if (!newCustomTest || newCustomTest === undefined) {
+        if (!newCustomTest) {
             return response.status(404).json({ data: null, message: "Custom test metadata not found" });
         }
         return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
     }
     catch (error) {
+        console.log(error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+router.get("/get-single-test-for-edit/:id", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        const newCustomTest = yield TestsServices.getCustomTestById(id);
+        if (!newCustomTest) {
+            return response.status(404).json({ data: null, message: "Custom test metadata not found" });
+        }
+        return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
+    }
+    catch (error) {
+        console.log(error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

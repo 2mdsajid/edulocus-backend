@@ -12,13 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const tests_methods_1 = require("./tests.methods");
 const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, function* () {
-    const { name, slug, createdById, mode, questions, type, stream } = customTestData;
+    const { name, slug, createdById, mode, questions, type, stream, description, specialImage, specialUrl, imageUrl, isLocked } = customTestData;
     const newCustomTest = yield prisma_1.default.customTest.create({
         data: {
             name,
@@ -26,15 +26,52 @@ const createCustomTest = (customTestData) => __awaiter(void 0, void 0, void 0, f
             stream,
             createdById,
             type,
+            description,
+            specialImage,
+            specialUrl,
+            imageUrl,
             mode: mode || 'ALL',
             questions: questions
         }
     });
     if (!newCustomTest)
         return null;
+    if (customTestData.isLocked) {
+        const newLockedTest = yield prisma_1.default.testLock.create({
+            data: {
+                testId: newCustomTest.id,
+            }
+        });
+        if (!newLockedTest)
+            return null;
+    }
     return newCustomTest.id;
 });
 exports.createCustomTest = createCustomTest;
+const createTestCodes = (testId, limit) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Get existing codes first
+        const existingTestLock = yield prisma_1.default.testLock.findUnique({
+            where: { testId }
+        });
+        const existingCodes = (existingTestLock === null || existingTestLock === void 0 ? void 0 : existingTestLock.lockCodes) || [];
+        const newCodes = (0, tests_methods_1.generateRandomCodesForTest)(limit);
+        // Combine existing codes with new ones
+        const updatedCodes = [...existingCodes, ...newCodes];
+        const newTestCodes = yield prisma_1.default.testLock.update({
+            where: { testId },
+            data: { lockCodes: updatedCodes }
+        });
+        if (!newTestCodes)
+            return null;
+        return newTestCodes.lockCodes;
+    }
+    catch (error) {
+        console.error("Error creating test code:", error);
+        return null;
+    }
+});
+exports.createTestCodes = createTestCodes;
 const addTestToGroup = (groupId, testId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const updatedTest = yield prisma_1.default.customTest.update({
@@ -132,6 +169,57 @@ const isDailyTestSlugExist = (slug, stream) => __awaiter(void 0, void 0, void 0,
     return true;
 });
 exports.isDailyTestSlugExist = isDailyTestSlugExist;
+const isTestLocked = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const customTest = yield prisma_1.default.customTest.findUnique({
+        where: {
+            id
+        },
+        select: {
+            testLock: true
+        }
+    });
+    if (!customTest)
+        return null;
+    if ((_a = customTest.testLock) === null || _a === void 0 ? void 0 : _a.isLocked)
+        return true;
+    return false;
+});
+exports.isTestLocked = isTestLocked;
+const checkTestValidity = (id, testCode) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c;
+    const customTest = yield prisma_1.default.customTest.findUnique({
+        where: {
+            id
+        },
+        select: {
+            testLock: true
+        }
+    });
+    if (!customTest)
+        return null;
+    if ((_a = customTest.testLock) === null || _a === void 0 ? void 0 : _a.isLocked) {
+        if (!testCode || testCode === '' || testCode === undefined)
+            return false;
+        if (!((_b = customTest.testLock) === null || _b === void 0 ? void 0 : _b.lockCodes.includes(testCode)))
+            return false;
+        if ((_c = customTest.testLock) === null || _c === void 0 ? void 0 : _c.keysUsed.includes(testCode))
+            return false;
+        yield prisma_1.default.testLock.update({
+            where: {
+                testId: id
+            },
+            data: {
+                keysUsed: {
+                    push: testCode
+                }
+            }
+        });
+        return true;
+    }
+    return true;
+});
+exports.checkTestValidity = checkTestValidity;
 const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: { id },
@@ -267,6 +355,17 @@ const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function
             date: true,
             usersConnected: true,
             questions: true,
+            description: true,
+            imageUrl: true,
+            specialImage: true,
+            specialUrl: true,
+            testLock: {
+                select: {
+                    isLocked: true,
+                    keysUsed: true,
+                    lockCodes: true,
+                }
+            },
             usersAttended: {
                 select: {
                     username: true,

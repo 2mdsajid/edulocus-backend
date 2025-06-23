@@ -134,6 +134,11 @@ export const getGroupById = async (groupId: string): Promise<TGroupDetail | null
                     name:true,
                     id:true,
                     date:true,
+                    testLock:{
+                        select:{
+                            isLocked:true,
+                        }
+                    }
                 }
             },
             members:{
@@ -156,10 +161,13 @@ export const getGroupById = async (groupId: string): Promise<TGroupDetail | null
 
     return {
         ...group,
-        creatorName: group.creator.name
+        creatorName: group.creator.name,
+        customTests: group.customTests.map(test => ({
+            ...test,
+            isLocked: test.testLock?.isLocked || false
+        }))
     };
 }
-
 
 export const addMemberToGroup = async (userToAddId:string, groupId:string): Promise<string | null> => {
 
