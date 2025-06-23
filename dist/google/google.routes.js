@@ -67,4 +67,28 @@ router.post("/get-gemini-explanation", (request, response) => __awaiter(void 0, 
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.put('/gemini-quesiton-update', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!request.body.id) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+        // Update the question using AI
+        const updatedQuestion = yield (0, google_services_1.updateQuestionByAI)(request.body);
+        // const updatedQuestionData = await updateQuestion({
+        //     id: updatedQuestion.id,
+        //     question: updatedQuestion.question,
+        //     options: updatedQuestion.options,
+        //     answer: updatedQuestion.answer,
+        //     explanation: updatedQuestion.explanation,
+        // });
+        if (!updatedQuestion) {
+            return response.status(404).json({ data: null, message: 'Question not found or could not be updated by AI' });
+        }
+        return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully by AI' });
+    }
+    catch (error) {
+        console.error("🚀 ~ router.put error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 exports.default = router;

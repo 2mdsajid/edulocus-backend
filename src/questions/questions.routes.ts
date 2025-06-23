@@ -169,6 +169,42 @@ router.get('/get-total-questions-per-subject-and-chapter',checkStreamMiddleware,
 })
 
 
+router.get('/get-reported-questions', checkModerator, async (request: Request, response: Response) => {
+    try {
+        const reportedQuestions = await QuestionServices.getReportedQuestions();
+        if (!reportedQuestions || reportedQuestions.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Reported Questions Found' });
+        }
+        return response.status(200).json({ data: reportedQuestions, message: 'Reported Questions Retrieved' });
+    } catch (error) {
+        console.error("🚀 ~ router.get error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+router.put('/update-question', checkModerator, async (request: Request, response: Response) => {
+    try {
+
+        if (!request.body.id) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+
+        // Update the question
+        const updatedQuestion = await QuestionServices.updateQuestion(request.body);
+        if (!updatedQuestion) {
+            return response.status(404).json({ data: null, message: 'Question not found or could not be updated' });
+        }
+
+        return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully' });
+    } catch (error) {
+        console.error("🚀 ~ router.put error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+
+
 // make a similar route t get count of total questions
 router.get('/get-total-questions-count', async (request: Request, response: Response) => {
     try {

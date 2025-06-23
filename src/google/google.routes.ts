@@ -1,7 +1,8 @@
-import express, { Response } from 'express';
-import { askGemini, getChapterAndSubjectScores, getGeminiExplanation, isUserLegibleForAiAsk } from '../google/google.services';
-import { getUserSession, RequestExtended } from '../utils/middleware';
+import express, { Response, Request } from 'express';
+import { askGemini, getChapterAndSubjectScores, getGeminiExplanation, isUserLegibleForAiAsk, updateQuestionByAI } from '../google/google.services';
+import { checkModerator, getUserSession, RequestExtended } from '../utils/middleware';
 import { questionSchemaForGemini } from './google.schema';
+import { updateQuestion } from '../questions/questions.services';
 
 const router = express.Router();
 
@@ -56,4 +57,35 @@ router.post("/get-gemini-explanation", async (request: RequestExtended, response
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
+
+
+router.put('/gemini-quesiton-update', checkModerator, async (request: Request, response: Response) => {
+    try {
+        if (!request.body.id) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+
+        // Update the question using AI
+        const updatedQuestion = await updateQuestionByAI(request.body);
+        // const updatedQuestionData = await updateQuestion({
+        //     id: updatedQuestion.id,
+        //     question: updatedQuestion.question,
+        //     options: updatedQuestion.options,
+        //     answer: updatedQuestion.answer,
+        //     explanation: updatedQuestion.explanation,
+        // });
+
+        
+        if (!updatedQuestion) {
+            return response.status(404).json({ data: null, message: 'Question not found or could not be updated by AI' });
+        }
+
+        return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully by AI' });
+    } catch (error) {
+        console.error("🚀 ~ router.put error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
 export default router

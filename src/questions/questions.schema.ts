@@ -15,6 +15,8 @@ export type TBaseOption = Omit<Option, 'questionId'>
 
 export type TQuestion = TBaseQuestion & { images: TBaseImages | null, options: TBaseOption }
 
+export type TReportQuestion = TQuestion & {message : string | null}
+
 export type TAddQuestion = Omit<TQuestion, 'id'>
 
 export type TAddQuestionCount = Omit<QuestionCount, 'id'>

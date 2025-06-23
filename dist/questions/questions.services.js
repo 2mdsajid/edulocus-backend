@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -83,6 +83,97 @@ const reportQuestion = (questionId, description) => __awaiter(void 0, void 0, vo
     return reportedQuestion.message;
 });
 exports.reportQuestion = reportQuestion;
+// get reported questions
+const getReportedQuestions = () => __awaiter(void 0, void 0, void 0, function* () {
+    const reportedQuestions = yield prisma_1.default.isReported.findMany({
+        select: {
+            message: true,
+            question: {
+                select: {
+                    id: true,
+                    question: true,
+                    subject: true,
+                    chapter: true,
+                    options: {
+                        select: {
+                            a: true,
+                            b: true,
+                            c: true,
+                            d: true,
+                        }
+                    },
+                    answer: true,
+                    explanation: true,
+                    images: {
+                        select: {
+                            qn: true,
+                            a: true,
+                            b: true,
+                            c: true,
+                            d: true,
+                            exp: true,
+                        }
+                    },
+                    difficulty: true,
+                    unit: true,
+                    stream: true,
+                }
+            }
+        }
+    });
+    if (!reportedQuestions || reportedQuestions.length === 0) {
+        return [];
+    }
+    return reportedQuestions.map(report => (Object.assign(Object.assign({}, report.question), { message: report.message, options: report.question.options || {
+            a: '',
+            b: '',
+            c: '',
+            d: ''
+        }, images: report.question.images })));
+});
+exports.getReportedQuestions = getReportedQuestions;
+//update question
+const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id, question, answer, explanation, subject, chapter, unit, stream, difficulty, options, images } = questionData;
+    const updatedQuestion = yield prisma_1.default.question.update({
+        where: { id },
+        data: {
+            question,
+            answer,
+            explanation,
+            subject,
+            chapter,
+            unit,
+            stream,
+            difficulty,
+        },
+        include: {
+            options: true,
+            images: true
+        }
+    });
+    if (!updatedQuestion)
+        return null;
+    if (options) {
+        yield prisma_1.default.option.update({
+            where: { questionId: id },
+            data: options
+        });
+    }
+    if (images) {
+        yield prisma_1.default.images.update({
+            where: { questionId: id },
+            data: images
+        });
+    }
+    return Object.assign(Object.assign({}, updatedQuestion), { options: updatedQuestion.options || {
+            a: '',
+            b: '',
+            c: '',
+            d: ''
+        }, images: updatedQuestion.images });
+});
+exports.updateQuestion = updateQuestion;
 // add multiple questions from same chapter and subject
 const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __awaiter(void 0, void 0, void 0, function* () {
     if (!questions.length)

@@ -3,7 +3,7 @@ import { TStream, TStreamHierarchy, TSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { SYLLABUS } from "../utils/syllabus";
 import { doesSubjectExist, getAllSubjects, getAllTopicsBySubject } from "./questions.methods";
-import { TAddQuestion, TAddQuestionCount, TBaseOption, TBaseQuestion, TCreatePastQuestion, TQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
+import { TAddQuestion, TAddQuestionCount, TBaseOption, TBaseQuestion, TCreatePastQuestion, TQuestion, TReportQuestion, TTotalQuestionsPerSubject, TTotalQuestionsPerSubjectAndChapter } from "./questions.schema";
 
 
 // add a single question
@@ -75,6 +75,114 @@ export const reportQuestion = async (questionId: string, description: string): P
     })
     return reportedQuestion.message
 }
+
+
+// get reported questions
+export const getReportedQuestions = async (): Promise<TReportQuestion[]> => {
+    const reportedQuestions = await prisma.isReported.findMany({
+        select:{
+            message:true,
+            question: {
+                select: {
+                    id: true,
+                    question: true,
+                    subject: true,
+                    chapter: true,
+                    options: {
+                        select:{
+                            a:true,
+                            b:true,
+                            c:true,
+                            d:true,
+                        }
+                    },
+                    answer: true,
+                    explanation: true,
+                    images: {
+                        select:{
+                            qn:true,
+                            a:true,
+                            b:true,
+                            c:true,
+                            d:true,
+                            exp:true,
+                        }
+                    },
+                    difficulty: true,
+                    unit: true,
+                    stream: true,
+                }
+            }
+        }
+    });
+
+    if (!reportedQuestions || reportedQuestions.length === 0) {
+        return [];
+    }
+
+    return reportedQuestions.map(report => ({
+        ...report.question,
+        message: report.message,
+        options: report.question.options || {
+            a: '',
+            b: '',
+            c: '',
+            d: ''
+        },
+        images: report.question.images
+    }));
+};
+
+//update question
+export const updateQuestion = async (questionData: TQuestion): Promise<TQuestion | null> => {
+    const { id, question, answer, explanation, subject, chapter, unit, stream, difficulty, options, images } = questionData;
+
+    const updatedQuestion = await prisma.question.update({
+        where: { id },
+        data: {
+            question,
+            answer,
+            explanation,
+            subject,
+            chapter,
+            unit,
+            stream,
+            difficulty,
+        },
+        include: {
+            options: true,
+            images: true
+        }
+    });
+
+    if (!updatedQuestion) return null;
+
+    if (options) {
+        await prisma.option.update({
+            where: { questionId: id },
+            data: options
+        });
+    }
+
+    if (images) {
+        await prisma.images.update({
+            where: { questionId: id },
+            data: images
+        });
+    }
+
+    return {
+        ...updatedQuestion,
+        options: updatedQuestion.options || {
+            a: '',
+            b: '',
+            c: '',
+            d: ''
+        },
+        images: updatedQuestion.images
+    };
+};
+
 
 
 // add multiple questions from same chapter and subject

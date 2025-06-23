@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TBaseOption } from '../questions/questions.schema';
 
 // Define the schema for a single chapter score
 export const chapterScoreSchema = z.object({
@@ -15,6 +16,18 @@ export const questionSchemaForGemini = z.object({
   }),
   correctAnswer: z.string().nullable(),
 });
+
+
+export type TAiQUestionUpdate = {
+  id: string, // Assuming the ID is needed for update
+  question: string,
+  options: TBaseOption,
+  answer: string,
+  explanation: string,
+  message: string, // Include the report message
+}
+
+
 
 export type TQuestionSchemaForGemini = z.infer<typeof questionSchemaForGemini>;
 
