@@ -350,6 +350,16 @@ export const getQuestionsBySubject = async (subject: string): Promise<TQuestion[
             options: true,
             answer: true,
             explanation: true,
+            images: {
+                select:{
+                    qn:true,
+                    a:true,
+                    b:true,
+                    c:true,
+                    d:true,
+                    exp:true,
+                }
+            },
             difficulty: true,
             unit: true,
             stream: true,

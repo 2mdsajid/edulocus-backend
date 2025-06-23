@@ -252,6 +252,16 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
             explanation: true,
             subject: true,
             stream: true,
+            images: {
+                select: {
+                    qn: true,
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                    exp: true,
+                }
+            },
             chapter: true,
             unit: true,
             difficulty: true,

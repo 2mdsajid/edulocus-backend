@@ -13,7 +13,7 @@ export type TCreatePastQuestion = Omit<IsPastQuestion,'questionId'>
 
 export type TBaseOption = Omit<Option, 'questionId'>
 
-export type TQuestion = TBaseQuestion & { images?: TBaseImages, options: TBaseOption }
+export type TQuestion = TBaseQuestion & { images: TBaseImages | null, options: TBaseOption }
 
 export type TAddQuestion = Omit<TQuestion, 'id'>
 

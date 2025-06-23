@@ -248,6 +248,16 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
             explanation: true,
             subject: true,
             stream: true,
+            images: {
+                select:{
+                    qn:true,
+                    a:true,
+                    b:true,
+                    c:true,
+                    d:true,
+                    exp:true,
+                }
+            },
             chapter: true,
             unit: true,
             difficulty: true,

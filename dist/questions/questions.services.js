@@ -318,6 +318,16 @@ const getQuestionsBySubject = (subject) => __awaiter(void 0, void 0, void 0, fun
             options: true,
             answer: true,
             explanation: true,
+            images: {
+                select: {
+                    qn: true,
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                    exp: true,
+                }
+            },
             difficulty: true,
             unit: true,
             stream: true,
