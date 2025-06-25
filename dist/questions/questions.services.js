@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
+exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.removeReportedQuestions = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -133,6 +133,7 @@ const getReportedQuestions = () => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.getReportedQuestions = getReportedQuestions;
 //update question
+// just putting any coz sometimes there may be no chapter in the question
 const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, function* () {
     const { id, question, answer, explanation, subject, chapter, unit, stream, difficulty, options, images } = questionData;
     const updatedQuestion = yield prisma_1.default.question.update({
@@ -148,7 +149,14 @@ const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, funct
             difficulty,
         },
         include: {
-            options: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
             images: true
         }
     });
@@ -166,6 +174,9 @@ const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, funct
             data: images
         });
     }
+    // await prisma.isReported.delete({
+    //     where: { questionId: id }
+    // })
     return Object.assign(Object.assign({}, updatedQuestion), { options: updatedQuestion.options || {
             a: '',
             b: '',
@@ -174,6 +185,19 @@ const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, funct
         }, images: updatedQuestion.images });
 });
 exports.updateQuestion = updateQuestion;
+const removeReportedQuestions = (questionId) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield prisma_1.default.isReported.delete({
+            where: { questionId }
+        });
+        return true;
+    }
+    catch (error) {
+        console.error("Error removing reported question:", error);
+        return false;
+    }
+});
+exports.removeReportedQuestions = removeReportedQuestions;
 // add multiple questions from same chapter and subject
 const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __awaiter(void 0, void 0, void 0, function* () {
     if (!questions.length)

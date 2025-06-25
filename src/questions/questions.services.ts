@@ -134,7 +134,8 @@ export const getReportedQuestions = async (): Promise<TReportQuestion[]> => {
 };
 
 //update question
-export const updateQuestion = async (questionData: TQuestion): Promise<TQuestion | null> => {
+// just putting any coz sometimes there may be no chapter in the question
+export const updateQuestion = async (questionData: any): Promise<TQuestion | null> => {
     const { id, question, answer, explanation, subject, chapter, unit, stream, difficulty, options, images } = questionData;
 
     const updatedQuestion = await prisma.question.update({
@@ -150,7 +151,14 @@ export const updateQuestion = async (questionData: TQuestion): Promise<TQuestion
             difficulty,
         },
         include: {
-            options: true,
+            options: {
+                select:{
+                    a:true,
+                    b:true,
+                    c:true,
+                    d:true,
+                }
+            },
             images: true
         }
     });
@@ -171,6 +179,10 @@ export const updateQuestion = async (questionData: TQuestion): Promise<TQuestion
         });
     }
 
+    // await prisma.isReported.delete({
+    //     where: { questionId: id }
+    // })
+
     return {
         ...updatedQuestion,
         options: updatedQuestion.options || {
@@ -182,6 +194,21 @@ export const updateQuestion = async (questionData: TQuestion): Promise<TQuestion
         images: updatedQuestion.images
     };
 };
+
+
+export const removeReportedQuestions = async (questionId: string): Promise<boolean> => {
+    try {
+        await prisma.isReported.delete({
+            where: { questionId }
+        });
+        return true;
+    } catch (error) {
+        console.error("Error removing reported question:", error);
+        return false;
+    }
+};
+
+
 
 
 

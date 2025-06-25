@@ -182,7 +182,7 @@ router.get('/get-reported-questions', checkModerator, async (request: Request, r
     }
 });
 
-router.put('/update-question', checkModerator, async (request: Request, response: Response) => {
+router.post('/update-question', checkModerator, async (request: Request, response: Response) => {
     try {
 
         if (!request.body.id) {
@@ -202,6 +202,26 @@ router.put('/update-question', checkModerator, async (request: Request, response
     }
 });
 
+
+// remove reported questions
+router.delete('/remove-reported-question/:questionId', checkModerator, async (request: Request, response: Response) => {
+    try {
+        const { questionId } = request.params;
+        if (!questionId) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+
+        const isRemoved = await QuestionServices.removeReportedQuestions(questionId);
+        if (!isRemoved) {
+            return response.status(404).json({ data: null, message: 'Failed to remove reported question' });
+        }
+
+        return response.status(200).json({ data: true, message: 'Reported question removed successfully' });
+    } catch (error) {
+        console.error("🚀 ~ router.delete error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
 
 
 

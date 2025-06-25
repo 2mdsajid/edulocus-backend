@@ -59,7 +59,7 @@ router.post("/get-gemini-explanation", async (request: RequestExtended, response
 })
 
 
-router.put('/gemini-quesiton-update', checkModerator, async (request: Request, response: Response) => {
+router.post('/gemini-question-update', checkModerator, async (request: Request, response: Response) => {
     try {
         if (!request.body.id) {
             return response.status(400).json({ data: null, message: 'Question ID is required' });
@@ -67,17 +67,15 @@ router.put('/gemini-quesiton-update', checkModerator, async (request: Request, r
 
         // Update the question using AI
         const updatedQuestion = await updateQuestionByAI(request.body);
-        // const updatedQuestionData = await updateQuestion({
-        //     id: updatedQuestion.id,
-        //     question: updatedQuestion.question,
-        //     options: updatedQuestion.options,
-        //     answer: updatedQuestion.answer,
-        //     explanation: updatedQuestion.explanation,
-        // });
 
         
-        if (!updatedQuestion) {
+        if (!updatedQuestion?.id) {
             return response.status(404).json({ data: null, message: 'Question not found or could not be updated by AI' });
+        }
+
+        const newUpdatedQuestion = await updateQuestion(updatedQuestion)
+        if(!newUpdatedQuestion){
+            return response.status(400).json({ data: null, message: 'Unable to update the database' }); 
         }
 
         return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully by AI' });

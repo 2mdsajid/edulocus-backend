@@ -193,7 +193,7 @@ router.get('/get-reported-questions', middleware_1.checkModerator, (request, res
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-router.put('/update-question', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.post('/update-question', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!request.body.id) {
             return response.status(400).json({ data: null, message: 'Question ID is required' });
@@ -207,6 +207,24 @@ router.put('/update-question', middleware_1.checkModerator, (request, response) 
     }
     catch (error) {
         console.error("🚀 ~ router.put error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// remove reported questions
+router.delete('/remove-reported-question/:questionId', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { questionId } = request.params;
+        if (!questionId) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+        const isRemoved = yield QuestionServices.removeReportedQuestions(questionId);
+        if (!isRemoved) {
+            return response.status(404).json({ data: null, message: 'Failed to remove reported question' });
+        }
+        return response.status(200).json({ data: true, message: 'Reported question removed successfully' });
+    }
+    catch (error) {
+        console.error("🚀 ~ router.delete error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
