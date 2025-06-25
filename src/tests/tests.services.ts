@@ -640,7 +640,6 @@ export const getDashboardAnalytics = async (userId: string): Promise<TDashboardA
         return null; // If no user data is found, return null
     }
 
-    console.log(currentUser)
 
     const totalTests = currentUser.testAnalytics.length;
     const totalQuestionsAttempt = calculateTotalQuestionsAttempt(currentUser.testAnalytics);
