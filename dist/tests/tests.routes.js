@@ -638,6 +638,23 @@ router.get("/get-tests-by-type/:type", middleware_1.checkStreamMiddleware, middl
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+router.delete("/delete-custom-test/:id", middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = request.params;
+        if (!id) {
+            return response.status(400).json({ data: null, message: 'Test ID is required' });
+        }
+        const isDeleted = yield TestsServices.deleteTestById(id);
+        if (!isDeleted) {
+            return response.status(404).json({ data: null, message: 'Test not found or could not be deleted' });
+        }
+        return response.status(200).json({ data: id, message: 'Test deleted successfully' });
+    }
+    catch (error) {
+        console.error("Error deleting test:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 router.post("/save-test-analytic", tests_validators_1.createTestAnalyticValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);

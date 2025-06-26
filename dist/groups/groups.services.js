@@ -128,6 +128,7 @@ const getGroupById = (groupId) => __awaiter(void 0, void 0, void 0, function* ()
                     name: true,
                     id: true,
                     date: true,
+                    archive: true,
                     testLock: {
                         select: {
                             isLocked: true,

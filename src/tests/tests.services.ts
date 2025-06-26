@@ -423,19 +423,46 @@ export const getCustomTestMetadata = async (id: string): Promise<TCustomTestMeta
 }
 
 export const archiveTestById = async (id: string): Promise<boolean | null> => {
-    const customTest = await prisma.customTest.update({
+    const customTest = await prisma.customTest.findFirst({
         where: {
             id
-        },
-        data: {
-            archive: true
         }
     });
 
     if (!customTest) return null
 
+    const updatedTest = await prisma.customTest.update({
+        where: {
+            id
+        },
+        data: {
+            archive: !customTest.archive
+        }
+    });
+
+    if (!updatedTest) return null
+
     return true
 }
+
+export const deleteTestById = async (id: string): Promise<boolean | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: {
+            id
+        }
+    });
+
+    if (!customTest) return null
+
+    await prisma.customTest.delete({
+        where: {
+            id
+        }
+    });
+
+    return true
+}
+
 
 export const archiveTestBySlugAndStream = async (slug: string, stream: TStream): Promise<boolean | null> => {
     const customTest = await prisma.customTest.findFirst({

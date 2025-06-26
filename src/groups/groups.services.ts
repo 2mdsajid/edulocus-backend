@@ -134,6 +134,7 @@ export const getGroupById = async (groupId: string): Promise<TGroupDetail | null
                     name:true,
                     id:true,
                     date:true,
+                    archive:true,
                     testLock:{
                         select:{
                             isLocked:true,

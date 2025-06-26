@@ -706,7 +706,7 @@ router.get("/get-all-tests-created-by-user", checkModerator, async (request: Req
         console.error("Error getting user's tests:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
-});
+})
 
 
 router.get("/get-tests-by-type/:type", checkStreamMiddleware, getSubscribedUserId, async (request: RequestExtended, response: Response) => {
@@ -727,6 +727,26 @@ router.get("/get-tests-by-type/:type", checkStreamMiddleware, getSubscribedUserI
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });
+
+router.delete("/delete-custom-test/:id", checkModerator, async (request: Request, response: Response) => {
+    try {
+        const { id } = request.params;
+        if (!id) {
+            return response.status(400).json({ data: null, message: 'Test ID is required' });
+        }
+
+        const isDeleted = await TestsServices.deleteTestById(id);
+        if (!isDeleted) {
+            return response.status(404).json({ data: null, message: 'Test not found or could not be deleted' });
+        }
+
+        return response.status(200).json({ data: id, message: 'Test deleted successfully' });
+    } catch (error: any) {
+        console.error("Error deleting test:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
 
 router.post("/save-test-analytic", createTestAnalyticValidation, async (request: Request, response: Response) => {
     try {

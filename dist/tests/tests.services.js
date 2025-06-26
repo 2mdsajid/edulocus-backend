@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.deleteTestById = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -403,19 +403,42 @@ const getCustomTestMetadata = (id) => __awaiter(void 0, void 0, void 0, function
 });
 exports.getCustomTestMetadata = getCustomTestMetadata;
 const archiveTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const customTest = yield prisma_1.default.customTest.update({
+    const customTest = yield prisma_1.default.customTest.findFirst({
         where: {
             id
-        },
-        data: {
-            archive: true
         }
     });
     if (!customTest)
         return null;
+    const updatedTest = yield prisma_1.default.customTest.update({
+        where: {
+            id
+        },
+        data: {
+            archive: !customTest.archive
+        }
+    });
+    if (!updatedTest)
+        return null;
     return true;
 });
 exports.archiveTestById = archiveTestById;
+const deleteTestById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.findFirst({
+        where: {
+            id
+        }
+    });
+    if (!customTest)
+        return null;
+    yield prisma_1.default.customTest.delete({
+        where: {
+            id
+        }
+    });
+    return true;
+});
+exports.deleteTestById = deleteTestById;
 const archiveTestBySlugAndStream = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
         where: {
