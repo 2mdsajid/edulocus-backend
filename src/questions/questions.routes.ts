@@ -21,6 +21,10 @@ router.post('/add-single-question', checkModerator, addSingleQuestionValidation,
         }
 
         const questionId = await QuestionServices.addSingleQuestion(request.body, request.user.id)
+        console.log(questionId)
+        if(!questionId) {
+            return response.status(400).json({ data: null, message: "Unable to upload the image" });
+        }
         return response.status(200).json({ data: questionId, message: 'Question Created' });
     } catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' })

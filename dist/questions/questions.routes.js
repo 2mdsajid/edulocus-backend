@@ -52,6 +52,9 @@ router.post('/add-single-question', middleware_1.checkModerator, questions_valid
             return response.status(400).json({ data: null, message: "Not Authorized" });
         }
         const questionId = yield QuestionServices.addSingleQuestion(request.body, request.user.id);
+        if (!questionId) {
+            return response.status(400).json({ data: null, message: "Unable to upload the image" });
+        }
         return response.status(200).json({ data: questionId, message: 'Question Created' });
     }
     catch (error) {

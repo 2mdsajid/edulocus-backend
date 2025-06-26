@@ -13,14 +13,28 @@ export type TCreatePastQuestion = Omit<IsPastQuestion,'questionId'>
 
 export type TBaseOption = Omit<Option, 'questionId'>
 
-export type TQuestion = TBaseQuestion & { images: TBaseImages | null, options: TBaseOption }
+export type TQuestionVideo = {
+    id:string
+    url:string
+    questionId:string
+}
+
+export type TQuestion = TBaseQuestion & { images: TBaseImages | null, options: TBaseOption, videoUrl?:string  }
 
 export type TReportQuestion = TQuestion & {message : string | null}
 
-export type TAddQuestion = Omit<TQuestion, 'id'>
+export type TAddQuestion = Omit<TQuestion, 'id'> & {videoUrl?:string}
 
 export type TAddQuestionCount = Omit<QuestionCount, 'id'>
+
+
+
+
 export type TTotalQuestionsPerSubject = Pick<QuestionCount, 'subject' | 'count'>
+
+
+
+
 export type TTotalQuestionsPerSubjectAndChapter =
     {
         [subject: string]: {

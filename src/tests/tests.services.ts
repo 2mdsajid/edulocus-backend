@@ -261,12 +261,20 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
             chapter: true,
             unit: true,
             difficulty: true,
+            videoUrl:{
+                select:{
+                    id:true,
+                    questionId:true,
+                    url:true,
+                }
+            }
         }
     });
 
     const modifiedQuestions = questions.map((q) => ({
         ...q,
-        options: q.options || { a: "", b: "", c: "", d: "" }
+        options: q.options || { a: "", b: "", c: "", d: "" },
+        videoUrl: q.videoUrl?.url
     }));
 
     const modifiedCustomTest = {
@@ -275,7 +283,9 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
         questions: modifiedQuestions,
     };
 
-    return modifiedCustomTest;
+    return {
+        ...modifiedCustomTest,
+    };
 };
 
 

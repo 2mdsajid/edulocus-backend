@@ -8,7 +8,7 @@ import { TAddQuestion, TAddQuestionCount, TBaseOption, TBaseQuestion, TCreatePas
 
 // add a single question
 export const addSingleQuestion = async (questionObject: TAddQuestion, userId: string): Promise<string | null> => {
-    const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream } = questionObject;
+    const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream, videoUrl, images } = questionObject;
     const newQuestion = await prisma.question.create({
         data: {
             question,
@@ -46,6 +46,46 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
         }
     })
 
+    // Handle images if they exist and have valid URLs
+    if (images) {
+        const { a, b, c, d, qn, exp } = images;
+        const hasValidImage = [a, b, c, d, qn, exp].some(url => url && url.trim() !== '');
+        
+        if (hasValidImage) {
+            await prisma.images.create({
+                data: {
+                    questionId: newQuestion.id,
+                    a: a && a.trim() !== '' ? a : null,
+                    b: b && b.trim() !== '' ? b : null,
+                    c: c && c.trim() !== '' ? c : null,
+                    d: d && d.trim() !== '' ? d : null,
+                    qn: qn && qn.trim() !== '' ? qn : null,
+                    exp: exp && exp.trim() !== '' ? exp : null
+                }
+            });
+        }
+    }
+
+    if(videoUrl){
+        const existingVideo = await prisma.questionVideo.findUnique({
+            where: { questionId: newQuestion.id }
+        });
+        
+        if(existingVideo) {
+            await prisma.questionVideo.update({
+                where: { questionId: newQuestion.id },
+                data: { url: videoUrl }
+            });
+        } else {
+            await prisma.questionVideo.create({
+                data: {
+                    questionId: newQuestion.id,
+                    url: videoUrl
+                }
+            });
+        }
+    }
+
     await updateQuestionCount({
         stream: newQuestion.stream,
         subject: newQuestion.subject,
@@ -55,6 +95,8 @@ export const addSingleQuestion = async (questionObject: TAddQuestion, userId: st
 
     return newQuestion.id ?? null
 }
+
+
 
 // check if question is reported
 export const checkIfQuestionIsReported = async (questionId: string): Promise<boolean> => {

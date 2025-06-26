@@ -165,8 +165,19 @@ model Question {
 
     analytic TestQuestionAnswer[]
 
+    // Relationship to the QuestionVideo model
+    videoUrl QuestionVideo? 
+
     @@index([chapter])
     @@index([subject])
+}
+
+// to store video url of the explanation
+model QuestionVideo {
+    id       String @id @default(cuid())
+    url String // This field will always contain a URL if a record exists
+    questionId String @unique
+    question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 }
 
 enum ANSWER {
@@ -293,7 +304,7 @@ model TestLock {
     id        String     @id @default(cuid())
     testId    String     @unique // Ensures one lock configuration per test, or one-to-one
     test      CustomTest @relation(fields: [testId], references: [id], onDelete: Cascade)
-    lockCodes String[] @default([]) // Array of codes that can unlock this test
+    lockCodes String[]   @default([]) // Array of codes that can unlock this test
     isLocked  Boolean    @default(true) // Explicitly state if it's currently locked
     keysUsed  String[]   @default([]) // This could potentially be moved to TestLock if it's strictly for unlocking
 

@@ -20,7 +20,7 @@ const questions_methods_1 = require("./questions.methods");
 // add a single question
 const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream } = questionObject;
+    const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream, videoUrl, images } = questionObject;
     const newQuestion = yield prisma_1.default.question.create({
         data: {
             question,
@@ -54,6 +54,43 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
             by: userId
         }
     });
+    // Handle images if they exist and have valid URLs
+    if (images) {
+        const { a, b, c, d, qn, exp } = images;
+        const hasValidImage = [a, b, c, d, qn, exp].some(url => url && url.trim() !== '');
+        if (hasValidImage) {
+            yield prisma_1.default.images.create({
+                data: {
+                    questionId: newQuestion.id,
+                    a: a && a.trim() !== '' ? a : null,
+                    b: b && b.trim() !== '' ? b : null,
+                    c: c && c.trim() !== '' ? c : null,
+                    d: d && d.trim() !== '' ? d : null,
+                    qn: qn && qn.trim() !== '' ? qn : null,
+                    exp: exp && exp.trim() !== '' ? exp : null
+                }
+            });
+        }
+    }
+    if (videoUrl) {
+        const existingVideo = yield prisma_1.default.questionVideo.findUnique({
+            where: { questionId: newQuestion.id }
+        });
+        if (existingVideo) {
+            yield prisma_1.default.questionVideo.update({
+                where: { questionId: newQuestion.id },
+                data: { url: videoUrl }
+            });
+        }
+        else {
+            yield prisma_1.default.questionVideo.create({
+                data: {
+                    questionId: newQuestion.id,
+                    url: videoUrl
+                }
+            });
+        }
+    }
     yield (0, exports.updateQuestionCount)({
         stream: newQuestion.stream,
         subject: newQuestion.subject,

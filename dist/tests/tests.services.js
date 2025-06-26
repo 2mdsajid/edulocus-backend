@@ -265,11 +265,21 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
             chapter: true,
             unit: true,
             difficulty: true,
+            videoUrl: {
+                select: {
+                    id: true,
+                    questionId: true,
+                    url: true,
+                }
+            }
         }
     });
-    const modifiedQuestions = questions.map((q) => (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" } })));
+    const modifiedQuestions = questions.map((q) => {
+        var _a;
+        return (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" }, videoUrl: (_a = q.videoUrl) === null || _a === void 0 ? void 0 : _a.url }));
+    });
     const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, questions: modifiedQuestions });
-    return modifiedCustomTest;
+    return Object.assign({}, modifiedCustomTest);
 });
 exports.getCustomTestById = getCustomTestById;
 const getTestBasicScores = (testid) => __awaiter(void 0, void 0, void 0, function* () {
@@ -602,7 +612,6 @@ const getDashboardAnalytics = (userId) => __awaiter(void 0, void 0, void 0, func
     if (!currentUser) {
         return null; // If no user data is found, return null
     }
-    console.log(currentUser);
     const totalTests = currentUser.testAnalytics.length;
     const totalQuestionsAttempt = (0, tests_methods_1.calculateTotalQuestionsAttempt)(currentUser.testAnalytics);
     const totalCorrectAnswers = (0, tests_methods_1.calculateTotalCorrectAnswers)(currentUser.testAnalytics);
