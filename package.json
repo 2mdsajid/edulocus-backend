@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun --hot src/index.ts",
-    "start": "npx prisma migrate && npx prisma generate && node dist/index.js",
+    "start": "npx prisma migrate && npx prisma db push && npx prisma generate && node dist/index.js",
     "build": "tsc",
     "seed": "bun scripts/seed.ts",
     "db": "bun prisma db push && bun prisma generate"
