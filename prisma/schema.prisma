@@ -149,8 +149,11 @@ model Question {
     answer         ANSWER
     explanation    String          @default("")
     images         Images?
+    // Keep these old string fields TEMPORARILY during the migration.
+    // They will be removed AFTER the data migration script populates subjectId/chapterId.
     subject        String          @default("unknown")
     chapter        String          @default("unknown")
+
     unit           String          @default("unknown")
     category       String          @default("mbbs")
     difficulty     String          @default("m")
@@ -160,24 +163,62 @@ model Question {
     IsPast         IsPastQuestion?
     attempt        Int             @default(0)
     correctattempt Int             @default(0)
-
-    stream STREAM @default(PG) // default stream remove this later onn
-
-    analytic TestQuestionAnswer[]
+    stream         STREAM          @default(PG)
+    analytic       TestQuestionAnswer[]
 
     // Relationship to the QuestionVideo model
-    videoUrl QuestionVideo? 
+    videoUrl QuestionVideo?
 
-    @@index([chapter])
+    // New foreign key fields - make them optional (nullable) initially for migration safety
+    // They will be made required (`String`) after data migration if all data is guaranteed to have them.
+    subjectId      String?
+    chapterId      String?
+
+    // Explicitly named relations to avoid ambiguity with existing 'subject'/'chapter' string fields
+    // The name in the @relation() attribute must match the name in the other model.
+    subjectEntity  Subject?        @relation("SubjectQuestions", fields: [subjectId], references: [id])
+    chapterEntity  Chapter?        @relation("ChapterQuestions", fields: [chapterId], references: [id])
+
+
+    @@index([chapterId])
+    @@index([subjectId])
+    @@index([chapterId, subjectId])
+    @@index([stream])
+    // You might also temporarily keep the old indexes on 'subject' and 'chapter'
+    // until those columns are removed.
     @@index([subject])
+    @@index([chapter])
 }
 
 // to store video url of the explanation
 model QuestionVideo {
-    id       String @id @default(cuid())
-    url String // This field will always contain a URL if a record exists
-    questionId String @unique
-    question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+    id         String   @id @default(cuid())
+    url        String // This field will always contain a URL if a record exists
+    questionId String   @unique
+    question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Subject {
+    id        String     @id @default(cuid())
+    name      String     @unique
+    chapters  Chapter[]  // Relation to Chapters belonging to this subject
+    questions Question[] @relation("SubjectQuestions") // Explicitly named relation matching Question's subjectEntity
+    stream    STREAM     @default(PG)
+
+    @@index([stream])
+}
+
+model Chapter {
+    id        String     @id @default(cuid())
+    name      String
+    subjectId String
+    subject   Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+    questions Question[] @relation("ChapterQuestions") // Explicitly named relation matching Question's chapterEntity
+    stream    STREAM     @default(PG)
+
+    @@unique([subjectId, name]) // Ensures a chapter name is unique within a given subject
+    @@index([subjectId])
+    @@index([stream])
 }
 
 enum ANSWER {
@@ -233,14 +274,16 @@ model IsFlagged {
 }
 
 model QuestionCount {
-    id      String @id @default(cuid())
+    id        String @id @default(cuid())
     subject String
     chapter String
-    count   Int    @default(0)
-
+    subjectId String @default("") // Or String?
+    chapterId String @default("") // Or String?
+    count     Int    @default(0)
     stream STREAM @default(PG)
-
-    @@unique([subject, chapter])
+    @@unique([subject, chapter]) // Remove this after data migration
+    @@unique([subjectId, chapterId]) // Add this after data migration
+    @@index([stream])
 }
 
 model IsPastQuestion {
