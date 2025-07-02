@@ -28,7 +28,6 @@ router.post("/create-custom-tests",
             }
 
             const createdById = request.user?.id
-            console.log(createdById)
             if (!request.user || !createdById) {
                 return response.status(400).json({ message: 'Unauthorized' });
             }
@@ -45,7 +44,6 @@ router.post("/create-custom-tests",
 
             // Calculate total marks across all subjects
             const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
-            console.log(totalMarks)
 
 
             // Fetch questions for each subject based on their mark ratio
@@ -159,7 +157,7 @@ router.post("/create-custom-test-metadata",
                 questions: questionsArrays,
             }
 
-            console.log(data)
+            // console.log(data)
 
             const newCustomTestId = await TestsServices.createCustomTest(data);
             if (!newCustomTestId || newCustomTestId === undefined) {
@@ -285,6 +283,8 @@ router.post("/create-past-tests",
             return response.status(500).json({ data: null, message: 'Internal Server Error' });
         }
     });
+
+
 
 // to create tests by paid  users -- esp subjectwise, chapterwise tests creation
 router.post("/create-custom-tests-by-users",
@@ -694,9 +694,6 @@ router.get("/get-all-tests-created-by-user", checkModerator, async (request: Req
         if (!userId) {
             return response.status(400).json({ data: null, message: 'User ID not found' });
         }
-
-        console.log(userId)
-
         const customTests = await TestsServices.getAllTestsCreatedByUser(userId);
         if (!customTests || customTests.length === 0) {
             return response.status(400).json({ data: null, message: 'No Tests Found!' });

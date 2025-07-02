@@ -36,6 +36,7 @@ export const createCustomTest = async (customTestData: TcreateCustomTest): Promi
 
     return newCustomTest.id
 }
+
 export const createTestCodes = async (testId: string, limit: number): Promise<string[] | null> => {
     try {
         // Get existing codes first
@@ -267,7 +268,10 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
                     questionId:true,
                     url:true,
                 }
-            }
+            },
+            IsPast: true,
+            subjectId:true,
+            chapterId: true,
         }
     });
 

@@ -9,6 +9,7 @@
     "start": "npx prisma migrate && npx prisma db push && npx prisma generate && node dist/index.js",
     "build": "tsc",
     "seed": "bun scripts/seed.ts",
+    "update": "bun run scripts/upload.ts",
     "db": "bun prisma db push && bun prisma generate"
   },
   "author": "c0mrad1",
@@ -22,7 +23,10 @@
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
+    "node-html-to-image": "^5.0.0",
+    "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^6.10.0",
+    "p-limit": "^6.2.0",
     "prisma-extension-random": "^0.2.2",
     "ts-node": "^10.9.2",
     "zod": "^3.24.2"
@@ -31,7 +35,8 @@
     "@types/cors": "^2.8.15",
     "@types/express": "^4.17.20",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20.8.10",
+    "@types/node": "^24.0.7",
+    "@types/node-telegram-bot-api": "^0.64.9",
     "@types/nodemailer": "^6.4.17",
     "esbuild-register": "^3.5.0",
     "prisma": "^5.5.2",

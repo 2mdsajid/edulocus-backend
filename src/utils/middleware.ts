@@ -63,7 +63,8 @@ export const getSubscribedUserId = async (
       req.stream = streamInUpperCase as TStream
 
       req.user = admin;
-      req.mode = 'PUBLIC';
+      req.mode = 'PUBLIC'; //so unlogged ones will give only 10 questions
+      req.user.isSubscribed = false;
       next();
     }
   } catch (error) {

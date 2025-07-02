@@ -203,7 +203,7 @@ model Subject {
     name      String     @unique
     chapters  Chapter[]  // Relation to Chapters belonging to this subject
     questions Question[] @relation("SubjectQuestions") // Explicitly named relation matching Question's subjectEntity
-    stream    STREAM     @default(PG)
+    stream    STREAM     @default(UG)
 
     @@index([stream])
 }
@@ -214,7 +214,7 @@ model Chapter {
     subjectId String
     subject   Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
     questions Question[] @relation("ChapterQuestions") // Explicitly named relation matching Question's chapterEntity
-    stream    STREAM     @default(PG)
+    stream    STREAM     @default(UG)
 
     @@unique([subjectId, name]) // Ensures a chapter name is unique within a given subject
     @@index([subjectId])
@@ -282,7 +282,7 @@ model QuestionCount {
     count     Int    @default(0)
     stream STREAM @default(PG)
     @@unique([subject, chapter]) // Remove this after data migration
-    // @@unique([subjectId, chapterId]) // Add this after data migration
+    @@unique([subjectId, chapterId]) // Add this after data migration
     @@index([stream])
 }
 

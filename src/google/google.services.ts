@@ -3,7 +3,7 @@ import prisma from "../utils/prisma";
 import { scoresSchema, TAiQUestionUpdate, TQuestionSchemaForGemini, TScoreSchema } from "./google.schema";
 import { model } from "./google.model";
 import { truncatedGenAiOutput } from "./google.methods";
-import { TQuestion } from "../questions/questions.schema";
+import { TQuestionSchema } from "../questions/questions.schema";
 
 export const isUserLegibleForAiAsk = async (userId: string): Promise<boolean> => {
     const allUsersTests = await prisma.testAnalytic.findMany({
@@ -270,7 +270,7 @@ Output JSON Structure:
     const trimmedResponse = responseText.trim().replace(/```json|```/g, '');
     
     // Parse the cleaned JSON string into an object
-    const parsedResponse: TQuestion = JSON.parse(trimmedResponse);
+    const parsedResponse: TQuestionSchema = JSON.parse(trimmedResponse);
 
 
     // Return the structured, corrected data

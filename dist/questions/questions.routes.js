@@ -42,6 +42,7 @@ const middleware_1 = require("../utils/middleware");
 const questions_validators_1 = require("./questions.validators");
 const functions_1 = require("../utils/functions");
 const router = express_1.default.Router();
+// add single question to database
 router.post('/add-single-question', middleware_1.checkModerator, questions_validators_1.addSingleQuestionValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);
@@ -52,6 +53,7 @@ router.post('/add-single-question', middleware_1.checkModerator, questions_valid
             return response.status(400).json({ data: null, message: "Not Authorized" });
         }
         const questionId = yield QuestionServices.addSingleQuestion(request.body, request.user.id);
+        console.log(questionId);
         if (!questionId) {
             return response.status(400).json({ data: null, message: "Unable to upload the image" });
         }
@@ -86,7 +88,7 @@ router.post('/report-question/:questionId', questions_validators_1.reportQuestio
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-// add multiple questions from same chapter
+// add multiple questions from same chapter into database
 router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.checkModerator, questions_validators_1.addMultipleQuestionsValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const errors = (0, express_validator_1.validationResult)(request);
@@ -107,7 +109,7 @@ router.post('/add-multiple-question-for-same-subject-and-chapter', middleware_1.
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-// add multiple questions from different subject and chapter
+// add multiple questions from different subject and chapter into databse
 router.post('/add-multiple-question-for-different-subject-and-chapter', middleware_1.checkModerator, questions_validators_1.addMultipleQuestionsValidation, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         console.log(request.body.questions.length);
@@ -129,6 +131,7 @@ router.post('/add-multiple-question-for-different-subject-and-chapter', middlewa
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// fetch randomly questions from question pool
 router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const limit = request.query.limit;
@@ -151,23 +154,24 @@ router.get('/get-questions', (request, response) => __awaiter(void 0, void 0, vo
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-// users will get this for their own stream
-router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+// get total questions count by subject form the database
+router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddleware, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
+        const stream = request.stream;
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
         }
-        const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubject(request.stream);
-        if (!totalQuestionsPerSubject || totalQuestionsPerSubject.length === 0) {
+        const allSubjectsAndChaptersWithCounts = yield QuestionServices.getTotalQuestionsPerSubject(stream);
+        if (!allSubjectsAndChaptersWithCounts) {
             return response.status(500).json({ data: [], message: 'No Questions Found' });
         }
-        return response.status(200).json({ data: totalQuestionsPerSubject, message: 'Question Found' });
+        return response.status(200).json({ data: allSubjectsAndChaptersWithCounts, message: 'Question Found' });
     }
     catch (error) {
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-// users will get this for their own stream
+// get total questionc count of a chapter 
 router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStreamMiddleware, middleware_1.getSubscribedUserId, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
@@ -183,6 +187,65 @@ router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStr
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// get questions Ids by subject while making tests for a stream
+router.get('/get-questions-by-subject', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const subject = request.query.subject;
+        const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+        const stream = request.query.stream;
+        if (!subject) {
+            return response.status(400).json({ data: null, message: 'Invalid Subject' });
+        }
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        const questions = yield QuestionServices.getQuestionsIdsBySubject(subject, limit, stream);
+        if (!questions) {
+            return response.status(404).json({ data: null, message: 'No Questions Found' });
+        }
+        return response.status(200).json({ data: questions, message: 'Questions Found' });
+    }
+    catch (error) {
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// Get questions Ids by chapter while making tests for a specific stream
+router.get('/get-questions-by-chapter', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { stream, chapter, subject, limit } = request.query;
+        // Validate stream
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        // Validate chapter
+        if (!chapter || typeof chapter !== 'string') {
+            return response.status(400).json({ data: null, message: 'Chapter is required' });
+        }
+        // Validate subject
+        if (!subject || typeof subject !== 'string') {
+            return response.status(400).json({ data: null, message: 'Subject is required' });
+        }
+        // Validate limit
+        let limitValue = 0;
+        if (limit !== undefined) {
+            const parsedLimit = Number(limit);
+            if (isNaN(parsedLimit) || parsedLimit < 0) {
+                return response.status(400).json({ data: null, message: 'Invalid limit value' });
+            }
+            limitValue = parsedLimit;
+        }
+        const questionsIds = yield QuestionServices.getQuestionsIdsBySubjectAndChapter(subject, chapter, limitValue, stream);
+        if (!questionsIds || questionsIds.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found for this Chapter' });
+        }
+        return response.status(200).json({ data: questionsIds, message: 'Questions Retrieved Successfully' });
+    }
+    catch (error) {
+        console.error('Error in /get-questions-by-chapter:', error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// get all reported questions
 router.get('/get-reported-questions', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const reportedQuestions = yield QuestionServices.getReportedQuestions();
@@ -193,23 +256,6 @@ router.get('/get-reported-questions', middleware_1.checkModerator, (request, res
     }
     catch (error) {
         console.error("🚀 ~ router.get error:", error);
-        return response.status(500).json({ data: null, message: 'Internal Server Error' });
-    }
-}));
-router.post('/update-question', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        if (!request.body.id) {
-            return response.status(400).json({ data: null, message: 'Question ID is required' });
-        }
-        // Update the question
-        const updatedQuestion = yield QuestionServices.updateQuestion(request.body);
-        if (!updatedQuestion) {
-            return response.status(404).json({ data: null, message: 'Question not found or could not be updated' });
-        }
-        return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully' });
-    }
-    catch (error) {
-        console.error("🚀 ~ router.put error:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -231,6 +277,24 @@ router.delete('/remove-reported-question/:questionId', middleware_1.checkModerat
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// update existing questions
+router.post('/update-question', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!request.body.id) {
+            return response.status(400).json({ data: null, message: 'Question ID is required' });
+        }
+        // Update the question
+        const updatedQuestion = yield QuestionServices.updateQuestion(request.body);
+        if (!updatedQuestion) {
+            return response.status(404).json({ data: null, message: 'Question not found or could not be updated' });
+        }
+        return response.status(200).json({ data: updatedQuestion, message: 'Question updated successfully' });
+    }
+    catch (error) {
+        console.error("🚀 ~ router.put error:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 // make a similar route t get count of total questions
 router.get('/get-total-questions-count', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -244,6 +308,7 @@ router.get('/get-total-questions-count', (request, response) => __awaiter(void 0
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// send the syllabus to frontend
 router.get('/get-syllabus', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;
@@ -260,6 +325,7 @@ router.get('/get-syllabus', (request, response) => __awaiter(void 0, void 0, voi
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// send the stream hierarchy
 router.get('/get-stream-hierarchy', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const streamHierarchy = yield QuestionServices.getStreamHierarchy();
@@ -272,24 +338,7 @@ router.get('/get-stream-hierarchy', (request, response) => __awaiter(void 0, voi
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
-// get questions by subject while making tests
-//  not ading stream -- as the subjects are totally different as foe now
-router.get('/get-questions-by-subject', middleware_1.checkModerator, (request, response) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const subject = request.query.subject;
-        if (!subject) {
-            return response.status(400).json({ data: null, message: 'Invalid Subject' });
-        }
-        const questions = yield QuestionServices.getQuestionsBySubject(subject);
-        if (!questions) {
-            return response.status(404).json({ data: null, message: 'No Questions Found' });
-        }
-        return response.status(200).json({ data: questions, message: 'Questions Found' });
-    }
-    catch (error) {
-        return response.status(500).json({ data: null, message: 'Internal Server Error' });
-    }
-}));
+// send all the subjects to frontend from the syllabus
 router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;
@@ -306,6 +355,7 @@ router.get('/get-subjects', (request, response) => __awaiter(void 0, void 0, voi
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// get chapters of a subject from the sullabus
 router.get('/get-chapters-by-subject', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const stream = request.query.stream;

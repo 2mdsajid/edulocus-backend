@@ -57,7 +57,6 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
             return response.status(400).json({ message: errors.array()[0].msg });
         }
         const createdById = (_a = request.user) === null || _a === void 0 ? void 0 : _a.id;
-        console.log(createdById);
         if (!request.user || !createdById) {
             return response.status(400).json({ message: 'Unauthorized' });
         }
@@ -69,7 +68,6 @@ router.post("/create-custom-tests", middleware_1.checkModerator, tests_validator
         // console.log(subjectsAndMarks);
         // Calculate total marks across all subjects
         const totalMarks = subjectsAndMarks.reduce((sum, subject) => sum + subject.marks, 0);
-        console.log(totalMarks);
         // Fetch questions for each subject based on their mark ratio
         const questionsPromises = subjectsAndMarks.map((subject) => __awaiter(void 0, void 0, void 0, function* () {
             const subjectLimit = Math.floor((subject.marks / totalMarks) * Number(limit));
@@ -158,7 +156,7 @@ router.post("/create-custom-test-metadata", middleware_1.checkModerator, tests_v
             type: "MODEL",
             questions: questionsArrays,
         };
-        console.log(data);
+        // console.log(data)
         const newCustomTestId = yield TestsServices.createCustomTest(data);
         if (!newCustomTestId || newCustomTestId === undefined) {
             return response.status(404).json({ data: null, message: "Custom test not found" });
@@ -608,7 +606,6 @@ router.get("/get-all-tests-created-by-user", middleware_1.checkModerator, (reque
         if (!userId) {
             return response.status(400).json({ data: null, message: 'User ID not found' });
         }
-        console.log(userId);
         const customTests = yield TestsServices.getAllTestsCreatedByUser(userId);
         if (!customTests || customTests.length === 0) {
             return response.status(400).json({ data: null, message: 'No Tests Found!' });

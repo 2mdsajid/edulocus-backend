@@ -271,7 +271,10 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
                     questionId: true,
                     url: true,
                 }
-            }
+            },
+            IsPast: true,
+            subjectId: true,
+            chapterId: true,
         }
     });
     const modifiedQuestions = questions.map((q) => {

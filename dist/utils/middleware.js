@@ -56,7 +56,8 @@ const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0
             }
             req.stream = streamInUpperCase;
             req.user = admin;
-            req.mode = 'PUBLIC';
+            req.mode = 'PUBLIC'; //so unlogged ones will give only 10 questions
+            req.user.isSubscribed = false;
             next();
         }
     }

@@ -12,25 +12,54 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsBySubject = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateQuestionCount = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.removeReportedQuestions = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
+exports.bulkUpdateCorrectedQuestions = exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.removeReportedQuestions = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
 const questions_methods_1 = require("./questions.methods");
-// add a single question
+// add a single question 
 const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream, videoUrl, images } = questionObject;
+    // Check if the subject exists, create if not
+    let subjectRecord = yield prisma_1.default.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true }
+    });
+    if (!subjectRecord) {
+        subjectRecord = yield prisma_1.default.subject.create({
+            data: { name: subject, stream },
+            select: { id: true }
+        });
+    }
+    // Check if the chapter exists for the subject, create if not
+    let chapterRecord = yield prisma_1.default.chapter.findUnique({
+        where: {
+            subjectId_name: {
+                name: chapter,
+                subjectId: subjectRecord.id
+            }
+        },
+        select: { id: true }
+    });
+    if (!chapterRecord) {
+        chapterRecord = yield prisma_1.default.chapter.create({
+            data: { name: chapter, subjectId: subjectRecord.id },
+            select: { id: true }
+        });
+    }
     const newQuestion = yield prisma_1.default.question.create({
         data: {
             question,
             answer,
-            subject,
-            chapter,
+            subject: subject,
+            chapter: chapter,
             unit: unit || "",
             stream,
             explanation,
             difficulty,
+            subjectId: subjectRecord.id,
+            chapterId: chapterRecord.id
         },
         select: {
             id: true,
@@ -91,12 +120,6 @@ const addSingleQuestion = (questionObject, userId) => __awaiter(void 0, void 0, 
             });
         }
     }
-    yield (0, exports.updateQuestionCount)({
-        stream: newQuestion.stream,
-        subject: newQuestion.subject,
-        chapter: newQuestion.chapter,
-        count: 1
-    });
     return (_a = newQuestion.id) !== null && _a !== void 0 ? _a : null;
 });
 exports.addSingleQuestion = addSingleQuestion;
@@ -154,6 +177,9 @@ const getReportedQuestions = () => __awaiter(void 0, void 0, void 0, function* (
                     difficulty: true,
                     unit: true,
                     stream: true,
+                    IsPast: true,
+                    subjectId: true,
+                    chapterId: true,
                 }
             }
         }
@@ -169,7 +195,6 @@ const getReportedQuestions = () => __awaiter(void 0, void 0, void 0, function* (
         }, images: report.question.images })));
 });
 exports.getReportedQuestions = getReportedQuestions;
-//update question
 // just putting any coz sometimes there may be no chapter in the question
 const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, function* () {
     const { id, question, answer, explanation, subject, chapter, unit, stream, difficulty, options, images } = questionData;
@@ -194,7 +219,8 @@ const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, funct
                     d: true,
                 }
             },
-            images: true
+            images: true,
+            IsPast: true,
         }
     });
     if (!updatedQuestion)
@@ -222,6 +248,7 @@ const updateQuestion = (questionData) => __awaiter(void 0, void 0, void 0, funct
         }, images: updatedQuestion.images });
 });
 exports.updateQuestion = updateQuestion;
+// this will remove questions from the report page
 const removeReportedQuestions = (questionId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield prisma_1.default.isReported.delete({
@@ -240,6 +267,33 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
     if (!questions.length)
         return null;
     const { subject, chapter, stream } = questions[0];
+    // Check if the subject exists, create if not
+    let subjectRecord = yield prisma_1.default.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true }
+    });
+    if (!subjectRecord) {
+        subjectRecord = yield prisma_1.default.subject.create({
+            data: { name: subject, stream },
+            select: { id: true }
+        });
+    }
+    // Check if the chapter exists for the subject, create if not
+    let chapterRecord = yield prisma_1.default.chapter.findUnique({
+        where: {
+            subjectId_name: {
+                name: chapter,
+                subjectId: subjectRecord.id
+            }
+        },
+        select: { id: true }
+    });
+    if (!chapterRecord) {
+        chapterRecord = yield prisma_1.default.chapter.create({
+            data: { name: chapter, subjectId: subjectRecord.id },
+            select: { id: true }
+        });
+    }
     const addedQuestionIds = [];
     for (const questionObject of questions) {
         const { question, answer, explanation, options, difficulty, stream, unit, images } = questionObject;
@@ -247,12 +301,14 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
             data: {
                 question,
                 answer,
-                subject,
-                chapter,
+                subject: subject,
+                chapter: chapter,
+                unit: unit || "",
                 stream,
                 explanation,
                 difficulty,
-                unit: unit || "",
+                subjectId: subjectRecord.id,
+                chapterId: chapterRecord.id
             },
             select: {
                 id: true,
@@ -285,12 +341,6 @@ const addMultipleQuestionsForSameSubjectAndChapter = (questions, userId) => __aw
         });
         addedQuestionIds.push(newQuestion.id);
     }
-    yield (0, exports.updateQuestionCount)({
-        stream,
-        subject,
-        chapter,
-        count: questions.length,
-    });
     return addedQuestionIds;
 });
 exports.addMultipleQuestionsForSameSubjectAndChapter = addMultipleQuestionsForSameSubjectAndChapter;
@@ -300,17 +350,46 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         return null;
     const addedQuestionIds = [];
     for (const questionObject of questions) {
-        const { question, answer, explanation, options, subject, chapter, difficulty, unit, stream, images } = questionObject;
+        const { question, answer, explanation, options, subject, chapter, unit, difficulty, stream, images } = questionObject;
+        // Check if the subject exists, create if not
+        let subjectRecord = yield prisma_1.default.subject.findUnique({
+            where: { name: subject, stream },
+            select: { id: true }
+        });
+        if (!subjectRecord) {
+            subjectRecord = yield prisma_1.default.subject.create({
+                data: { name: subject, stream },
+                select: { id: true }
+            });
+        }
+        // Check if the chapter exists for the subject, create if not
+        let chapterRecord = yield prisma_1.default.chapter.findUnique({
+            where: {
+                subjectId_name: {
+                    name: chapter,
+                    subjectId: subjectRecord.id
+                }
+            },
+            select: { id: true }
+        });
+        if (!chapterRecord) {
+            chapterRecord = yield prisma_1.default.chapter.create({
+                data: { name: chapter, subjectId: subjectRecord.id },
+                select: { id: true }
+            });
+        }
         const newQuestion = yield prisma_1.default.question.create({
             data: {
                 question,
                 answer,
-                subject,
-                chapter,
+                subject: subject,
+                chapter: chapter,
                 unit: unit || "",
-                explanation,
                 stream,
+                explanation,
                 difficulty,
+                subjectId: subjectRecord.id,
+                chapterId: chapterRecord.id
             },
             select: {
                 id: true,
@@ -321,24 +400,27 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
         });
         if (!newQuestion)
             return null;
-        const { a, b, c, d } = options;
         const newOption = yield prisma_1.default.option.create({
-            data: {
-                a,
-                b,
-                c,
-                d,
-                questionId: newQuestion.id,
-            },
+            data: Object.assign(Object.assign({}, options), { questionId: newQuestion.id }),
         });
         if (!newOption)
             return null;
         if (images) {
-            const newImages = yield prisma_1.default.images.create({
-                data: Object.assign(Object.assign({}, images), { questionId: newQuestion.id }),
-            });
-            if (!newImages)
-                return null;
+            const { a, b, c, d, qn, exp } = images;
+            const hasValidImage = [a, b, c, d, qn, exp].some(url => url && url.trim() !== '');
+            if (hasValidImage) {
+                yield prisma_1.default.images.create({
+                    data: {
+                        questionId: newQuestion.id,
+                        a: a && a.trim() !== '' ? a : null,
+                        b: b && b.trim() !== '' ? b : null,
+                        c: c && c.trim() !== '' ? c : null,
+                        d: d && d.trim() !== '' ? d : null,
+                        qn: qn && qn.trim() !== '' ? qn : null,
+                        exp: exp && exp.trim() !== '' ? exp : null
+                    }
+                });
+            }
         }
         // const isAddedByAdmin = ROLES_HIEARCHY.MODERATOR.includes(newQuestion.user.role as string);
         yield prisma_1.default.isVerified.create({
@@ -349,12 +431,6 @@ const addMultipleQuestionsForDifferentSubjectAndChapter = (questions, userId) =>
             },
         });
         addedQuestionIds.push(newQuestion.id);
-        yield (0, exports.updateQuestionCount)({
-            stream: newQuestion.stream,
-            subject: newQuestion.subject,
-            chapter: newQuestion.chapter,
-            count: 1,
-        });
     }
     return addedQuestionIds;
 });
@@ -376,39 +452,7 @@ const updateIsPastQuestion = (isPastQuestionData, questionsIds) => __awaiter(voi
     return newPastQuestions.count > 0 ? questionsIds : null;
 });
 exports.updateIsPastQuestion = updateIsPastQuestion;
-// update the question counts in db for each chapter ans subject
-// stream is optional for now but will be required later
-// make unique combination of subject and chapter and stream --- which is not present now
-const updateQuestionCount = (data) => __awaiter(void 0, void 0, void 0, function* () {
-    const { subject, chapter, count, stream } = data;
-    const existingCount = yield prisma_1.default.questionCount.findUnique({
-        where: {
-            subject_chapter: { subject, chapter }, // Check unique combination
-        },
-    });
-    if (existingCount) {
-        yield prisma_1.default.questionCount.update({
-            where: {
-                subject_chapter: { subject, chapter },
-            },
-            data: {
-                count: existingCount.count + count,
-            }
-        });
-    }
-    else {
-        yield prisma_1.default.questionCount.create({
-            data: {
-                subject,
-                chapter,
-                count: count,
-                stream: stream
-            },
-        });
-    }
-});
-exports.updateQuestionCount = updateQuestionCount;
-// to fetch a certain number of question ids -- esp for creating custom tests
+// to fetch a certain number of random question ids -- esp for creating custom tests
 const getQuestionsIds = (limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     // Validate that limit is a positive integer
     if (!Number.isInteger(limit) || limit <= 0) {
@@ -430,13 +474,23 @@ const getQuestionsIds = (limit, stream) => __awaiter(void 0, void 0, void 0, fun
     return questionIds;
 });
 exports.getQuestionsIds = getQuestionsIds;
-// ot Fetch questions by subject with a limit -- esp for subjectwise tests
+//  Fetch questions by subject with a limit -- esp for subjectwise tests
 const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const limitValue = limit !== null && limit !== void 0 ? limit : 10;
+    // Find the subject ID based on the subject name and stream
+    const subjectRecord = yield prisma_1.default.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true }
+    });
+    if (!subjectRecord) {
+        console.warn(`Subject "${subject}" not found for stream "${stream}".`);
+        return null;
+    }
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
-            subject: subject,
+            subjectId: subjectRecord.id,
         },
+        select: { id: true }
     });
     if (!selectedQuestions || selectedQuestions.length === 0)
         return null;
@@ -446,143 +500,142 @@ exports.getQuestionsIdsBySubject = getQuestionsIdsBySubject;
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
 const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const limitValue = limit !== null && limit !== void 0 ? limit : 10;
+    // Find the subject ID based on the subject name and stream
+    const subjectRecord = yield prisma_1.default.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true }
+    });
+    if (!subjectRecord) {
+        console.warn(`Subject "${subject}" not found for stream "${stream}".`);
+        return null;
+    }
+    // Find the chapter ID based on the chapter name and subjectId
+    const chapterRecord = yield prisma_1.default.chapter.findUnique({
+        where: {
+            subjectId_name: {
+                name: chapter,
+                subjectId: subjectRecord.id
+            }
+        },
+        select: { id: true }
+    });
+    if (!chapterRecord) {
+        console.warn(`Chapter "${chapter}" not found for subject "${subject}" and stream "${stream}".`);
+        return null;
+    }
     const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
         where: {
-            chapter: chapter,
+            subjectId: subjectRecord.id,
+            chapterId: chapterRecord.id,
         },
+        select: { id: true }
     });
     if (!selectedQuestions || selectedQuestions.length === 0)
         return null;
     return selectedQuestions.map(question => question.id);
 });
 exports.getQuestionsIdsBySubjectAndChapter = getQuestionsIdsBySubjectAndChapter;
-// reconside later this -- some buggy code this is
-const getQuestionsBySubject = (subject) => __awaiter(void 0, void 0, void 0, function* () {
-    const questions = yield prisma_1.default.question.findManyRandom(25, {
-        where: {
-            subject: subject
-        },
-        select: {
-            id: true,
-            question: true,
-            subject: true,
-            chapter: true,
-            options: true,
-            answer: true,
-            explanation: true,
-            images: {
-                select: {
-                    qn: true,
-                    a: true,
-                    b: true,
-                    c: true,
-                    d: true,
-                    exp: true,
-                }
-            },
-            difficulty: true,
-            unit: true,
-            stream: true,
-        }
-    });
-    const modifiedQuestions = questions.map(question => {
-        var _a, _b, _c, _d;
-        return Object.assign(Object.assign({}, question), { options: {
-                a: ((_a = question.options) === null || _a === void 0 ? void 0 : _a.a) || "",
-                b: ((_b = question.options) === null || _b === void 0 ? void 0 : _b.b) || "",
-                c: ((_c = question.options) === null || _c === void 0 ? void 0 : _c.c) || "",
-                d: ((_d = question.options) === null || _d === void 0 ? void 0 : _d.d) || "",
-            } });
-    });
-    if (!modifiedQuestions || modifiedQuestions.length === 0)
-        return null;
-    return modifiedQuestions;
-});
-exports.getQuestionsBySubject = getQuestionsBySubject;
 // get total questions count
 const getTotalQuestionsCount = () => __awaiter(void 0, void 0, void 0, function* () {
     const totalQuestions = yield prisma_1.default.question.count();
     return totalQuestions !== null && totalQuestions !== void 0 ? totalQuestions : null;
 });
 exports.getTotalQuestionsCount = getTotalQuestionsCount;
-// get syllabus
+// get syllabus from the main syllabus
 const getSyllabus = (stream) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     return (_a = syllabus_1.SYLLABUS[stream]) !== null && _a !== void 0 ? _a : null;
 });
 exports.getSyllabus = getSyllabus;
-// get sream hierarchy
+// get sream hierarchy from the main syllabus
 const getStreamHierarchy = () => __awaiter(void 0, void 0, void 0, function* () {
     return global_data_1.STREAM_HIERARCHY !== null && global_data_1.STREAM_HIERARCHY !== void 0 ? global_data_1.STREAM_HIERARCHY : null;
 });
 exports.getStreamHierarchy = getStreamHierarchy;
-// if subject exist
+// if subject exist from the main syllabus
 const isSubjectInTheStream = (stream, subject) => __awaiter(void 0, void 0, void 0, function* () {
     return (0, questions_methods_1.doesSubjectExist)(syllabus_1.SYLLABUS, stream, subject);
 });
 exports.isSubjectInTheStream = isSubjectInTheStream;
-// get Subjects
+// get Subjects from the main syllabus
 const getSubjects = (stream) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     return (_a = (0, questions_methods_1.getAllSubjects)(syllabus_1.SYLLABUS, stream)) !== null && _a !== void 0 ? _a : null;
 });
 exports.getSubjects = getSubjects;
-// get chapters of a subject
+// get chapters of a subject from the main syllabus
 const getChaptersBySubject = (stream, subject) => __awaiter(void 0, void 0, void 0, function* () {
     return (0, questions_methods_1.getAllTopicsBySubject)(syllabus_1.SYLLABUS, stream, subject);
 });
 exports.getChaptersBySubject = getChaptersBySubject;
-// get count of questions in each subject -- exp for subject wise test models
+// get count of questions in each subject from database
 const getTotalQuestionsPerSubject = (stream) => __awaiter(void 0, void 0, void 0, function* () {
-    const questionCounts = yield prisma_1.default.questionCount.findMany({
-        where: {
-            stream: stream
-        }
-    }); // Retrieve all records
-    const totalQuestionsPerSubject = {}; // Object to store counts per subject
-    questionCounts.forEach((record) => {
-        const { subject, count } = record;
-        if (totalQuestionsPerSubject[subject]) {
-            totalQuestionsPerSubject[subject] += count;
-        }
-        else {
-            totalQuestionsPerSubject[subject] = count;
-        }
-    });
-    const result = Object.entries(totalQuestionsPerSubject)
-        .map(([subject, count]) => ({ subject, count }))
-        .sort((a, b) => b.count - a.count); // Sort in descending order based on count
-    return result;
+    try {
+        const subjects = yield prisma_1.default.subject.findMany({
+            where: {
+                stream: stream
+            },
+            select: {
+                name: true,
+                _count: {
+                    select: {
+                        questions: true
+                    }
+                }
+            }
+        });
+        const result = subjects.map(subject => ({
+            subject: subject.name,
+            count: subject._count.questions
+        })).sort((a, b) => b.count - a.count);
+        return result;
+    }
+    catch (error) {
+        console.error("Error fetching total questions per subject:", error);
+        return null;
+    }
 });
 exports.getTotalQuestionsPerSubject = getTotalQuestionsPerSubject;
-// get count of questions in each chapter and its subject -- exp for showing chapter wise tests models
+// get count of questions in each chapter and its subject from databse
 const getTotalQuestionsPerSubjectAndChapter = (stream) => __awaiter(void 0, void 0, void 0, function* () {
-    const questionCounts = yield prisma_1.default.questionCount.findMany({
-        where: {
-            stream: stream
-        }
-    });
-    const totalQuestionsPerSubjectAndChapter = {};
-    questionCounts.forEach((record) => {
-        const { subject, chapter, count } = record;
-        if (!totalQuestionsPerSubjectAndChapter[subject]) {
-            totalQuestionsPerSubjectAndChapter[subject] = {};
-        }
-        if (totalQuestionsPerSubjectAndChapter[subject][chapter]) {
-            totalQuestionsPerSubjectAndChapter[subject][chapter] += count;
-        }
-        else {
-            totalQuestionsPerSubjectAndChapter[subject][chapter] = count;
-        }
-    });
-    // Sort chapters by count in descending order within each subject while maintaining the nested object structure
-    const result = Object.fromEntries(Object.entries(totalQuestionsPerSubjectAndChapter).map(([subject, chapters]) => [
-        subject,
-        Object.fromEntries(Object.entries(chapters)
-            .sort(([, countA], [, countB]) => countB - countA) // Sort by count in descending order
-        ),
-    ]));
-    return result;
+    try {
+        const allSubjects = yield prisma_1.default.subject.findMany({
+            where: { stream: stream },
+            select: {
+                name: true,
+                chapters: {
+                    select: {
+                        name: true,
+                        _count: {
+                            select: {
+                                questions: true
+                            }
+                        }
+                    },
+                    orderBy: {
+                        questions: {
+                            _count: 'desc'
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+        const result = {};
+        allSubjects.forEach(subject => {
+            result[subject.name] = {};
+            subject.chapters.forEach(chapter => {
+                result[subject.name][chapter.name] = chapter._count.questions;
+            });
+        });
+        return result;
+    }
+    catch (error) {
+        console.error('Error fetching all subjects and chapters with counts:', error);
+        return null;
+    }
 });
 exports.getTotalQuestionsPerSubjectAndChapter = getTotalQuestionsPerSubjectAndChapter;
 // a function that will read all the questions and options associated with them in the database and then return them
@@ -606,3 +659,100 @@ const getAllQuestions = () => __awaiter(void 0, void 0, void 0, function* () {
     return questions;
 });
 exports.getAllQuestions = getAllQuestions;
+// bulk update the questions ---- not needed now
+const bulkUpdateCorrectedQuestions = (questions) => __awaiter(void 0, void 0, void 0, function* () {
+    // Create an array of all the update promises we need to run.
+    const updateOperations = questions.flatMap(q => [
+        // Promise to update the main Question table
+        prisma_1.default.question.update({
+            where: { id: q.id },
+            data: {
+                question: q.question,
+                answer: q.answer,
+                explanation: q.explanation,
+            },
+        }),
+        // Promise to update the related Option table
+        prisma_1.default.option.update({
+            where: { questionId: q.id },
+            data: {
+                a: q.options.a,
+                b: q.options.b,
+                c: q.options.c,
+                d: q.options.d,
+            },
+        }),
+    ]);
+    // Execute all update operations within a single transaction for safety and performance.
+    // If any single update fails, the entire transaction is rolled back.
+    const result = yield prisma_1.default.$transaction(updateOperations);
+    // The result of a transaction is an array of the results of each operation.
+    // We count the successful question updates by dividing the total successful operations by 2.
+    return { count: result.length / 2 };
+});
+exports.bulkUpdateCorrectedQuestions = bulkUpdateCorrectedQuestions;
+// // get questions from a specific chapter from database -- same as above actually
+// export const getQuestionsByChapter = async (stream: TStream, chapter: string, subject: string): Promise<TQuestionSchema[] | null> => {
+//     try {
+//         // First find the subject to get its ID
+//         const subjectRecord = await prisma.subject.findFirst({
+//             where: {
+//                 stream: stream,
+//                 name: subject
+//             },
+//             select: {
+//                 id: true
+//             }
+//         });
+//         if (!subjectRecord) return null;
+//         // Now find the chapter using the subject ID
+//         const chapterRecord = await prisma.chapter.findUnique({
+//             where: {
+//                 subjectId_name: {
+//                     subjectId: subjectRecord.id,
+//                     name: chapter
+//                 }
+//             },
+//             select: {
+//                 questions: {
+//                     select: {
+//                         id: true,
+//                         question: true,
+//                         subject: true,
+//                         chapter: true,
+//                         options: {
+//                             select: {
+//                                 a: true,
+//                                 b: true,
+//                                 c: true,
+//                                 d: true,
+//                             }
+//                         },
+//                         answer: true,
+//                         explanation: true,
+//                         difficulty: true,
+//                         unit: true,
+//                         stream: true,
+//                         IsPast: true,
+//                         subjectId: true,
+//                         chapterId: true,
+//                         images: {
+//                             select: {
+//                                 a: true,
+//                                 b: true,
+//                                 c: true,
+//                                 d: true,
+//                             }
+//                         },
+//                     }
+//                 }
+//             }
+//         });
+//         if (!chapterRecord) return null;
+//         return chapterRecord.questions as TQuestionSchema[];
+//     } catch (error) {
+//         console.error('Error fetching questions by chapter:', error);
+//         return null;
+//     }
+// };
+// // //////////// do consider removing it

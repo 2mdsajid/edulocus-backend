@@ -1,5 +1,5 @@
 import { CustomTest, ModeOfTest, PastPaper, Prisma, TestAnalytic, TestQuestionAnswer, TypeOfTest, UserScore } from "@prisma/client";
-import { TQuestion, TQuestionVideo } from "../questions/questions.schema";
+import { TQuestionSchema } from "../questions/questions.schema";
 import { LucideIcon } from "lucide-react";
 
 export type TcreateCustomTest = Pick<CustomTest,
@@ -63,7 +63,7 @@ export type TSingleCustomTestWithQuestions = Pick<CustomTest,
     'archive'
 > & {
     createdBy: string,
-    questions: TQuestion[]
+    questions: TQuestionSchema[]
 }
 
 
