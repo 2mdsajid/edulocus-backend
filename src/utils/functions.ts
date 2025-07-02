@@ -66,3 +66,22 @@ export function getSubjectsAndMarks(
 
   return result;
 }
+
+
+
+export const capitalizeWords = (str: string): string => {
+  return str.replace(/_/g, ' ').split(' ').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+};
+
+
+export const formatDateForSyllabus = (date: Date): string => {
+  const monthNames = [
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december"
+  ];
+  const month = monthNames[date.getMonth()];
+  const day = date.getDate();
+  return `${month}_${day}`;
+};

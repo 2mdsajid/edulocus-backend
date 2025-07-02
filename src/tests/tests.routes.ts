@@ -5,12 +5,13 @@ import { TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TTypeOfTe
 import * as TestsServices from './tests.services';
 import * as GroupServices from '../groups/groups.services'
 import { createCustomTestByUserValidation, createCustomTestValidation, createPastTestValidation, createTestAnalyticValidation, saveUserScoreValidation } from './tests.validators';
-import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, getQuestionsIdsBySubject, updateIsPastQuestion } from '../questions/questions.services';
+import { addMultipleQuestionsForDifferentSubjectAndChapter, getQuestionsIds, getQuestionsIdsBySubject, getQuestionsIdsBySubjectAndChapter, updateIsPastQuestion } from '../questions/questions.services';
 import prisma from '../utils/prisma';
-import { getStreams, getSubjectsAndMarks } from '../utils/functions';
+import { capitalizeWords, formatDateForSyllabus, getStreams, getSubjectsAndMarks } from '../utils/functions';
 import { TStream } from '../utils/global-types';
 import { SYLLABUS } from '../utils/syllabus';
 import { custom, date } from 'zod';
+import { ChapterWiseSyllabus, TChapterWiseSyllabus } from '../utils/chap_syllabus';
 
 const router = express.Router();
 
@@ -353,8 +354,8 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         const currentDayOfMonth = date.getDate(); // Get the current day of the month (1-31)
 
         // Check if the current day is an "alternate day" (odd number)
+        return response.status(200).json({ data: null, message: 'Daily test can only be created on alternate days.' });
         if (currentDayOfMonth % 2 === 0) {
-            return response.status(403).json({ data: null, message: 'Daily test can only be created on alternate days.' });
         }
 
         const admin = await prisma.user.findFirst({
@@ -374,7 +375,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
             return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
         }
 
-        const createdById = admin.id;
+        const createdById = admin?.id;
         if (!createdById) {
             // This case should ideally not be hit if admin is found, but good to keep as a safeguard
             return response.status(400).json({ data: null, message: 'Unauthorized: Admin ID not found.' });
@@ -383,7 +384,7 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         const limit = 30;
 
         const questionsIds = await getQuestionsIds(Number(limit), 'UG');
-        if (!questionsIds || questionsIds.length === 0) {
+        if (!questionsIds || questionsIds?.length === 0) {
             return response.status(404).json({ data: null, message: 'No questions found for the daily test.' });
         }
 
@@ -402,10 +403,10 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         const data: TcreateCustomTest = {
             name: name,
             slug: slug,
-            createdById: createdById,
+            createdById: createdById || '',
             mode: "ALL",
             type: "DAILY_TEST",
-            questions: questionsIds,
+            questions: questionsIds || [],
             stream: stream,
             description: null,
             imageUrl: null,
@@ -425,6 +426,219 @@ router.get("/create-daily-test", async (request: RequestExtended, response: Resp
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });
+
+
+// create chapterwise tests for chapterwise series -- 
+router.get("/create-chapter-wise-test", async (request: Request, response: Response) => {
+    try {
+        const date = new Date();
+        // Format today's date to match the syllabus data format (e.g., "july_6")
+        const formattedDayForSyllabus = formatDateForSyllabus(date);
+
+        // Find today's schedule from the imported ChapterWiseSyllabus
+        const todaysSyllabus = ChapterWiseSyllabus.find(
+            (chapterDay) => chapterDay.day === formattedDayForSyllabus
+        );
+
+        if (!todaysSyllabus) {
+            console.log(`No schedule found for today: ${formattedDayForSyllabus}`);
+            return response.status(404).json({ data: null, message: `No schedule found for today (${formattedDayForSyllabus}) to create tests.` });
+        }
+
+        const admin = await prisma.user.findFirst({
+            where: {
+                role: "SAJID"
+            }
+        });
+
+        if (!admin) {
+            return response.status(400).json({ data: null, message: 'No admin user with role SAJID found.' });
+        }
+
+        const stream: TStream = 'UG'; // Assuming 'UG' as default stream
+        const createdById = admin.id;
+
+        const limitPerChapter = 10; // Limit for questions per chapter
+        const totalQuestionsLimit = 30; // Overall limit for each test
+
+        // Format the date for the slug (YYYY-MM-DD)
+        const formattedDateForSlug = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+        const timeSlots: Array<keyof TChapterWiseSyllabus[0]> = ["8am", "2pm", "6pm"];
+        const createdTestResults: { timeSlot: string, success: boolean, message: string, testId?: string | null }[] = [];
+
+        // Iterate through each time slot to create separate tests
+        for (const timeSlot of timeSlots) {
+            const slug = `cws-${formattedDateForSlug}-${timeSlot}`;
+
+            // Check if a test with this slug already exists
+            const testExists = await TestsServices.findCustomTestBySlug(slug, stream);
+            if (testExists) {
+                console.log(`Test with slug '${slug}' already exists. Skipping creation for ${timeSlot}.`);
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `Test with slug '${slug}' already exists. Skipping creation.`
+                });
+                continue; // Skip to the next time slot
+            }
+
+            const subjectsAtTime = todaysSyllabus[timeSlot];
+            let currentSlotQuestionsIds: string[] = [];
+            const currentSlotChapterNames: Set<string> = new Set();
+
+            if (subjectsAtTime && typeof subjectsAtTime !== 'string') { // Ensure it's an object with subjects
+                for (const subject in subjectsAtTime) {
+                    if (Object.prototype.hasOwnProperty.call(subjectsAtTime, subject)) {
+                        const chapters = subjectsAtTime[subject] as string[];
+                        for (const chapter of chapters) {
+                            // Fetch questions for each subject and chapter within this time slot
+                            const chapterQuestions = await getQuestionsIdsBySubjectAndChapter(
+                                subject,
+                                chapter,
+                                limitPerChapter,
+                                stream
+                            );
+                            currentSlotQuestionsIds = currentSlotQuestionsIds.concat(chapterQuestions ?? []);
+                            currentSlotChapterNames.add(chapter); // Add chapter name for test name
+                        }
+                    }
+                }
+            }
+
+            // Apply the total questions limit for this specific test
+            if (currentSlotQuestionsIds.length > totalQuestionsLimit) {
+                currentSlotQuestionsIds = currentSlotQuestionsIds.slice(0, totalQuestionsLimit);
+            }
+
+            if (currentSlotQuestionsIds.length === 0) {
+                console.log(`No questions found for the ${timeSlot} test on ${formattedDayForSyllabus}. Skipping test creation.`);
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `No questions found for ${timeSlot}.`
+                });
+                continue; // Skip to the next time slot
+            }
+
+            // Construct name for the current time slot's test
+            const testNameSuffix = Array.from(currentSlotChapterNames).map(capitalizeWords).join(', ');
+            const name = `Chapter Wise Series (${timeSlot.toUpperCase()}) - ${testNameSuffix}`;
+
+            const data: TcreateCustomTest = {
+                name: name,
+                slug: slug, // Use the pre-checked slug
+                createdById: createdById,
+                mode: "ALL",
+                type: "CHAPTER_WISE",
+                questions: currentSlotQuestionsIds,
+                stream: stream,
+                description: null,
+                imageUrl: null,
+                specialUrl: null,
+                specialImage: null,
+                isLocked: false,
+            };
+
+            const newCustomTestId = await TestsServices.createCustomTest(data);
+            if (newCustomTestId) {
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: true,
+                    message: `${slug} test created successfully.`,
+                    testId: newCustomTestId
+                });
+            } else {
+                // This else block will now primarily catch cases where createCustomTest returns null
+                // due to the mock `mockExistingSlugs` check, or other potential internal failures.
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `Failed to create test for ${timeSlot}.`
+                });
+            }
+        }
+
+        // Determine overall response based on individual test creation results
+        const allTestsSuccessful = createdTestResults.every(result => result.success);
+        const someTestsCreated = createdTestResults.some(result => result.success);
+
+        if (allTestsSuccessful) {
+            return response.status(201).json({
+                data: createdTestResults,
+                message: 'All daily chapter-wise tests created successfully.'
+            });
+        } else if (someTestsCreated) {
+            return response.status(207).json({ // 207 Multi-Status
+                data: createdTestResults,
+                message: 'Some daily chapter-wise tests were created, others failed or had no questions/were skipped.'
+            });
+        } else {
+            return response.status(500).json({
+                data: createdTestResults,
+                message: 'No daily chapter-wise tests could be created or all were skipped.'
+            });
+        }
+
+    } catch (error: any) {
+        console.error("Error creating daily tests:", error); // Log the actual error for debugging
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+// this willl fetch the current active test bassed on the client time and date
+router.get("/get-current-chapterwise-test/:dateandtime", async (request: Request, response: Response) => {
+    try {
+        const { dateandtime } = request.params;
+
+        if (!dateandtime) {
+            return response.status(400).json({ data: null, message: 'Date and time are required.' });
+        }
+
+        const isoDateAndTime = new Date(dateandtime);
+
+        if (isNaN(isoDateAndTime.getTime())) {
+            return response.status(400).json({ data: null, message: 'Invalid date and time format.' });
+        }
+
+        const year = isoDateAndTime.getFullYear();
+        const month = String(isoDateAndTime.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const day = String(isoDateAndTime.getDate()).padStart(2, '0');
+        let timeSlot = '';
+
+        const hour = isoDateAndTime.getHours();
+
+        if (hour >= 6 && hour < 14) {
+            timeSlot = '8am';
+        } else if (hour >= 14 && hour < 18) {
+            timeSlot = '2pm';
+        } else if (hour >= 18) {
+            timeSlot = '6pm';
+        } else {
+            timeSlot = '12am'; // Default to 8am if the time is before 6 AM
+        }
+
+        const slug = `cws-${year}-${month}-${day}-${timeSlot}`;
+        console.log('slug in route from fe',slug)
+
+        const customTest = await TestsServices.getCustomTestBySlugAndStream(slug,'UG')
+        if (!customTest) {
+            return response.status(404).json({ data: null, message: 'No test found for the given date and time.' });
+        }
+
+        return response.status(200).json({ data: customTest, message: 'Test found successfully.' });
+
+    } catch (error: any) {
+        console.error("Error getting current chapter-wise test:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+
+
+
 
 // daily tests for everyone --
 router.get("/create-daily-test-by-users/:date", checkModerator, async (request: RequestExtended, response: Response) => {
@@ -490,6 +704,10 @@ router.get("/create-daily-test-by-users/:date", checkModerator, async (request: 
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });
+
+
+
+
 
 
 router.get("/get-daily-tests/:date", checkStreamMiddleware, async (request: Request, response: Response) => {

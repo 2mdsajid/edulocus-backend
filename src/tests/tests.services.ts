@@ -3,7 +3,7 @@ import { typeOfTestsAndDescriptionData } from "../utils/global-data";
 import { TStream } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { calculateAverageScorePerQuestion, calculateAverageScorePerTest, calculateTotalCorrectAnswers, calculateTotalQuestionsAttempt, calculateTotalUnattemptQuestions, generateDailyTestProgress, generateRandomCodesForTest, generateRecentTests, getSubjectScoresForBarChart } from "./tests.methods";
-import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TScoreBreakdown, TSingleCustomTestWithQuestions, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
+import { TBaseCustomTest, TBasePastPaper, TBaseTestAnalytic, TBaseUserScore, TcreateCustomTest, TcreateCustomTestByUser, TCreatePastPaper, TCreateTestAnalytic, TCustomTestMetadata, TDashboardAnalyticData, TSaveUserScore, TScoreBreakdown, TSingleCustomTestWithQuestions, TTestArchiveResult, TTypeOfTest, TTypeOfTestsAndDescription } from "./tests.schema";
 
 export const createCustomTest = async (customTestData: TcreateCustomTest): Promise<string | null> => {
     const { name, slug, createdById, mode, questions, type, stream, description, specialImage, specialUrl, imageUrl, isLocked } = customTestData;
@@ -152,6 +152,18 @@ export const createChapterWiseCustomTestByUser = async (customTestData: TcreateC
     return newCustomTest.id
 }
 
+export const findCustomTestBySlug = async (slug: string, stream:TStream): Promise<boolean> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: {
+            slug: slug,
+            stream: stream
+        }
+    });
+    if (!customTest) return false;
+    return true
+}
+
+
 export const isDailyTestSlugExist = async (slug: string, stream: TStream): Promise<boolean> => {
     const dailyTest = await prisma.customTest.findFirst({
         where: {
@@ -293,6 +305,82 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 };
 
 
+export const getCustomTestBySlugAndStream = async (slug:string, stream:TStream): Promise<TSingleCustomTestWithQuestions | null> => {
+    const customTest = await prisma.customTest.findFirst({
+        where: { slug, stream },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            stream: true,
+            archive: true,
+            createdBy: { select: { name: true } },
+            questions: true
+        }
+    });
+    if (!customTest) return null;
+
+    const questions = await prisma.question.findMany({
+        where: { id: { in: customTest.questions } },
+        select: {
+            id: true,
+            question: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
+            answer: true,
+            explanation: true,
+            subject: true,
+            stream: true,
+            images: {
+                select:{
+                    qn:true,
+                    a:true,
+                    b:true,
+                    c:true,
+                    d:true,
+                    exp:true,
+                }
+            },
+            chapter: true,
+            unit: true,
+            difficulty: true,
+            videoUrl:{
+                select:{
+                    id:true,
+                    questionId:true,
+                    url:true,
+                }
+            },
+            IsPast: true,
+            subjectId:true,
+            chapterId: true,
+        }
+    });
+
+    const modifiedQuestions = questions.map((q) => ({
+        ...q,
+        options: q.options || { a: "", b: "", c: "", d: "" },
+        videoUrl: q.videoUrl?.url
+    }));
+
+    const modifiedCustomTest = {
+        ...customTest,
+        createdBy: customTest.createdBy.name,
+        questions: modifiedQuestions,
+    };
+
+    return {
+        ...modifiedCustomTest,
+    };
+};
+
+
 export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdown | null> => {
     const test = await prisma.customTest.findUnique({
         where: { id: testid },
@@ -351,6 +439,47 @@ export const getTestBasicScores = async (testid: string): Promise<TScoreBreakdow
         correct,
         incorrect,
     };
+};
+
+export const archiveCustomTestBySlug = async (slug: string, stream: TStream):Promise< TTestArchiveResult | null>=> {
+    try {
+        // Find the custom test by slug and stream to get its ID
+        const customTest = await prisma.customTest.findFirst({
+            where: {
+                stream: stream,
+                slug: slug,
+                type: "CHAPTER_WISE",
+            },
+            select: {
+                id: true,
+            },
+        });
+
+        if (!customTest) {
+            return null;
+        }
+
+        // Update the custom test by ID
+        const updatedTest = await prisma.customTest.update({
+            where: {
+                id: customTest.id,
+            },
+            data: {
+                archive: true,
+            },
+            select: { // selecting userscore after archiving
+                name: true,
+                id: true,
+                slug: true,
+                usersAttended:true,
+            },
+        });
+
+        return updatedTest;
+    } catch (error) {
+        console.error("Error archiving custom test:", error);
+        return null;
+    }
 };
 
 

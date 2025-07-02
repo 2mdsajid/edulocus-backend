@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStreams = exports.getRandomColor = exports.generateRandomCode = exports.isCuid = exports.isUUID = exports.formatDate = void 0;
+exports.formatDateForSyllabus = exports.capitalizeWords = exports.getStreams = exports.getRandomColor = exports.generateRandomCode = exports.isCuid = exports.isUUID = exports.formatDate = void 0;
 exports.getSubjectsAndMarks = getSubjectsAndMarks;
 const global_data_1 = require("./global-data");
 const formatDate = (dateString) => {
@@ -59,3 +59,17 @@ function getSubjectsAndMarks(syllabus, stream) {
     }
     return result;
 }
+const capitalizeWords = (str) => {
+    return str.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+exports.capitalizeWords = capitalizeWords;
+const formatDateForSyllabus = (date) => {
+    const monthNames = [
+        "january", "february", "march", "april", "may", "june",
+        "july", "august", "september", "october", "november", "december"
+    ];
+    const month = monthNames[date.getMonth()];
+    const day = date.getDate();
+    return `${month}_${day}`;
+};
+exports.formatDateForSyllabus = formatDateForSyllabus;

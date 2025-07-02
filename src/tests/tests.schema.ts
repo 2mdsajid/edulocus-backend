@@ -13,7 +13,7 @@ export type TcreateCustomTest = Pick<CustomTest,
     'description'|
     'imageUrl'|
     'specialImage'|
-    'specialUrl'
+    'specialUrl' 
 > & {
     isLocked : boolean
 }
@@ -184,3 +184,17 @@ export type TScoreBreakdown = {
 // for leaderboard
 export type TSaveUserScore = Omit<UserScore, 'id'>
 export type TBaseUserScore = Pick<UserScore, 'username' | 'totalScore'>
+
+
+
+export type TTestArchiveResult =  {
+    name: string;
+    id: string;
+    slug: string;
+    usersAttended: {
+        id: string;
+        customTestId: string;
+        username: string;
+        totalScore: number;
+    }[];
+}

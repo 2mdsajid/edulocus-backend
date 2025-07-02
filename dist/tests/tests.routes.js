@@ -45,6 +45,7 @@ const questions_services_1 = require("../questions/questions.services");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const functions_1 = require("../utils/functions");
 const syllabus_1 = require("../utils/syllabus");
+const chap_syllabus_1 = require("../utils/chap_syllabus");
 const router = express_1.default.Router();
 // Create a new custom test -- model test only as of now
 // due to server issues, can't create 200 marks as of now
@@ -309,8 +310,8 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         const date = new Date();
         const currentDayOfMonth = date.getDate(); // Get the current day of the month (1-31)
         // Check if the current day is an "alternate day" (odd number)
+        return response.status(200).json({ data: null, message: 'Daily test can only be created on alternate days.' });
         if (currentDayOfMonth % 2 === 0) {
-            return response.status(403).json({ data: null, message: 'Daily test can only be created on alternate days.' });
         }
         const admin = yield prisma_1.default.user.findFirst({
             where: {
@@ -326,14 +327,14 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Stream Not Specified or Invalid.' });
         }
-        const createdById = admin.id;
+        const createdById = admin === null || admin === void 0 ? void 0 : admin.id;
         if (!createdById) {
             // This case should ideally not be hit if admin is found, but good to keep as a safeguard
             return response.status(400).json({ data: null, message: 'Unauthorized: Admin ID not found.' });
         }
         const limit = 30;
         const questionsIds = yield (0, questions_services_1.getQuestionsIds)(Number(limit), 'UG');
-        if (!questionsIds || questionsIds.length === 0) {
+        if (!questionsIds || (questionsIds === null || questionsIds === void 0 ? void 0 : questionsIds.length) === 0) {
             return response.status(404).json({ data: null, message: 'No questions found for the daily test.' });
         }
         const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -346,10 +347,10 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
         const data = {
             name: name,
             slug: slug,
-            createdById: createdById,
+            createdById: createdById || '',
             mode: "ALL",
             type: "DAILY_TEST",
-            questions: questionsIds,
+            questions: questionsIds || [],
             stream: stream,
             description: null,
             imageUrl: null,
@@ -365,6 +366,181 @@ router.get("/create-daily-test", (request, response) => __awaiter(void 0, void 0
     }
     catch (error) {
         console.error("Error creating daily test:", error); // Log the actual error for debugging
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// create chapterwise tests for chapterwise series -- 
+router.get("/create-chapter-wise-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const date = new Date();
+        // Format today's date to match the syllabus data format (e.g., "july_6")
+        const formattedDayForSyllabus = (0, functions_1.formatDateForSyllabus)(date);
+        // Find today's schedule from the imported ChapterWiseSyllabus
+        const todaysSyllabus = chap_syllabus_1.ChapterWiseSyllabus.find((chapterDay) => chapterDay.day === formattedDayForSyllabus);
+        if (!todaysSyllabus) {
+            console.log(`No schedule found for today: ${formattedDayForSyllabus}`);
+            return response.status(404).json({ data: null, message: `No schedule found for today (${formattedDayForSyllabus}) to create tests.` });
+        }
+        const admin = yield prisma_1.default.user.findFirst({
+            where: {
+                role: "SAJID"
+            }
+        });
+        if (!admin) {
+            return response.status(400).json({ data: null, message: 'No admin user with role SAJID found.' });
+        }
+        const stream = 'UG'; // Assuming 'UG' as default stream
+        const createdById = admin.id;
+        const limitPerChapter = 10; // Limit for questions per chapter
+        const totalQuestionsLimit = 30; // Overall limit for each test
+        // Format the date for the slug (YYYY-MM-DD)
+        const formattedDateForSlug = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const timeSlots = ["8am", "2pm", "6pm"];
+        const createdTestResults = [];
+        // Iterate through each time slot to create separate tests
+        for (const timeSlot of timeSlots) {
+            const slug = `cws-${formattedDateForSlug}-${timeSlot}`;
+            // Check if a test with this slug already exists
+            const testExists = yield TestsServices.findCustomTestBySlug(slug, stream);
+            if (testExists) {
+                console.log(`Test with slug '${slug}' already exists. Skipping creation for ${timeSlot}.`);
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `Test with slug '${slug}' already exists. Skipping creation.`
+                });
+                continue; // Skip to the next time slot
+            }
+            const subjectsAtTime = todaysSyllabus[timeSlot];
+            let currentSlotQuestionsIds = [];
+            const currentSlotChapterNames = new Set();
+            if (subjectsAtTime && typeof subjectsAtTime !== 'string') { // Ensure it's an object with subjects
+                for (const subject in subjectsAtTime) {
+                    if (Object.prototype.hasOwnProperty.call(subjectsAtTime, subject)) {
+                        const chapters = subjectsAtTime[subject];
+                        for (const chapter of chapters) {
+                            // Fetch questions for each subject and chapter within this time slot
+                            const chapterQuestions = yield (0, questions_services_1.getQuestionsIdsBySubjectAndChapter)(subject, chapter, limitPerChapter, stream);
+                            currentSlotQuestionsIds = currentSlotQuestionsIds.concat(chapterQuestions !== null && chapterQuestions !== void 0 ? chapterQuestions : []);
+                            currentSlotChapterNames.add(chapter); // Add chapter name for test name
+                        }
+                    }
+                }
+            }
+            // Apply the total questions limit for this specific test
+            if (currentSlotQuestionsIds.length > totalQuestionsLimit) {
+                currentSlotQuestionsIds = currentSlotQuestionsIds.slice(0, totalQuestionsLimit);
+            }
+            if (currentSlotQuestionsIds.length === 0) {
+                console.log(`No questions found for the ${timeSlot} test on ${formattedDayForSyllabus}. Skipping test creation.`);
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `No questions found for ${timeSlot}.`
+                });
+                continue; // Skip to the next time slot
+            }
+            // Construct name for the current time slot's test
+            const testNameSuffix = Array.from(currentSlotChapterNames).map(functions_1.capitalizeWords).join(', ');
+            const name = `Chapter Wise Series (${timeSlot.toUpperCase()}) - ${testNameSuffix}`;
+            const data = {
+                name: name,
+                slug: slug, // Use the pre-checked slug
+                createdById: createdById,
+                mode: "ALL",
+                type: "CHAPTER_WISE",
+                questions: currentSlotQuestionsIds,
+                stream: stream,
+                description: null,
+                imageUrl: null,
+                specialUrl: null,
+                specialImage: null,
+                isLocked: false,
+            };
+            const newCustomTestId = yield TestsServices.createCustomTest(data);
+            if (newCustomTestId) {
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: true,
+                    message: `${slug} test created successfully.`,
+                    testId: newCustomTestId
+                });
+            }
+            else {
+                // This else block will now primarily catch cases where createCustomTest returns null
+                // due to the mock `mockExistingSlugs` check, or other potential internal failures.
+                createdTestResults.push({
+                    timeSlot: timeSlot,
+                    success: false,
+                    message: `Failed to create test for ${timeSlot}.`
+                });
+            }
+        }
+        // Determine overall response based on individual test creation results
+        const allTestsSuccessful = createdTestResults.every(result => result.success);
+        const someTestsCreated = createdTestResults.some(result => result.success);
+        if (allTestsSuccessful) {
+            return response.status(201).json({
+                data: createdTestResults,
+                message: 'All daily chapter-wise tests created successfully.'
+            });
+        }
+        else if (someTestsCreated) {
+            return response.status(207).json({
+                data: createdTestResults,
+                message: 'Some daily chapter-wise tests were created, others failed or had no questions/were skipped.'
+            });
+        }
+        else {
+            return response.status(500).json({
+                data: createdTestResults,
+                message: 'No daily chapter-wise tests could be created or all were skipped.'
+            });
+        }
+    }
+    catch (error) {
+        console.error("Error creating daily tests:", error); // Log the actual error for debugging
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// this willl fetch the current active test bassed on the client time and date
+router.get("/get-current-chapterwise-test/:dateandtime", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { dateandtime } = request.params;
+        if (!dateandtime) {
+            return response.status(400).json({ data: null, message: 'Date and time are required.' });
+        }
+        const isoDateAndTime = new Date(dateandtime);
+        if (isNaN(isoDateAndTime.getTime())) {
+            return response.status(400).json({ data: null, message: 'Invalid date and time format.' });
+        }
+        const year = isoDateAndTime.getFullYear();
+        const month = String(isoDateAndTime.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const day = String(isoDateAndTime.getDate()).padStart(2, '0');
+        let timeSlot = '';
+        const hour = isoDateAndTime.getHours();
+        if (hour >= 6 && hour < 14) {
+            timeSlot = '8am';
+        }
+        else if (hour >= 14 && hour < 18) {
+            timeSlot = '2pm';
+        }
+        else if (hour >= 18) {
+            timeSlot = '6pm';
+        }
+        else {
+            timeSlot = '12am'; // Default to 8am if the time is before 6 AM
+        }
+        const slug = `cws-${year}-${month}-${day}-${timeSlot}`;
+        console.log('slug in route from fe', slug);
+        const customTest = yield TestsServices.getCustomTestBySlugAndStream(slug, 'UG');
+        if (!customTest) {
+            return response.status(404).json({ data: null, message: 'No test found for the given date and time.' });
+        }
+        return response.status(200).json({ data: customTest, message: 'Test found successfully.' });
+    }
+    catch (error) {
+        console.error("Error getting current chapter-wise test:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));

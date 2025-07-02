@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.deleteTestById = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getTestBasicScores = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.deleteTestById = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.archiveCustomTestBySlug = exports.getTestBasicScores = exports.getCustomTestBySlugAndStream = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.findCustomTestBySlug = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -156,6 +156,18 @@ const createChapterWiseCustomTestByUser = (customTestData, subject, chapter) => 
     return newCustomTest.id;
 });
 exports.createChapterWiseCustomTestByUser = createChapterWiseCustomTestByUser;
+const findCustomTestBySlug = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.findFirst({
+        where: {
+            slug: slug,
+            stream: stream
+        }
+    });
+    if (!customTest)
+        return false;
+    return true;
+});
+exports.findCustomTestBySlug = findCustomTestBySlug;
 const isDailyTestSlugExist = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const dailyTest = yield prisma_1.default.customTest.findFirst({
         where: {
@@ -285,6 +297,71 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
     return Object.assign({}, modifiedCustomTest);
 });
 exports.getCustomTestById = getCustomTestById;
+const getCustomTestBySlugAndStream = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    const customTest = yield prisma_1.default.customTest.findFirst({
+        where: { slug, stream },
+        select: {
+            name: true,
+            id: true,
+            slug: true,
+            stream: true,
+            archive: true,
+            createdBy: { select: { name: true } },
+            questions: true
+        }
+    });
+    if (!customTest)
+        return null;
+    const questions = yield prisma_1.default.question.findMany({
+        where: { id: { in: customTest.questions } },
+        select: {
+            id: true,
+            question: true,
+            options: {
+                select: {
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                }
+            },
+            answer: true,
+            explanation: true,
+            subject: true,
+            stream: true,
+            images: {
+                select: {
+                    qn: true,
+                    a: true,
+                    b: true,
+                    c: true,
+                    d: true,
+                    exp: true,
+                }
+            },
+            chapter: true,
+            unit: true,
+            difficulty: true,
+            videoUrl: {
+                select: {
+                    id: true,
+                    questionId: true,
+                    url: true,
+                }
+            },
+            IsPast: true,
+            subjectId: true,
+            chapterId: true,
+        }
+    });
+    const modifiedQuestions = questions.map((q) => {
+        var _a;
+        return (Object.assign(Object.assign({}, q), { options: q.options || { a: "", b: "", c: "", d: "" }, videoUrl: (_a = q.videoUrl) === null || _a === void 0 ? void 0 : _a.url }));
+    });
+    const modifiedCustomTest = Object.assign(Object.assign({}, customTest), { createdBy: customTest.createdBy.name, questions: modifiedQuestions });
+    return Object.assign({}, modifiedCustomTest);
+});
+exports.getCustomTestBySlugAndStream = getCustomTestBySlugAndStream;
 const getTestBasicScores = (testid) => __awaiter(void 0, void 0, void 0, function* () {
     const test = yield prisma_1.default.customTest.findUnique({
         where: { id: testid },
@@ -341,6 +418,45 @@ const getTestBasicScores = (testid) => __awaiter(void 0, void 0, void 0, functio
     };
 });
 exports.getTestBasicScores = getTestBasicScores;
+const archiveCustomTestBySlug = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Find the custom test by slug and stream to get its ID
+        const customTest = yield prisma_1.default.customTest.findFirst({
+            where: {
+                stream: stream,
+                slug: slug,
+                type: "CHAPTER_WISE",
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (!customTest) {
+            return null;
+        }
+        // Update the custom test by ID
+        const updatedTest = yield prisma_1.default.customTest.update({
+            where: {
+                id: customTest.id,
+            },
+            data: {
+                archive: true,
+            },
+            select: {
+                name: true,
+                id: true,
+                slug: true,
+                usersAttended: true,
+            },
+        });
+        return updatedTest;
+    }
+    catch (error) {
+        console.error("Error archiving custom test:", error);
+        return null;
+    }
+});
+exports.archiveCustomTestBySlug = archiveCustomTestBySlug;
 const getDailyTestsBySlug = (slug) => __awaiter(void 0, void 0, void 0, function* () {
     const customTests = yield prisma_1.default.customTest.findMany({
         where: {
