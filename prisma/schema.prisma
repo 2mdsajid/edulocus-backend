@@ -282,7 +282,7 @@ model QuestionCount {
     count     Int    @default(0)
     stream STREAM @default(PG)
     @@unique([subject, chapter]) // Remove this after data migration
-    @@unique([subjectId, chapterId]) // Add this after data migration
+    // @@unique([subjectId, chapterId]) // Add this after data migration
     @@index([stream])
 }
 
