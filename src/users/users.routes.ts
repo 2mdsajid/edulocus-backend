@@ -290,4 +290,41 @@ router.get('/get-user-session', getUserSession, async (request: RequestExtended,
 })
 
 
+// register users for chapterwise tests
+router.post('/register-chapterwise-test', async (request: Request, response: Response) => {
+    try {
+        const { name, email, phone, message } = request.body;
+
+        if (!name || !email || !phone || !message) {
+            return response.status(400).json({ data: null, message: 'Please provide all the required fields' });
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return response.status(400).json({ data: null, message: 'Please provide a valid email address' });
+        }
+
+        // Basic phone validation (assuming a 10-digit US phone number)
+        const phoneRegex = /^\d{10}$/;
+        if (!phoneRegex.test(phone)) {
+            return response.status(400).json({ data: null, message: 'Please provide a valid 10-digit phone number' });
+        }
+
+        const registration = await UserServices.registerForChapterwiseTest({
+            name,
+            email,
+            phone,
+            message,
+        });
+
+        return response.status(200).json({ data: registration, message: 'Registered successfully!' });
+    } catch (error) {
+        console.error("Error during chapterwise test registration:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+
 export default router

@@ -504,8 +504,18 @@ router.get("/create-chapter-wise-test", (request, response) => __awaiter(void 0,
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
+// this will send the chapter wise series syllabus to frontend
+router.get("/get-daily-schedule", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        return response.status(200).json({ data: chap_syllabus_1.ChapterWiseSyllabus, message: 'Daily schedule fetched successfully.' });
+    }
+    catch (error) {
+        console.error("Error getting daily schedule:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
 // This will fetch the current active test based on the server's Nepal time and date
-router.get("/get-current-chapterwise-test/:datetime", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/get-current-chapterwise-test", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Get current time in Nepal Standard Time (NST)
         const nowInNepal = luxon_1.DateTime.now().setZone('Asia/Kathmandu');

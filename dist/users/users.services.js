@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setUserSubscription = exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.getAllUsers = exports.isUserExist = exports.getUserIdByEmail = exports.checkEmailExist = void 0;
+exports.registerForChapterwiseTest = exports.setUserSubscription = exports.setUserStream = exports.getUserById = exports.createSubscriptionRequest = exports.createUserFeedback = exports.changeRole = exports.generateAuthToken = exports.signupWithLuciaGoogleUser = exports.loginWithLuciaGoogleUser = exports.loginUser = exports.userSignUp = exports.getAllUsers = exports.isUserExist = exports.getUserIdByEmail = exports.checkEmailExist = void 0;
 const functions_1 = require("../utils/functions");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -294,3 +294,24 @@ const setUserSubscription = (userId) => __awaiter(void 0, void 0, void 0, functi
     return user;
 });
 exports.setUserSubscription = setUserSubscription;
+const registerForChapterwiseTest = (data) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { name, email, phone, message } = data;
+        const registration = yield prisma_1.default.chapterwiseRegistration.create({
+            data: {
+                name,
+                email,
+                phone,
+                message
+            }
+        });
+        if (!registration)
+            return null;
+        return registration.id;
+    }
+    catch (error) {
+        console.error("Error creating chapterwise registration:", error);
+        throw error; // Re-throw the error to be handled by the route
+    }
+});
+exports.registerForChapterwiseTest = registerForChapterwiseTest;

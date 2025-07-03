@@ -586,8 +586,20 @@ router.get("/create-chapter-wise-test", async (request: Request, response: Respo
     }
 });
 
+
+// this will send the chapter wise series syllabus to frontend
+router.get("/get-daily-schedule", async (request: Request, response: Response) => {
+    try {
+        return response.status(200).json({ data: ChapterWiseSyllabus, message: 'Daily schedule fetched successfully.' });
+    } catch (error: any) {
+        console.error("Error getting daily schedule:", error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
 // This will fetch the current active test based on the server's Nepal time and date
-router.get("/get-current-chapterwise-test/:datetime", async (request: Request, response: Response) => {
+router.get("/get-current-chapterwise-test", async (request: Request, response: Response) => {
     try {
         // Get current time in Nepal Standard Time (NST)
         const nowInNepal = DateTime.now().setZone('Asia/Kathmandu');

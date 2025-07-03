@@ -141,6 +141,17 @@ model GroupMember {
     @@unique([userId, groupId])
 }
 
+
+model ChapterwiseRegistration {
+    id        String   @id @default(uuid())
+    name      String
+    email     String
+    phone     String
+    message   String
+    createdAt DateTime @default(now())
+}
+
+
 // QUESTIONS -----------------------------------------------------------
 model Question {
     id             String          @id @default(cuid())

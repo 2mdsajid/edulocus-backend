@@ -1,7 +1,7 @@
 import { isUUID } from "../utils/functions";
 import { TStream } from "../utils/global-types";
 import prisma from "../utils/prisma"
-import { TBaseUser, TCreateSubscriptionRequest, TCreateUserFeedback, TJWT, TLogInUser, TLuciaGoogleAuth, TSignUpUser } from "./users.schema";
+import { TBaseUser, TChapterwiseRegistration, TCreateSubscriptionRequest, TCreateUserFeedback, TJWT, TLogInUser, TLuciaGoogleAuth, TSignUpUser } from "./users.schema";
 import jwt from 'jsonwebtoken';
 
 
@@ -279,3 +279,24 @@ export const setUserSubscription = async (userId: string): Promise<TBaseUser | n
     if (!user) return null
     return user
 }
+
+
+export const registerForChapterwiseTest = async (data:TChapterwiseRegistration):Promise<string | null> => {
+    try {
+        const { name, email, phone, message } = data;
+        const registration = await prisma.chapterwiseRegistration.create({
+            data:{
+                name,
+                email,
+                phone,
+                message
+            }
+        });
+        if(!registration) return null
+        return registration.id;
+    } catch (error) {
+        console.error("Error creating chapterwise registration:", error);
+        throw error; // Re-throw the error to be handled by the route
+    }
+};
+

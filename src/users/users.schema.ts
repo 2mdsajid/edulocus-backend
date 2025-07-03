@@ -57,3 +57,15 @@ export type TJWT = TBaseUser
 
 export type TCreateUserFeedback = Omit<Feedback, 'id' | 'createdAt'>
 export type TCreateSubscriptionRequest = Omit<SubscriptionRequest, 'id' | 'createdAt'>
+
+
+import { z } from "zod";
+
+export const ChapterwiseRegistrationSchema = z.object({
+    name: z.string(),
+    email: z.string().email(),
+    phone: z.string(),
+    message: z.string(),
+});
+
+export type TChapterwiseRegistration = z.infer<typeof ChapterwiseRegistrationSchema>;
