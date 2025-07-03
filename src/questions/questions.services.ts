@@ -3,7 +3,7 @@ import { TStream, TStreamHierarchy, TSyllabus } from "../utils/global-types";
 import prisma from "../utils/prisma";
 import { SYLLABUS } from "../utils/syllabus";
 import { doesSubjectExist, getAllSubjects, getAllTopicsBySubject } from "./questions.methods";
-import { TAddQuestionSchema, TAllSubjectsAndChaptersWithCounts, TChapterWithQuestionCountSchema, TCorrectedQuestionSchema, TCreatePastQuestionSchema, TQuestionSchema, TReportQuestionSchema, TTotalQuestionsPerSubjectAndChapterSchema, TTotalQuestionsPerSubjectSchema } from "./questions.schema";
+import { TAddQuestionSchema, TAllSubjectsAndChaptersWithCounts, TBaseQuestionSchema, TChapterWithQuestionCountSchema, TCorrectedQuestionSchema, TCreatePastQuestionSchema, TQuestionSchema, TReportQuestionSchema, TTotalQuestionsPerSubjectAndChapterSchema, TTotalQuestionsPerSubjectSchema } from "./questions.schema";
 
 
 // add a single question 
@@ -571,6 +571,52 @@ export const getQuestionsIdsBySubject = async (subject: string, limit: number, s
 
     if (!selectedQuestions || selectedQuestions.length === 0) return null;
     return selectedQuestions.map(question => question.id);
+};
+
+
+// complete question sby subject
+export const getCompleteQuestionsBySubject = async (subject: string, limit: number, stream: TStream): Promise<TBaseQuestionSchema[] | null> => {
+    const limitValue = limit ?? 10;
+
+    // Find the subject ID based on the subject name and stream
+    const subjectRecord = await prisma.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true,  }
+    });
+
+    if (!subjectRecord) {
+        console.warn(`Subject "${subject}" not found for stream "${stream}".`);
+        return null;
+    }
+
+    const selectedQuestions = await prisma.question.findManyRandom(limitValue, {
+        where: {
+            subjectId: subjectRecord.id,
+        },
+        select: { 
+            id: true, 
+            question:true,
+            answer:true,
+            explanation:true,
+            subject:true,
+            chapter:true,
+            unit:true,
+            images:true,
+            stream:true,
+            subjectId:true,
+            chapterId:true,
+            difficulty:true,
+            IsPast:true,
+            options:{
+                select:{
+                    a:true, b:true, c:true, d:true,
+            },
+            
+        } }
+    });
+
+    if (!selectedQuestions || selectedQuestions.length === 0) return null;
+    return selectedQuestions
 };
 
 

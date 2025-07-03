@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bulkUpdateCorrectedQuestions = exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsIdsBySubjectAndChapter = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.removeReportedQuestions = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
+exports.bulkUpdateCorrectedQuestions = exports.getAllQuestions = exports.getTotalQuestionsPerSubjectAndChapter = exports.getTotalQuestionsPerSubject = exports.getChaptersBySubject = exports.getSubjects = exports.isSubjectInTheStream = exports.getStreamHierarchy = exports.getSyllabus = exports.getTotalQuestionsCount = exports.getQuestionsIdsBySubjectAndChapter = exports.getCompleteQuestionsBySubject = exports.getQuestionsIdsBySubject = exports.getQuestionsIds = exports.updateIsPastQuestion = exports.addMultipleQuestionsForDifferentSubjectAndChapter = exports.addMultipleQuestionsForSameSubjectAndChapter = exports.removeReportedQuestions = exports.updateQuestion = exports.getReportedQuestions = exports.reportQuestion = exports.checkIfQuestionIsReported = exports.addSingleQuestion = void 0;
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
 const syllabus_1 = require("../utils/syllabus");
@@ -497,6 +497,48 @@ const getQuestionsIdsBySubject = (subject, limit, stream) => __awaiter(void 0, v
     return selectedQuestions.map(question => question.id);
 });
 exports.getQuestionsIdsBySubject = getQuestionsIdsBySubject;
+// complete question sby subject
+const getCompleteQuestionsBySubject = (subject, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    const limitValue = limit !== null && limit !== void 0 ? limit : 10;
+    // Find the subject ID based on the subject name and stream
+    const subjectRecord = yield prisma_1.default.subject.findUnique({
+        where: { name: subject, stream },
+        select: { id: true, }
+    });
+    if (!subjectRecord) {
+        console.warn(`Subject "${subject}" not found for stream "${stream}".`);
+        return null;
+    }
+    const selectedQuestions = yield prisma_1.default.question.findManyRandom(limitValue, {
+        where: {
+            subjectId: subjectRecord.id,
+        },
+        select: {
+            id: true,
+            question: true,
+            answer: true,
+            explanation: true,
+            subject: true,
+            chapter: true,
+            unit: true,
+            images: true,
+            stream: true,
+            subjectId: true,
+            chapterId: true,
+            difficulty: true,
+            IsPast: true,
+            options: {
+                select: {
+                    a: true, b: true, c: true, d: true,
+                },
+            }
+        }
+    });
+    if (!selectedQuestions || selectedQuestions.length === 0)
+        return null;
+    return selectedQuestions;
+});
+exports.getCompleteQuestionsBySubject = getCompleteQuestionsBySubject;
 // to Fetch questions by subject and chapter with a limit -- esp for chapterwise tests
 const getQuestionsIdsBySubjectAndChapter = (subject, chapter, limit, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const limitValue = limit !== null && limit !== void 0 ? limit : 10;

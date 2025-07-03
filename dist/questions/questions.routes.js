@@ -206,6 +206,7 @@ router.get('/get-questions-by-subject', (request, response) => __awaiter(void 0,
         return response.status(200).json({ data: questions, message: 'Questions Found' });
     }
     catch (error) {
+        console.error("Error in /get-questions-by-subject:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 }));
@@ -235,6 +236,39 @@ router.get('/get-questions-by-chapter', (request, response) => __awaiter(void 0,
             limitValue = parsedLimit;
         }
         const questionsIds = yield QuestionServices.getQuestionsIdsBySubjectAndChapter(subject, chapter, limitValue, stream);
+        if (!questionsIds || questionsIds.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found for this Chapter' });
+        }
+        return response.status(200).json({ data: questionsIds, message: 'Questions Retrieved Successfully' });
+    }
+    catch (error) {
+        console.error('Error in /get-questions-by-chapter:', error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+}));
+// Get questions Ids by chapter while making tests for a specific stream
+router.get('/get-full-questions-by-subject', (request, response) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { stream, subject } = request.query;
+        const limit = 25;
+        // Validate stream
+        if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+        // Validate subject
+        if (!subject || typeof subject !== 'string') {
+            return response.status(400).json({ data: null, message: 'Subject is required' });
+        }
+        // Validate limit
+        let limitValue = 0;
+        if (limit !== undefined) {
+            const parsedLimit = Number(limit);
+            if (isNaN(parsedLimit) || parsedLimit < 0) {
+                return response.status(400).json({ data: null, message: 'Invalid limit value' });
+            }
+            limitValue = parsedLimit;
+        }
+        const questionsIds = yield QuestionServices.getCompleteQuestionsBySubject(subject, limitValue, stream);
         if (!questionsIds || questionsIds.length === 0) {
             return response.status(404).json({ data: null, message: 'No Questions Found for this Chapter' });
         }

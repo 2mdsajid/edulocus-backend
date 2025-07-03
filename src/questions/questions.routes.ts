@@ -195,11 +195,14 @@ router.get('/get-questions-by-subject', async (request: Request, response: Respo
         }
 
         const questions = await QuestionServices.getQuestionsIdsBySubject(subject, limit, stream)
+
         if (!questions) {
             return response.status(404).json({ data: null, message: 'No Questions Found' })
         }
+
         return response.status(200).json({ data: questions, message: 'Questions Found' });
     } catch (error) {
+        console.error("Error in /get-questions-by-subject:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' })
     }
 })
@@ -236,6 +239,45 @@ router.get('/get-questions-by-chapter', async (request: Request, response: Respo
         }
 
         const questionsIds = await QuestionServices.getQuestionsIdsBySubjectAndChapter(subject, chapter, limitValue, stream as TStream);
+        if (!questionsIds || questionsIds.length === 0) {
+            return response.status(404).json({ data: null, message: 'No Questions Found for this Chapter' });
+        }
+
+        return response.status(200).json({ data: questionsIds, message: 'Questions Retrieved Successfully' });
+    } catch (error) {
+        console.error('Error in /get-questions-by-chapter:', error);
+        return response.status(500).json({ data: null, message: 'Internal Server Error' });
+    }
+});
+
+
+// Get questions Ids by chapter while making tests for a specific stream
+router.get('/get-full-questions-by-subject', async (request: Request, response: Response) => {
+    try {
+        const { stream, subject } = request.query;
+        const limit = 25
+
+        // Validate stream
+        if (!stream || !getStreams().includes(stream as TStream)) {
+            return response.status(400).json({ data: null, message: 'Invalid Stream' });
+        }
+
+        // Validate subject
+        if (!subject || typeof subject !== 'string') {
+            return response.status(400).json({ data: null, message: 'Subject is required' });
+        }
+
+        // Validate limit
+        let limitValue = 0;
+        if (limit !== undefined) {
+            const parsedLimit = Number(limit);
+            if (isNaN(parsedLimit) || parsedLimit < 0) {
+                return response.status(400).json({ data: null, message: 'Invalid limit value' });
+            }
+            limitValue = parsedLimit;
+        }
+
+        const questionsIds = await QuestionServices.getCompleteQuestionsBySubject(subject, limitValue, stream as TStream);
         if (!questionsIds || questionsIds.length === 0) {
             return response.status(404).json({ data: null, message: 'No Questions Found for this Chapter' });
         }
