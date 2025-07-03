@@ -35,8 +35,10 @@ export const getSubscribedUserId = async (
 
       if (user) {
         req.user = user;
+        console.log('user',user)
         req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
         req.stream = user.stream
+        console.log('stream in user middleware', user.stream)
         next();
       }
     } else {

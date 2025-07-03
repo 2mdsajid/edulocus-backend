@@ -110,7 +110,7 @@ const formatDateForSyllabus = (date: Date): string => {
  * GET route to send today's schedule to the Telegram channel.
  * It dynamically fetches the schedule based on the current date from ChapterWiseSyllabus.
  */
-router.get('/send-todays-schedule', async (req: Request, res: Response) => {
+router.get('/send-todays-schedule-image', async (req: Request, res: Response) => {
     const today = new Date();
     const formattedToday = formatDateForSyllabus(today);
 
@@ -182,6 +182,67 @@ router.get('/send-todays-schedule', async (req: Request, res: Response) => {
             console.error('Failed to cleanup temporary image file:', cleanupError);
         }
     }
+});
+
+router.get('/send-todays-schedule', async (req: Request, res: Response) => {
+  const today = new Date();
+  const formattedToday = formatDateForSyllabus(today);
+
+  // Find today's schedule in the imported data
+  const todaysSyllabus = ChapterWiseSyllabus.find(
+      (chapterDay) => chapterDay.day === formattedToday
+  );
+
+  if (!todaysSyllabus) {
+      console.log(`No schedule found for today: ${formattedToday}`);
+      return res.status(404).json({
+          success: false,
+          message: `No schedule found for today (${formattedToday}).`
+      });
+  }
+
+  const scheduleTextParts: string[] = [];
+  scheduleTextParts.push(`*Today's Schedule (${today.toLocaleDateString('en-GB')})*\n`);
+
+  // Define the order of time slots
+  const timeSlots: Array<keyof TChapterWiseSyllabus[0]> = ["8am", "2pm", "6pm"];
+
+  // Populate scheduleTextParts based on today's syllabus
+  for (const timeSlot of timeSlots) {
+      const subjectsAtTime = todaysSyllabus[timeSlot];
+      if (subjectsAtTime && typeof subjectsAtTime !== 'string') {
+          const subjectsForTimeSlot: string[] = [];
+          for (const subject in subjectsAtTime) {
+              if (Object.prototype.hasOwnProperty.call(subjectsAtTime, subject)) {
+                  const chapters = subjectsAtTime[subject] as string[];
+                  const chapterString = chapters.join(', '); // Join multiple chapters with a comma and space
+                  subjectsForTimeSlot.push(
+                      `  *${subject.replace(/_/g, ' ')}*\n    ${chapterString.replace(/_/g, ' ')}`
+                  );
+              }
+          }
+          if (subjectsForTimeSlot.length > 0) {
+              scheduleTextParts.push(`*${timeSlot.toUpperCase()}*\n${subjectsForTimeSlot.join('\n')}\n`);
+          }
+      }
+  }
+
+  const finalMessage = scheduleTextParts.join('\n') +
+                       `\nHere is the schedule for today!\nDo join this chat for any discussions 👇\nhttps://t.me/+ygNs2o0PLXpjNDQ1`;
+
+  try {
+      // Send the generated text message to Telegram
+      // Using MarkdownV2 for bolding. Escaping might be needed for certain characters.
+      await bot.sendMessage(chatId, finalMessage, { parse_mode: 'Markdown' });
+
+      console.log(`Dynamic schedule text sent to Telegram channel ${chatId}`);
+      res.status(200).json({ success: true, message: 'Dynamic schedule text successfully sent to Telegram.' });
+
+  } catch (error) {
+      console.error('Failed to send dynamic schedule text message:', error);
+      res.status(500).json({ success: false, error: 'An error occurred while sending the message.' });
+  }
+  // No finally block needed for file cleanup since no image is generated
 });
 
 

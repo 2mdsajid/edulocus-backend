@@ -38,13 +38,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const cors_1 = __importDefault(require("cors"));
 const dotenv = __importStar(require("dotenv"));
 const express_1 = __importDefault(require("express"));
+const google_routes_1 = __importDefault(require("./google/google.routes"));
+const groups_routes_1 = __importDefault(require("./groups/groups.routes"));
+const mail_routes_1 = __importDefault(require("./mail/mail.routes"));
 const questions_routes_1 = __importDefault(require("./questions/questions.routes"));
+const telegram_routes_1 = __importDefault(require("./telegram/telegram.routes"));
 const tests_routes_1 = __importDefault(require("./tests/tests.routes"));
 const users_routes_1 = __importDefault(require("./users/users.routes"));
-const google_routes_1 = __importDefault(require("./google/google.routes"));
-const mail_routes_1 = __importDefault(require("./mail/mail.routes"));
-const groups_routes_1 = __importDefault(require("./groups/groups.routes"));
-const telegram_routes_1 = __importDefault(require("./telegram/telegram.routes"));
 dotenv.config();
 if (!process.env.PORT) {
     console.log("Please specify port number ");

@@ -10,7 +10,7 @@ import prisma from '../utils/prisma';
 import { capitalizeWords, formatDateForSyllabus, getStreams, getSubjectsAndMarks } from '../utils/functions';
 import { TStream } from '../utils/global-types';
 import { SYLLABUS } from '../utils/syllabus';
-import { custom, date } from 'zod';
+import { DateTime } from 'luxon'; // Import DateTime from luxon
 import { ChapterWiseSyllabus, TChapterWiseSyllabus } from '../utils/chap_syllabus';
 
 const router = express.Router();
@@ -458,7 +458,7 @@ router.get("/create-chapter-wise-test", async (request: Request, response: Respo
         const stream: TStream = 'UG'; // Assuming 'UG' as default stream
         const createdById = admin.id;
 
-        const limitPerChapter = 10; // Limit for questions per chapter
+        const limitPerChapter = 30; // Limit for questions per chapter
         const totalQuestionsLimit = 30; // Overall limit for each test
 
         // Format the date for the slug (YYYY-MM-DD)
@@ -586,28 +586,24 @@ router.get("/create-chapter-wise-test", async (request: Request, response: Respo
     }
 });
 
-
-// this willl fetch the current active test bassed on the client time and date
-router.get("/get-current-chapterwise-test/:dateandtime", async (request: Request, response: Response) => {
+// This will fetch the current active test based on the server's Nepal time and date
+router.get("/get-current-chapterwise-test/:datetime", async (request: Request, response: Response) => {
     try {
-        const { dateandtime } = request.params;
+        // Get current time in Nepal Standard Time (NST)
+        const nowInNepal = DateTime.now().setZone('Asia/Kathmandu');
 
-        if (!dateandtime) {
-            return response.status(400).json({ data: null, message: 'Date and time are required.' });
+        // Check if setting the time zone was successful
+        if (!nowInNepal.isValid) {
+            console.error("Error setting time zone to Asia/Kathmandu:", nowInNepal.invalidExplanation);
+            return response.status(500).json({ data: null, message: 'Could not determine Nepal time.' });
         }
 
-        const isoDateAndTime = new Date(dateandtime);
-
-        if (isNaN(isoDateAndTime.getTime())) {
-            return response.status(400).json({ data: null, message: 'Invalid date and time format.' });
-        }
-
-        const year = isoDateAndTime.getFullYear();
-        const month = String(isoDateAndTime.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
-        const day = String(isoDateAndTime.getDate()).padStart(2, '0');
+        const year = nowInNepal.year;
+        const month = String(nowInNepal.month).padStart(2, '0');
+        const day = String(nowInNepal.day).padStart(2, '0');
         let timeSlot = '';
 
-        const hour = isoDateAndTime.getHours();
+        const hour = nowInNepal.hour; // This will be the hour in Nepal time
 
         if (hour >= 6 && hour < 14) {
             timeSlot = '8am';
@@ -616,18 +612,23 @@ router.get("/get-current-chapterwise-test/:dateandtime", async (request: Request
         } else if (hour >= 18) {
             timeSlot = '6pm';
         } else {
-            timeSlot = '12am'; // Default to 8am if the time is before 6 AM
+            // If the time is before 6 AM, you might want to consider what schedule applies.
+            // Current logic defaults to '12am' (which seems to be a placeholder for 8am),
+            // but consider if tests truly start at 12 AM or if this is for the next day's first slot.
+            // For now, retaining original logic's '12am' slot (implying the 8am range for the current day)
+            // Or you might want to return a "no test found" for early morning.
+            timeSlot = '12am'; // Or handle as "no active test yet for today"
         }
 
         const slug = `cws-${year}-${month}-${day}-${timeSlot}`;
-        console.log('slug in route from fe',slug)
+        console.log('slug generated on server (Nepal time):', slug);
 
-        const customTest = await TestsServices.getCustomTestBySlugAndStream(slug,'UG')
+        const customTest = await TestsServices.getCustomTestBySlugAndStream(slug, 'UG');
         if (!customTest) {
-            return response.status(404).json({ data: null, message: 'No test found for the given date and time.' });
+            return response.status(404).json({ data: null, message: 'No test found for the given date and time on the server.' });
         }
 
-        return response.status(200).json({ data: customTest, message: 'Test found successfully.' });
+        return response.status(200).json({ data: customTest, message: 'Test found successfully based on Nepal time.' });
 
     } catch (error: any) {
         console.error("Error getting current chapter-wise test:", error);
@@ -861,18 +862,24 @@ router.get("/get-single-test/:id", async (request: Request, response: Response) 
 });
 
 
-router.get("/get-single-test-for-edit/:id",checkModerator, async (request: Request, response: Response) => {
+router.get("/get-single-test-for-edit/:id", checkModerator, async (request: Request, response: Response) => {
     try {
-        const { id } = request.params
+        console.log("Fetching test for edit with id:", request.params.id);
+        const { id } = request.params;
+        console.log("Extracted id from params:", id);
 
         const newCustomTest = await TestsServices.getCustomTestById(id);
+        console.log("Test service returned:", newCustomTest);
+
         if (!newCustomTest) {
-            return response.status(404).json({ data: null, message: "Custom test metadata not found" })
+            console.log("Test not found");
+            return response.status(404).json({ data: null, message: "Custom test metadata not found" });
         }
 
-        return response.status(201).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
+        console.log("Test found, returning data");
+        return response.status(200).json({ data: newCustomTest, message: `${newCustomTest.name} test found` });
     } catch (error: any) {
-        console.log(error)
+        console.error("Error getting test for edit:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });
     }
 });

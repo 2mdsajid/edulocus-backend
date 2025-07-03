@@ -32,8 +32,10 @@ const getSubscribedUserId = (req, res, next) => __awaiter(void 0, void 0, void 0
             const user = yield (0, users_services_1.getUserById)(userFromJWT.id);
             if (user) {
                 req.user = user;
+                console.log('user', user);
                 req.mode = user.isSubscribed ? 'USER' : 'PUBLIC';
                 req.stream = user.stream;
+                console.log('stream in user middleware', user.stream);
                 next();
             }
         }

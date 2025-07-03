@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun --hot src/index.ts",
-    "start": "npx prisma migrate && npx prisma db push && npx prisma generate && node dist/index.js",
+    "start": "bun puppeteer browsers install chromium@latest && npx prisma migrate && npx prisma db push && npx prisma generate && node dist/index.js",
     "build": "tsc",
     "seed": "bun scripts/seed.ts",
     "update": "bun run scripts/upload.ts",
@@ -17,12 +17,14 @@
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "@prisma/client": "^5.20.0",
+    "@types/luxon": "^3.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
+    "luxon": "^3.6.1",
     "node-html-to-image": "^5.0.0",
     "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^6.10.0",
