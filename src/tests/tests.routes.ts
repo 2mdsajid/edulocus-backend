@@ -11,7 +11,7 @@ import { capitalizeWords, formatDateForSyllabus, getStreams, getSubjectsAndMarks
 import { TStream } from '../utils/global-types';
 import { SYLLABUS } from '../utils/syllabus';
 import { DateTime } from 'luxon'; // Import DateTime from luxon
-import { ChapterWiseSyllabus, TChapterWiseSyllabus } from '../utils/chap_syllabus';
+import { ChapterWiseSyllabus, ChapterWiseSyllabusOriginal, TChapterWiseSyllabus } from '../utils/chap_syllabus';
 
 const router = express.Router();
 
@@ -590,7 +590,7 @@ router.get("/create-chapter-wise-test", async (request: Request, response: Respo
 // this will send the chapter wise series syllabus to frontend
 router.get("/get-daily-schedule", async (request: Request, response: Response) => {
     try {
-        return response.status(200).json({ data: ChapterWiseSyllabus, message: 'Daily schedule fetched successfully.' });
+        return response.status(200).json({ data: ChapterWiseSyllabusOriginal, message: 'Daily schedule fetched successfully.' });
     } catch (error: any) {
         console.error("Error getting daily schedule:", error);
         return response.status(500).json({ data: null, message: 'Internal Server Error' });

@@ -507,7 +507,7 @@ router.get("/create-chapter-wise-test", (request, response) => __awaiter(void 0,
 // this will send the chapter wise series syllabus to frontend
 router.get("/get-daily-schedule", (request, response) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        return response.status(200).json({ data: chap_syllabus_1.ChapterWiseSyllabus, message: 'Daily schedule fetched successfully.' });
+        return response.status(200).json({ data: chap_syllabus_1.ChapterWiseSyllabusOriginal, message: 'Daily schedule fetched successfully.' });
     }
     catch (error) {
         console.error("Error getting daily schedule:", error);

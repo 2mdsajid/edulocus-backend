@@ -295,7 +295,7 @@ router.post('/register-chapterwise-test', async (request: Request, response: Res
     try {
         const { name, email, phone, message } = request.body;
 
-        if (!name || !email || !phone || !message) {
+        if (!name || !email || !phone ) {
             return response.status(400).json({ data: null, message: 'Please provide all the required fields' });
         }
 
