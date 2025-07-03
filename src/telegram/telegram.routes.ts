@@ -1,18 +1,15 @@
-import express, { Router, Request, Response } from 'express';
+import { Request, Response, Router } from 'express';
 import TelegramBot from 'node-telegram-bot-api';
-import puppeteer from 'puppeteer'; // Import puppeteer directly for PDF generation
-import nodeHtmlToImage from 'node-html-to-image';
-import fs from 'fs/promises'; // Used for deleting the temporary file
-import path from 'path'; // Used for creating a reliable file path
+
+
+import * as TestServices from '../tests/tests.services';
 import { ChapterWiseSyllabus, TChapterWiseSyllabus } from '../utils/chap_syllabus';
-import * as TestServices from '../tests/tests.services'
-import { TTestArchiveResult } from '../tests/tests.schema';
 
 interface ScheduleData {
   title?: string;
   caption?: string;
-  headers: string[];
-  rows: string[][];
+  headers: string[]; // Not directly used for Markdown output, but kept for consistency if needed elsewhere
+  rows: string[][]; // Not directly used for Markdown output, but kept for consistency if needed elsewhere
 }
 
 const router: Router = Router();
@@ -25,71 +22,6 @@ if (!token) {
 const chatId = '@edulocus_test';
 
 const bot = new TelegramBot(token);
-
-const generateScheduleHtml = (scheduleData: ScheduleData): string => {
-  const { title, headers, rows } = scheduleData;
-
-  const ths = headers.map(header => `<th>${header}</th>`).join('');
-
-  const trs = rows.map(row => {
-    const tds = row.map(cell => `<td>${cell}</td>`).join('');
-    return `<tr>${tds}</tr>`;
-  }).join('');
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          width: 500px;
-          padding: 15px;
-          background-color: #f8f9fa;
-        }
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        h2 {
-          text-align: center;
-          color: #333;
-        }
-        th, td { 
-          border: 1px solid #dee2e6; 
-          padding: 12px; 
-          text-align: left; 
-        }
-        th { 
-          background-color: #343a40;
-          color: white;
-        }
-        tr:nth-child(even) { 
-          background-color: #f2f2f2; 
-        }
-        tr:hover { 
-          background-color: #e9ecef; 
-        }
-      </style>
-    </head>
-    <body>
-      ${title ? `<h2>${title}</h2>` : ''}
-      <table>
-        <thead>
-          <tr>${ths}</tr>
-        </thead>
-        <tbody>
-          ${trs}
-        </tbody>
-      </table>
-    </body>
-    </html>
-  `;
-};
-
 
 /**
  * Formats a Date object into a string like "july_6" or "august_15".
@@ -108,82 +40,8 @@ const formatDateForSyllabus = (date: Date): string => {
 
 /**
  * GET route to send today's schedule to the Telegram channel.
- * It dynamically fetches the schedule based on the current date from ChapterWiseSyllabus.
+ * This version sends a plain text message formatted with Markdown.
  */
-router.get('/send-todays-schedule-image', async (req: Request, res: Response) => {
-    const today = new Date();
-    const formattedToday = formatDateForSyllabus(today);
-
-    // Find today's schedule in the imported data
-    const todaysSyllabus = ChapterWiseSyllabus.find(
-        (chapterDay) => chapterDay.day === formattedToday
-    );
-
-    if (!todaysSyllabus) {
-        console.log(`No schedule found for today: ${formattedToday}`);
-        return res.status(404).json({
-            success: false,
-            message: `No schedule found for today (${formattedToday}).`
-        });
-    }
-
-    const scheduleRows: string[][] = [];
-
-    // Define the order of time slots
-    const timeSlots: Array<keyof TChapterWiseSyllabus[0]> = ["8am", "2pm", "6pm"];
-
-    // Populate scheduleRows based on today's syllabus
-    for (const timeSlot of timeSlots) {
-        const subjectsAtTime = todaysSyllabus[timeSlot];
-        if (subjectsAtTime && typeof subjectsAtTime !== 'string') {
-            for (const subject in subjectsAtTime) {
-                if (Object.prototype.hasOwnProperty.call(subjectsAtTime, subject)) {
-                    const chapters = subjectsAtTime[subject] as string[];
-                    // Join multiple chapters with a comma and space
-                    const chapterString = chapters.join(', ');
-                    scheduleRows.push([timeSlot.toUpperCase(), subject.replace(/_/g, ' '), chapterString.replace(/_/g, ' ')]);
-                }
-            }
-        }
-    }
-
-    const scheduleData: ScheduleData = {
-        title: `Today's Schedule (${today.toLocaleDateString('en-GB')})`,
-        caption: `Here is the schedule for today!\nDo join this chat for any discussions 👇\nhttps://t.me/+ygNs2o0PLXpjNDQ1`,
-        headers: ["Time", "Subject", "Chapter"],
-        rows: scheduleRows
-    };
-
-    const outputPath = path.join(__dirname, 'todays_schedule.png');
-
-    try {
-        const html = generateScheduleHtml(scheduleData);
-        // Generate image from HTML
-        await nodeHtmlToImage({
-            output: outputPath,
-            html,
-            puppeteerArgs: { args: ['--no-sandbox'] } // Required for running in some environments
-        });
-
-        // Send the generated image to Telegram
-        await bot.sendPhoto(chatId, outputPath, { caption: scheduleData.caption });
-
-        console.log(`Dynamic schedule image sent to Telegram channel ${chatId}`);
-        res.status(200).json({ success: true, message: 'Dynamic schedule image successfully sent to Telegram.' });
-
-    } catch (error) {
-        console.error('Failed to send dynamic schedule image:', error);
-        res.status(500).json({ success: false, error: 'An error occurred while generating or sending the image.' });
-    } finally {
-        // Clean up the created temporary image file
-        try {
-            await fs.unlink(outputPath);
-        } catch (cleanupError) {
-            console.error('Failed to cleanup temporary image file:', cleanupError);
-        }
-    }
-});
-
 router.get('/send-todays-schedule', async (req: Request, res: Response) => {
   const today = new Date();
   const formattedToday = formatDateForSyllabus(today);
@@ -202,6 +60,7 @@ router.get('/send-todays-schedule', async (req: Request, res: Response) => {
   }
 
   const scheduleTextParts: string[] = [];
+  // Title for the schedule message
   scheduleTextParts.push(`*Today's Schedule (${today.toLocaleDateString('en-GB')})*\n`);
 
   // Define the order of time slots
@@ -216,23 +75,25 @@ router.get('/send-todays-schedule', async (req: Request, res: Response) => {
               if (Object.prototype.hasOwnProperty.call(subjectsAtTime, subject)) {
                   const chapters = subjectsAtTime[subject] as string[];
                   const chapterString = chapters.join(', '); // Join multiple chapters with a comma and space
+                  // Format:   *Subject Name* \n     Chapter 1, Chapter 2
                   subjectsForTimeSlot.push(
                       `  *${subject.replace(/_/g, ' ')}*\n    ${chapterString.replace(/_/g, ' ')}`
                   );
               }
           }
           if (subjectsForTimeSlot.length > 0) {
+              // Format: *TIME_SLOT*\n (subjects list)
               scheduleTextParts.push(`*${timeSlot.toUpperCase()}*\n${subjectsForTimeSlot.join('\n')}\n`);
           }
       }
   }
 
+  // Combine all parts and add the caption
   const finalMessage = scheduleTextParts.join('\n') +
                        `\nHere is the schedule for today!\nDo join this chat for any discussions 👇\nhttps://t.me/+ygNs2o0PLXpjNDQ1`;
 
   try {
-      // Send the generated text message to Telegram
-      // Using MarkdownV2 for bolding. Escaping might be needed for certain characters.
+      // Send the generated text message to Telegram using Markdown parse mode
       await bot.sendMessage(chatId, finalMessage, { parse_mode: 'Markdown' });
 
       console.log(`Dynamic schedule text sent to Telegram channel ${chatId}`);
@@ -242,38 +103,10 @@ router.get('/send-todays-schedule', async (req: Request, res: Response) => {
       console.error('Failed to send dynamic schedule text message:', error);
       res.status(500).json({ success: false, error: 'An error occurred while sending the message.' });
   }
-  // No finally block needed for file cleanup since no image is generated
 });
 
 
-// Mock TestServices for demonstration
-// const TestServices = {
-//   archiveCustomTestBySlug: async (slug: string, stream: string): Promise<TTestArchiveResult | null> => {
-//       console.log(`Mock: Archiving test with slug: ${slug} for stream: ${stream}`);
-//       // Simulate finding and archiving a test
-//       if (slug.includes('cws-2025-07-03-8am')) { // Example slug for a successful archive
-//           return {
-//               name: "Chapter Wise Series (8AM) - Reproductive System",
-//               id: "test_id_8am",
-//               slug: slug,
-//               usersAttended: [
-//                   { id: "user1", customTestId: "test_id_8am", username: "Alice", totalScore: 95 },
-//                   { id: "user2", customTestId: "test_id_8am", username: "Bob", totalScore: 88 },
-//                   { id: "user3", customTestId: "test_id_8am", username: "Charlie", totalScore: 72 },
-//                   { id: "user4", customTestId: "test_id_8am", username: "David", totalScore: 95 },
-//                   { id: "user5", customTestId: "test_id_8am", username: "Eve", totalScore: 60 },
-//               ]
-//           };
-//       }
-//       return null; // Simulate test not found or already archived
-//   }
-// };
-
-
 router.get("/deactivate-chapterwise/:slug", async (req: Request, res: Response) => {
-  const outputPath = path.join(__dirname, 'leaderboard.pdf'); // Change extension to .pdf
-  let browser; // Declare browser outside try block for finally access
-
   try {
       const { slug } = req.params;
       if (!slug) {
@@ -297,60 +130,74 @@ router.get("/deactivate-chapterwise/:slug", async (req: Request, res: Response) 
           return res.status(404).json({ data: null, message: 'Test not found or already archived.' });
       }
 
-      const leaderboardData: ScheduleData = {
-          title: `Leaderboard - ${archivedTestResult.name} (${today.toLocaleDateString('en-GB')})`,
-          headers: ["Rank", "Username", "Score"],
-          rows: []
-      };
+      const leaderboardTextParts: string[] = [];
+      // Title for the leaderboard message
+      leaderboardTextParts.push(`*Leaderboard - ${archivedTestResult.name} (${today.toLocaleDateString('en-GB')})*\n`);
 
       if (archivedTestResult.usersAttended.length > 0) {
           const sortedUsers = [...archivedTestResult.usersAttended].sort((a, b) => b.totalScore - a.totalScore);
 
+          // Calculate max widths for each column for formatting
+          let maxRankWidth = 'Rank'.length;
+          let maxUsernameWidth = 'Username'.length;
+          let maxScoreWidth = 'Score'.length;
+
           sortedUsers.forEach((user, index) => {
-              leaderboardData.rows.push([
-                  (index + 1).toString(),
-                  user.username,
-                  user.totalScore.toString()
-              ]);
+              maxRankWidth = Math.max(maxRankWidth, (index + 1).toString().length);
+              maxUsernameWidth = Math.max(maxUsernameWidth, user.username.length);
+              maxScoreWidth = Math.max(maxScoreWidth, user.totalScore.toString().length);
           });
+
+          // Add a little extra padding for readability
+          maxRankWidth += 1;
+          maxUsernameWidth += 2;
+          maxScoreWidth += 1;
+
+          // Start the fixed-width code block
+          leaderboardTextParts.push('```'); // Markdown for code block start
+
+          // Header row
+          leaderboardTextParts.push(
+              `${'Rank'.padEnd(maxRankWidth)}| ` +
+              `${'Username'.padEnd(maxUsernameWidth)}| ` +
+              `${'Score'.padEnd(maxScoreWidth)}`
+          );
+
+          // Separator row
+          leaderboardTextParts.push(
+              `${'-'.repeat(maxRankWidth)}|` +
+              `${'-'.repeat(maxUsernameWidth + 1)}|` + // +1 for the space after '|'
+              `${'-'.repeat(maxScoreWidth)}`
+          );
+
+          // Data rows
+          sortedUsers.forEach((user, index) => {
+              leaderboardTextParts.push(
+                  `${(index + 1).toString().padEnd(maxRankWidth)}| ` +
+                  `${user.username.padEnd(maxUsernameWidth)}| ` +
+                  `${user.totalScore.toString().padEnd(maxScoreWidth)}`
+              );
+          });
+
+          leaderboardTextParts.push('```'); // Markdown for code block end
+
       } else {
-          leaderboardData.rows.push(["-", "No participants yet", "-"]);
+          leaderboardTextParts.push(`_No participants yet for this test._`);
       }
 
-      const html = generateScheduleHtml(leaderboardData);
+      const finalLeaderboardMessage = leaderboardTextParts.join('\n');
 
-      // Use puppeteer to generate PDF
-      browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' }); // Wait for network to be idle
-      await page.pdf({
-          path: outputPath,
-          format: 'A4',
-          printBackground: true, // Ensure background colors/images are printed
-          margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' }
-      });
+      // Send the generated Markdown text message to Telegram
+      await bot.sendMessage(chatId, finalLeaderboardMessage, { parse_mode: 'Markdown' });
 
-      // Send the generated PDF to Telegram
-      await bot.sendDocument(chatId, outputPath, { caption: `Leaderboard for ${archivedTestResult.name}` });
-
-      console.log(`Leaderboard PDF sent to Telegram channel ${chatId}`);
-      return res.status(200).json({ data: archivedTestResult, message: 'Test archived and leaderboard PDF sent successfully.' });
+      console.log(`Leaderboard text sent to Telegram channel ${chatId}`);
+      return res.status(200).json({ data: archivedTestResult, message: 'Test archived and leaderboard text sent successfully.' });
 
   } catch (error: any) {
       console.error("Error deactivating chapter-wise test or sending leaderboard:", error);
       return res.status(500).json({ data: null, message: 'Internal Server Error' });
-  } finally {
-      if (browser) {
-          await browser.close(); // Close the browser instance
-      }
-      try {
-          await fs.unlink(outputPath); // Clean up the created PDF file
-      } catch (cleanupError) {
-          console.error('Failed to cleanup temporary PDF file:', cleanupError);
-      }
   }
 });
-
 
 
 export default router;

@@ -5,6 +5,62 @@ exports.ChapterWiseSyllabus = [
     {
         "day": "july_3",
         "8am": {
+            "mat": [
+                "sentence_correction",
+                "simple_interest"
+            ]
+        },
+        "2pm": {
+            "zoology": [
+                "porifera"
+            ]
+        },
+        "6pm": {
+            "botany": [
+                "photosynthesis"
+            ]
+        }
+    },
+    {
+        "day": "july_4",
+        "8am": {
+            "mat": [
+                "arithmetic_reasoning",
+                "selecting_words"
+            ]
+        },
+        "2pm": {
+            "zoology": [
+                "origin_and_evolution_of_life"
+            ]
+        },
+        "6pm": {
+            "botany": [
+                "plant_diversity"
+            ]
+        }
+    },
+    {
+        "day": "july_5",
+        "8am": {
+            "zoology": [
+                "reproductive_system"
+            ]
+        },
+        "2pm": {
+            "botany": [
+                "morphology_of_angiosperm"
+            ]
+        },
+        "6pm": {
+            "physics": [
+                "thermodynamics"
+            ]
+        }
+    },
+    {
+        "day": "july_6",
+        "8am": {
             "zoology": [
                 "reproductive_system"
             ]
