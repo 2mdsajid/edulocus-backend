@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
-import { sendEmail } from './mail.services';
+import { getChapterWiseSubscribedEmails, sendChapterWiseTestSeriesMail, sendEmail } from './mail.services';
+import { TSendEmailSchema } from './mail.schema';
+import * as TestServices from '../tests/tests.services'
 const router = express.Router();
 
 router.post('/send-mail', async (request: Request, response: Response) => {
@@ -12,4 +14,114 @@ router.post('/send-mail', async (request: Request, response: Response) => {
     }
 })
 
+
+router.get("/send-todays-tests-email", async (req: Request, res: Response) => {
+    try {
+        // 1. Get today's date and find the tests
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const formattedDateForSlug = `${year}-${month}-${day}`;
+        const FRONTEND_URL = process.env.FRONTEND || 'http://localhost:3000';
+
+        const timeSlots = ['8am', '2pm', '6pm'];
+        const testPromises = timeSlots.map(async (slug) => {
+            const generatedSlug = `cws-${formattedDateForSlug}-${slug}`;
+            const test = await TestServices.getChapterWiseTestBySlugAndStream(generatedSlug, 'UG');
+            if (test) {
+                return {
+                    time: slug.toUpperCase(),
+                    name: test.name,
+                    url: `${FRONTEND_URL}/tests/view/${test.id}`,
+                };
+            }
+            return null;
+        });
+
+        const testResults = (await Promise.all(testPromises)).filter(result => result !== null);
+
+        if (testResults.length === 0) {
+            const message = `No chapter-wise tests found for today's schedule (${formattedDateForSlug}).`;
+            console.log(message);
+            return res.status(404).json({ data: null, message });
+        }
+
+        // 2. Get the list of subscribed user emails
+        const subscribedEmails = await getChapterWiseSubscribedEmails();
+        if (!subscribedEmails || subscribedEmails.length === 0) {
+            const message = "No subscribed users found to send the email to.";
+            console.log(message);
+            return res.status(404).json({ data: null, message });
+        }
+
+        // 3. Construct the main part of the HTML email body
+        const mainHtmlBody = `
+            <h2>Today's Chapter-wise Test Schedule</h2>
+            <p><strong>Date:</strong> ${today.toLocaleDateString('en-GB')}</p>
+            <p>Hello! Here is the schedule for today's free chapter-wise tests. Click the links below to start the test at the scheduled time.</p>
+            <hr>
+            ${testResults.map(test => `
+                <div style="margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 5px;">${test.time} - ${test.name}</h3>
+                    <a href="${test.url}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 5px;">
+                        Go to Test
+                    </a>
+                </div>
+            `).join('<hr>')}
+            <p>Good luck!</p>
+        `;
+
+        // 4. Iterate and send email to each user individually
+        const emailPromises = subscribedEmails.map(email => {
+            // Construct the personalized footer for each email
+            const footerHtml = `
+                <hr>
+                <div style="font-size: 12px; color: #777; text-align: center; margin-top: 20px;">
+                    <p>
+                        For more information about this test series, <a href="${FRONTEND_URL}/tests/chapterwise-series/info">click here</a>.
+                    </p>
+                    <p>
+                        <a href="${FRONTEND_URL}/privacy">Privacy Policy</a> | <a href="${FRONTEND_URL}/unsubscribe?email=${encodeURIComponent(email)}">Unsubscribe</a>
+                    </p>
+                </div>
+            `;
+
+            const fullHtmlBody = `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    ${mainHtmlBody}
+                    ${footerHtml}
+                </div>
+            `;
+
+            const mailData: TSendEmailSchema = {
+                to: email,
+                subject: `Today's Test Link - ${today.toLocaleDateString('en-GB')}`,
+                html: fullHtmlBody,
+            };
+
+            return sendChapterWiseTestSeriesMail(mailData);
+        });
+
+        const results = await Promise.allSettled(emailPromises);
+        
+        const successfulSends = results.filter(r => r.status === 'fulfilled' && r.value).length;
+        const failedSends = results.length - successfulSends;
+
+        const responseMessage = `Processing complete. Successfully sent ${successfulSends} emails. Failed to send ${failedSends} emails.`;
+        console.log(responseMessage);
+
+        return res.status(200).json({
+            data: {
+                successfulSends,
+                failedSends,
+            },
+            message: responseMessage,
+        });
+
+    } catch (error: any) {
+        console.error("Error in /send-todays-tests-email route:", error);
+        return res.status(500).json({ data: null, message: 'An internal server error occurred.' });
+    }
+});
 export default router

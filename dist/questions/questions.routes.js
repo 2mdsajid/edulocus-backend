@@ -161,6 +161,7 @@ router.get('/get-total-questions-per-subject', middleware_1.checkStreamMiddlewar
         if (!stream || !(0, functions_1.getStreams)().includes(stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
         }
+        // console.log('stream in route',request.stream)
         const allSubjectsAndChaptersWithCounts = yield QuestionServices.getTotalQuestionsPerSubject(stream);
         if (!allSubjectsAndChaptersWithCounts) {
             return response.status(500).json({ data: [], message: 'No Questions Found' });
@@ -177,6 +178,7 @@ router.get('/get-total-questions-per-subject-and-chapter', middleware_1.checkStr
         if (!request.stream || !(0, functions_1.getStreams)().includes(request.stream)) {
             return response.status(400).json({ data: null, message: 'Invalid Stream' });
         }
+        // console.log('stream in route',request.stream)
         const totalQuestionsPerSubject = yield QuestionServices.getTotalQuestionsPerSubjectAndChapter(request.stream);
         if (!totalQuestionsPerSubject) {
             return response.status(500).json({ data: null, message: 'No Questions Found' });

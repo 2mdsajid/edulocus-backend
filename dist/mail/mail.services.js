@@ -31,9 +31,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendEmail = void 0;
+exports.sendChapterWiseTestSeriesMail = exports.sendEmail = exports.getChapterWiseSubscribedEmails = void 0;
 const nodemailer = __importStar(require("nodemailer"));
+const prisma_1 = __importDefault(require("../utils/prisma"));
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT),
@@ -43,6 +47,17 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS,
     },
 });
+const getChapterWiseSubscribedEmails = () => __awaiter(void 0, void 0, void 0, function* () {
+    const subscriptions = yield prisma_1.default.chapterwiseRegistration.findMany({
+        select: {
+            email: true
+        }
+    });
+    if (!subscriptions)
+        return null;
+    return subscriptions.map(c => c.email);
+});
+exports.getChapterWiseSubscribedEmails = getChapterWiseSubscribedEmails;
 const sendEmail = (sendMailData) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { to, subject, html } = sendMailData;
@@ -63,3 +78,23 @@ const sendEmail = (sendMailData) => __awaiter(void 0, void 0, void 0, function* 
     }
 });
 exports.sendEmail = sendEmail;
+const sendChapterWiseTestSeriesMail = (sendMailData) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { to, subject, html } = sendMailData;
+        const mailOptions = {
+            from: process.env.SMTP_USER,
+            to,
+            subject,
+            html,
+        };
+        const info = yield transporter.sendMail(mailOptions);
+        if (!info)
+            return null;
+        return info;
+    }
+    catch (error) {
+        console.log("🚀 ~ sendEmail ~ error:", error);
+        return null;
+    }
+});
+exports.sendChapterWiseTestSeriesMail = sendChapterWiseTestSeriesMail;

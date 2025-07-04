@@ -483,6 +483,37 @@ export const archiveCustomTestBySlug = async (slug: string, stream: TStream):Pro
 };
 
 
+export const getChapterWiseTestBySlugAndStream = async (slug: string, stream: TStream):Promise< TBaseCustomTest | null>=> {
+    try {
+        // Find the custom test by slug and stream to get its ID
+        const customTest = await prisma.customTest.findFirst({
+            where: {
+                stream: stream,
+                slug: slug,
+                type: "CHAPTER_WISE",
+            },
+            select: { // selecting userscore after archiving
+                name: true,
+                id: true,
+                date: true,
+                archive: true,
+                createdBy: { select: { name: true } },
+                questions: true,
+                pastPaper: true
+            },
+        });
+
+        if (!customTest) {
+            return null;
+        }
+        return customTest;
+    } catch (error) {
+        console.error("Error archiving custom test:", error);
+        return null;
+    }
+};
+
+
 
 export const getDailyTestsBySlug = async (slug: string): Promise<TBaseCustomTest[] | null> => {
     const customTests = await prisma.customTest.findMany({
