@@ -117,15 +117,48 @@ const checkModerator = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
 });
 exports.checkModerator = checkModerator;
 const checkStreamMiddleware = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const stream = req.headers.stream;
-    // Handle case where stream could be string or string[]
-    const streamValue = Array.isArray(stream) ? stream[0] : stream;
-    const streamInUpperCase = streamValue === null || streamValue === void 0 ? void 0 : streamValue.toUpperCase();
-    const streams = (0, functions_1.getStreams)();
-    if (!streamValue || !streams.includes(streamInUpperCase)) {
-        return res.status(401).json({ message: "Stream Not Specified" });
+    try {
+        const bearer = req.headers.authorization;
+        const token = bearer ? bearer.split(" ")[1] : null;
+        let user = null;
+        let streamFromHeader = null;
+        if (token) {
+            const secretkey = process.env.SECRET_KEY_FOR_AUTH;
+            try {
+                const userFromJWT = jsonwebtoken_1.default.verify(token, secretkey);
+                user = (yield (0, users_services_1.getUserById)(userFromJWT.id));
+            }
+            catch (jwtError) {
+                // If JWT is invalid, consider them not logged in and proceed to check header
+            }
+        }
+        if (user) {
+            // User is logged in, set user and prioritize their stream
+            req.user = user;
+            req.stream = user.stream; // Assuming user object has a 'stream' property
+        }
+        else {
+            // User is not logged in or JWT was invalid, check stream from header
+            const stream = req.headers.stream;
+            // Handle case where stream could be string or string[]
+            const streamValue = Array.isArray(stream) ? stream[0] : stream;
+            streamFromHeader = streamValue === null || streamValue === void 0 ? void 0 : streamValue.toUpperCase();
+            const validStreams = (0, functions_1.getStreams)(); // Get your list of valid streams
+            if (!streamFromHeader || !validStreams.includes(streamFromHeader)) {
+                return res.status(401).json({ message: "Stream Not Specified or Invalid" });
+            }
+            req.stream = streamFromHeader;
+        }
+        // If neither user session nor header provided a valid stream (shouldn't happen with the above logic,
+        // but good for explicit safety), or if stream isn't set for some reason.
+        if (!req.stream) {
+            return res.status(401).json({ message: "Stream information missing." });
+        }
+        next();
     }
-    req.stream = streamInUpperCase;
-    next();
+    catch (error) {
+        console.error("checkStreamMiddleware: Error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 exports.checkStreamMiddleware = checkStreamMiddleware;
