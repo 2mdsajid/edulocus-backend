@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.deleteTestById = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getChapterWiseTestBySlugAndStream = exports.archiveCustomTestBySlug = exports.getTestBasicScores = exports.getCustomTestBySlugAndStream = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.findCustomTestBySlug = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
+exports.getDashboardAnalytics = exports.saveUserScore = exports.createTestAnalytic = exports.getTypesOfTests = exports.getAllTestsCreatedByUser = exports.getAllTests = exports.getAllTestsByType = exports.archiveTestBySlugAndStream = exports.deleteTestById = exports.archiveTestById = exports.getCustomTestMetadata = exports.getDailyTestsBySlug = exports.getChapterWiseTestBySlugAndStream = exports.activateCustomTestBySlug = exports.archiveCustomTestBySlug = exports.getTestBasicScores = exports.getCustomTestBySlugAndStream = exports.getCustomTestById = exports.checkTestValidity = exports.isTestLocked = exports.isDailyTestSlugExist = exports.findCustomTestBySlug = exports.createChapterWiseCustomTestByUser = exports.createSubjectWiseCustomTestByUser = exports.createPastTest = exports.updateTestQuestions = exports.addTestToGroup = exports.createTestCodes = exports.createCustomTest = void 0;
 const questions_services_1 = require("../questions/questions.services");
 const global_data_1 = require("../utils/global-data");
 const prisma_1 = __importDefault(require("../utils/prisma"));
@@ -429,6 +429,7 @@ const archiveCustomTestBySlug = (slug, stream) => __awaiter(void 0, void 0, void
             },
             select: {
                 id: true,
+                archive: true,
             },
         });
         if (!customTest) {
@@ -457,6 +458,45 @@ const archiveCustomTestBySlug = (slug, stream) => __awaiter(void 0, void 0, void
     }
 });
 exports.archiveCustomTestBySlug = archiveCustomTestBySlug;
+const activateCustomTestBySlug = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Find the custom test by slug and stream to get its ID
+        const customTest = yield prisma_1.default.customTest.findFirst({
+            where: {
+                stream: stream,
+                slug: slug,
+                type: "CHAPTER_WISE",
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (!customTest) {
+            return null;
+        }
+        // Update the custom test by ID
+        const updatedTest = yield prisma_1.default.customTest.update({
+            where: {
+                id: customTest.id,
+            },
+            data: {
+                archive: false,
+            },
+            select: {
+                name: true,
+                id: true,
+                slug: true,
+                usersAttended: true,
+            },
+        });
+        return updatedTest;
+    }
+    catch (error) {
+        console.error("Error archiving custom test:", error);
+        return null;
+    }
+});
+exports.activateCustomTestBySlug = activateCustomTestBySlug;
 const getChapterWiseTestBySlugAndStream = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // Find the custom test by slug and stream to get its ID

@@ -208,7 +208,7 @@ router.get("/send-daily-schedule-combined", async (req: Request, res: Response) 
         const timeSlots = ['8am', '2pm', '6pm'];
         const today = new Date();
         const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const month = String(today.getMonth()+1).padStart(2, '0');
         const day = String(today.getDate()+1).padStart(2, '0');
 
         const messageParts: string[] = [`*Free Chapterwise Series* - ${year}-${month}-${day}`];
@@ -217,6 +217,84 @@ router.get("/send-daily-schedule-combined", async (req: Request, res: Response) 
         // Process all time slots concurrently
         const testPromises = timeSlots.map(async (slug) => {
             const generatedSlug = `cws-${year}-${month}-${day}-${slug}`;
+            console.log(generatedSlug)
+            const test = await TestServices.getChapterWiseTestBySlugAndStream(generatedSlug, 'UG');
+            
+            if (test) {
+                const testViewUrl = `${process.env.FRONTEND}/tests/view/${test.id}`;
+                return {
+                    slug,
+                    name: test.name,
+                    url: testViewUrl,
+                    id: test.id
+                };
+            }
+            return null;
+        });
+
+        const results = await Promise.all(testPromises);
+
+        let testsFound = 0;
+        results.forEach(result => {
+            if (result) {
+                // Add a blank line before each test entry for better spacing
+                messageParts.push(
+                    ``, 
+                    `${result.slug}`,
+                     `${result.name}`,
+                    result.url
+                );
+                processedTests.push({ testId: result.id, url: result.url });
+                testsFound++;
+            }
+        });
+
+        if (testsFound === 0) {
+            console.log("No chapter-wise tests found for today's schedule.");
+            return res.status(404).json({ data: null, message: 'No tests found for any time slot today.' });
+        }
+
+        const telegramMessage = messageParts.join('\n');
+
+        await bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
+
+        console.log(`Consolidated daily schedule sent to Telegram channel ${testChatId}`);
+        
+        return res.status(200).json({
+            data: processedTests,
+            message: 'Daily schedule notification sent successfully.'
+        });
+
+    } catch (error: any) {
+        console.error("Error in /send-daily-schedule route:", error);
+        return res.status(500).json({ data: null, message: 'An internal server error occurred.' });
+    }
+});
+
+
+
+// will send all the tests in combined way -- send at morning 
+// combined and archived so can be activated later onn when the time comes
+router.get("/send-daily-schedule-combined-for-test", async (req: Request, res: Response) => {
+    try {
+        if (!testChatId) {
+            console.error("Error: TELEGRAM_CHAT_ID is not defined in environment variables.");
+            return res.status(500).json({ data: null, message: 'Server configuration error.' });
+        }
+
+        const timeSlots = ['8am', '2pm', '6pm'];
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth()+1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+
+        const messageParts: string[] = [`*Free Chapterwise Series* - ${year}-${month}-${day}`];
+        const processedTests:any = [];
+
+        // Process all time slots concurrently
+        const testPromises = timeSlots.map(async (slug) => {
+            const generatedSlug = `cws-${year}-${month}-${day}-${slug}`;
+            console.log(generatedSlug)
             const test = await TestServices.archiveCustomTestBySlug(generatedSlug, 'UG');
             
             if (test) {
@@ -270,8 +348,8 @@ router.get("/send-daily-schedule-combined", async (req: Request, res: Response) 
     }
 });
 
-// will send at dedicated time to main group
-// with main link of the test
+// will activate the test at the time for attending
+// no telegram message will be sent
 router.get("/send-daily-schedule/:slug", async (req: Request, res: Response) => {
     try {
         const { slug } = req.params;
@@ -296,7 +374,7 @@ router.get("/send-daily-schedule/:slug", async (req: Request, res: Response) => 
         const day = String(today.getDate()).padStart(2, '0');
         const generatedSlug = `cws-${year}-${month}-${day}-${slug}`;
 
-        const archivedTest = await TestServices.getChapterWiseTestBySlugAndStream(generatedSlug, 'UG');
+        const archivedTest = await TestServices.activateCustomTestBySlug(generatedSlug, 'UG');
 
         if (!archivedTest) {
             return res.status(404).json({ data: null, message: 'Test not found or has already been processed.' });
@@ -304,19 +382,19 @@ router.get("/send-daily-schedule/:slug", async (req: Request, res: Response) => 
 
         const testViewUrl = `${process.env.FRONTEND}/tests/view/${archivedTest.id}`;
 
-        const telegramMessage = [
-            `*Free Chapterwise Series - ${slug}*`,
-            `${year}-${month}-${day}`,
-            ``,
-            `${archivedTest.name}`,
-            ``,
-            testViewUrl,
-            ``
-        ].join('\n');
+        // const telegramMessage = [
+        //     `*Free Chapterwise Series - ${slug}*`,
+        //     `${year}-${month}-${day}`,
+        //     ``,
+        //     `${archivedTest.name}`,
+        //     ``,
+        //     testViewUrl,
+        //     ``
+        // ].join('\n');
 
-        await bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
+        // await bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
 
-        console.log(`Deactivation message sent to Telegram channel ${testChatId} for test: ${archivedTest.name}`);
+        // console.log(`Deactivation message sent to Telegram channel ${testChatId} for test: ${archivedTest.name}`);
         
         return res.status(200).json({
             data: {

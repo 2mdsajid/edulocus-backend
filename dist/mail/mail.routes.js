@@ -57,11 +57,11 @@ router.get("/send-todays-tests-email", (req, res) => __awaiter(void 0, void 0, v
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         const formattedDateForSlug = `${year}-${month}-${day}`;
-        const FRONTEND_URL = process.env.FRONTEND || 'http://localhost:3000';
+        const FRONTEND_URL = process.env.FRONTEND || 'https://edulocusweb.com';
         const timeSlots = ['8am', '2pm', '6pm'];
         const testPromises = timeSlots.map((slug) => __awaiter(void 0, void 0, void 0, function* () {
             const generatedSlug = `cws-${formattedDateForSlug}-${slug}`;
-            const test = yield TestServices.getChapterWiseTestBySlugAndStream(generatedSlug, 'UG');
+            const test = yield TestServices.archiveCustomTestBySlug(generatedSlug, 'UG');
             if (test) {
                 return {
                     time: slug.toUpperCase(),
@@ -88,7 +88,7 @@ router.get("/send-todays-tests-email", (req, res) => __awaiter(void 0, void 0, v
         const mainHtmlBody = `
             <h2>Today's Chapter-wise Test Schedule</h2>
             <p><strong>Date:</strong> ${today.toLocaleDateString('en-GB')}</p>
-            <p>Hello! Here is the schedule for today's free chapter-wise tests. Click the links below to start the test at the scheduled time.</p>
+            <p>Hello! Here is the schedule for today's free chapter-wise tests. Click the links below to start the test <b><u>after the scheduled time.</b></u></p>
             <hr>
             ${testResults.map(test => `
                 <div style="margin-bottom: 20px;">
