@@ -307,7 +307,7 @@ export const getCustomTestById = async (id: string): Promise<TSingleCustomTestWi
 
 export const getCustomTestBySlugAndStream = async (slug:string, stream:TStream): Promise<TSingleCustomTestWithQuestions | null> => {
     const customTest = await prisma.customTest.findFirst({
-        where: { slug, stream },
+        where: { slug, stream, archive:false },
         select: {
             name: true,
             id: true,

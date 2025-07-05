@@ -299,7 +299,7 @@ const getCustomTestById = (id) => __awaiter(void 0, void 0, void 0, function* ()
 exports.getCustomTestById = getCustomTestById;
 const getCustomTestBySlugAndStream = (slug, stream) => __awaiter(void 0, void 0, void 0, function* () {
     const customTest = yield prisma_1.default.customTest.findFirst({
-        where: { slug, stream },
+        where: { slug, stream, archive: false },
         select: {
             name: true,
             id: true,

@@ -101,12 +101,11 @@ router.get('/send-tomorrows-schedule', (req, res) => __awaiter(void 0, void 0, v
         }
     }
     // Combine all parts and add the updated caption
-    const finalMessage = scheduleTextParts.join('\n') +
-        `\nHere is the schedule for tomorrow!\nDo join this chat for any discussions �\nhttps://t.me/+ygNs2o0PLXpjNDQ1`;
+    const finalMessage = scheduleTextParts.join('\n');
     try {
         // Send the generated text message to Telegram
-        yield bot.sendMessage(testChatId, finalMessage, { parse_mode: 'Markdown' });
-        console.log(`Tomorrow's schedule sent to Telegram channel ${testChatId}`);
+        yield bot.sendMessage(edulocusOriginalChatId, finalMessage, { parse_mode: 'Markdown' });
+        console.log(`Tomorrow's schedule sent to Telegram channel ${edulocusOriginalChatId}`);
         res.status(200).json({ success: true, message: "Tomorrow's schedule successfully sent to Telegram." });
     }
     catch (error) {
@@ -117,7 +116,7 @@ router.get('/send-tomorrows-schedule', (req, res) => __awaiter(void 0, void 0, v
 // will deactivate all tests and publish the results -- at 10pm run -- main group
 router.get("/deactivate-chapterwise-all", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (!testChatId) {
+        if (!edulocusOriginalChatId) {
             console.error("Error: TELEGRAM_TEST_CHAT_ID is not defined in environment variables.");
             return res.status(500).json({ data: null, message: 'Server configuration error.' });
         }
@@ -170,7 +169,7 @@ router.get("/deactivate-chapterwise-all", (req, res) => __awaiter(void 0, void 0
                 leaderboardTextParts.push(`_No participants yet for this test._`);
             }
             const finalLeaderboardMessage = leaderboardTextParts.join('\n');
-            yield bot.sendMessage(testChatId, finalLeaderboardMessage, { parse_mode: 'Markdown' });
+            yield bot.sendMessage(edulocusOriginalChatId, finalLeaderboardMessage, { parse_mode: 'Markdown' });
             const message = `Leaderboard for ${slug} sent successfully.`;
             console.log(message);
             processingResults.push({ slug, status: 'Sent', message });
@@ -229,7 +228,7 @@ router.get("/send-daily-schedule-combined", (req, res) => __awaiter(void 0, void
         }
         const telegramMessage = messageParts.join('\n');
         yield bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
-        console.log(`Consolidated daily schedule sent to Telegram channel ${testChatId}`);
+        console.log(`Consolidated daily schedule sent to Telegram channel ${edulocusOriginalChatId}`);
         return res.status(200).json({
             data: processedTests,
             message: 'Daily schedule notification sent successfully.'
@@ -244,7 +243,7 @@ router.get("/send-daily-schedule-combined", (req, res) => __awaiter(void 0, void
 // combined and archived so can be activated later onn when the time comes
 router.get("/send-daily-schedule-combined-for-test", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (!testChatId) {
+        if (!edulocusOriginalChatId) {
             console.error("Error: TELEGRAM_CHAT_ID is not defined in environment variables.");
             return res.status(500).json({ data: null, message: 'Server configuration error.' });
         }
@@ -286,8 +285,8 @@ router.get("/send-daily-schedule-combined-for-test", (req, res) => __awaiter(voi
             return res.status(404).json({ data: null, message: 'No tests found for any time slot today.' });
         }
         const telegramMessage = messageParts.join('\n');
-        yield bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
-        console.log(`Consolidated daily schedule sent to Telegram channel ${testChatId}`);
+        yield bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
+        console.log(`Consolidated daily schedule sent to Telegram channel ${edulocusOriginalChatId}`);
         return res.status(200).json({
             data: processedTests,
             message: 'Daily schedule notification sent successfully.'
@@ -306,7 +305,7 @@ router.get("/send-daily-schedule/:slug", (req, res) => __awaiter(void 0, void 0,
         if (!slug) {
             return res.status(400).json({ data: null, message: 'Time slot slug is required.' });
         }
-        if (!testChatId) {
+        if (!edulocusOriginalChatId) {
             console.error("Error: TELEGRAM_CHAT_ID is not defined in environment variables.");
             return res.status(500).json({ data: null, message: 'Server configuration error.' });
         }
@@ -333,8 +332,8 @@ router.get("/send-daily-schedule/:slug", (req, res) => __awaiter(void 0, void 0,
         //     testViewUrl,
         //     ``
         // ].join('\n');
-        // await bot.sendMessage(testChatId, telegramMessage, { parse_mode: 'Markdown' });
-        // console.log(`Deactivation message sent to Telegram channel ${testChatId} for test: ${archivedTest.name}`);
+        // await bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
+        // console.log(`Deactivation message sent to Telegram channel ${edulocusOriginalChatId} for test: ${archivedTest.name}`);
         return res.status(200).json({
             data: {
                 testId: archivedTest.id,
