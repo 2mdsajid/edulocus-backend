@@ -37,7 +37,7 @@ jobs:
 
 
             # Build the project
-            /home/c0mrad1/.bun/bin/bun run build
+            # /home/c0mrad1/.bun/bin/bun run build
 
             # Run database migrations
             /home/c0mrad1/.bun/bin/bun run db
