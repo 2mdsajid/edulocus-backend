@@ -1,0 +1,45 @@
+# .github/workflows/deploy.yml
+
+name: CI/CD Pipeline
+
+# Run this workflow on pushes to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repository code so the runner can access it
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. The deployment step that connects to EC2 and runs commands
+      - name: Deploy and Restart Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to your project directory on the server
+            cd /home/c0mrad1/ebe
+
+            # Pull the latest code from the main branch
+            git pull origin main
+
+            # Install dependencies
+            bun install
+
+            # Build the project
+            bun run build
+
+            # Run database migrations
+            bun run db
+
+            # Reload the app with PM2 for zero-downtime
+            pm2 reload index

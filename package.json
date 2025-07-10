@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "bun --hot src/index.ts",
-    "start": "bun puppeteer browsers install chromium@latest && npx prisma migrate && npx prisma db push && npx prisma generate && node dist/index.js",
+    "start": "bun prisma db push && bun prisma generate && bun dist/index.js",
     "build": "tsc",
     "seed": "bun scripts/seed.ts",
     "update": "bun run scripts/merge.ts",

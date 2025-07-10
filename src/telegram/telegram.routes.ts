@@ -381,17 +381,17 @@ router.get("/send-daily-schedule/:slug", async (req: Request, res: Response) => 
 
         const testViewUrl = `${process.env.FRONTEND}/tests/view/${archivedTest.id}`;
 
-        // const telegramMessage = [
-        //     `*Free Chapterwise Series - ${slug}*`,
-        //     `${year}-${month}-${day}`,
-        //     ``,
-        //     `${archivedTest.name}`,
-        //     ``,
-        //     testViewUrl,
-        //     ``
-        // ].join('\n');
+        const telegramMessage = [
+            `*Free Chapterwise Series - ${slug}*`,
+            `${year}-${month}-${day}`,
+            ``,
+            `${archivedTest.name}`,
+            ``,
+            testViewUrl,
+            ``
+        ].join('\n');
 
-        // await bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
+        await bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
 
         // console.log(`Deactivation message sent to Telegram channel ${edulocusOriginalChatId} for test: ${archivedTest.name}`);
         
