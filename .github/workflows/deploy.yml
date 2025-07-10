@@ -33,13 +33,14 @@ jobs:
             git pull origin main
 
             # Install dependencies
-            bun install
+            /home/c0mrad1/.bun/bin/bun install
+
 
             # Build the project
-            bun run build
+            /home/c0mrad1/.bun/bin/bun run build
 
             # Run database migrations
-            bun run db
+            /home/c0mrad1/.bun/bin/bun run db
 
             # Reload the app with PM2 for zero-downtime
             pm2 reload index
