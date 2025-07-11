@@ -286,6 +286,7 @@ router.get("/send-daily-schedule-combined-for-test", async (req: Request, res: R
         const year = today.getFullYear();
         const month = String(today.getMonth()+1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
+        console.log(day)
 
         const messageParts: string[] = [`*Free Chapterwise Series* - ${year}-${month}-${day}`];
         const processedTests:any = [];

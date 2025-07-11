@@ -252,6 +252,7 @@ router.get("/send-daily-schedule-combined-for-test", (req, res) => __awaiter(voi
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
+        console.log(day);
         const messageParts = [`*Free Chapterwise Series* - ${year}-${month}-${day}`];
         const processedTests = [];
         // Process all time slots concurrently
@@ -323,16 +324,16 @@ router.get("/send-daily-schedule/:slug", (req, res) => __awaiter(void 0, void 0,
             return res.status(404).json({ data: null, message: 'Test not found or has already been processed.' });
         }
         const testViewUrl = `${process.env.FRONTEND}/tests/view/${archivedTest.id}`;
-        // const telegramMessage = [
-        //     `*Free Chapterwise Series - ${slug}*`,
-        //     `${year}-${month}-${day}`,
-        //     ``,
-        //     `${archivedTest.name}`,
-        //     ``,
-        //     testViewUrl,
-        //     ``
-        // ].join('\n');
-        // await bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
+        const telegramMessage = [
+            `*Free Chapterwise Series - ${slug}*`,
+            `${year}-${month}-${day}`,
+            ``,
+            `${archivedTest.name}`,
+            ``,
+            testViewUrl,
+            ``
+        ].join('\n');
+        yield bot.sendMessage(edulocusOriginalChatId, telegramMessage, { parse_mode: 'Markdown' });
         // console.log(`Deactivation message sent to Telegram channel ${edulocusOriginalChatId} for test: ${archivedTest.name}`);
         return res.status(200).json({
             data: {
