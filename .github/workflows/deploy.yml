@@ -27,7 +27,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Navigate to your project directory on the server
-            cd /home/ec2-user/ebe
+            cd /home/ec2-user/eb
 
             # Pull the latest code from the main branch
             git pull origin main
@@ -43,4 +43,4 @@ jobs:
             bun run db
 
             # Reload the app with PM2 for zero-downtime
-            pm2 reload edulocus
+            bun run start
